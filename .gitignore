@@ -1,0 +1,29 @@
+# dependencies
+node_modules
+
+# Next.js
+.next
+out
+build
+next-env.d.ts
+*.tsbuildinfo
+
+# environment
+.env
+.env.local
+.env.*.local
+
+# evaluation data: photos of real people are never committed
+test-data/
+
+# Python conversion tooling
+scripts/convert/__pycache__
+.venv
+
+# local tooling
+.claude/
+
+# misc
+.DS_Store
+npm-debug.log*
+.vercel

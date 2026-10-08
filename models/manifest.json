@@ -1,0 +1,44 @@
+{
+  "generatedBy": "scripts/convert/convert_models.py",
+  "models": {
+    "faceDetector": {
+      "file": "face_detector.onnx",
+      "sha256": "6a0660d068289166cc7c2a796386668b6bf32ca59b06815c05a3c2c4411a8a54",
+      "name": "MediaPipe BlazeFace (short range)",
+      "license": "Apache-2.0",
+      "modelCard": "https://storage.googleapis.com/mediapipe-assets/MediaPipe%20BlazeFace%20Model%20Card%20(Short%20Range).pdf",
+      "source": {
+        "url": "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
+        "sha256": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+        "member": "face_detector.tflite",
+        "memberSha256": "b4578f35940bf5a1a655214a1cce5cab13eba73c1297cd78e1a04c2380b0152f"
+      }
+    },
+    "faceLandmarks": {
+      "file": "face_landmarks.onnx",
+      "sha256": "00a407406107b0aacd0bd88337256ab7cd37102b9b40939dc318c771df03ba9e",
+      "name": "MediaPipe Face Mesh V2 (478 landmarks)",
+      "license": "Apache-2.0",
+      "modelCard": "https://storage.googleapis.com/mediapipe-assets/Model%20Card%20MediaPipe%20Face%20Mesh%20V2.pdf",
+      "source": {
+        "url": "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
+        "sha256": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+        "member": "face_landmarks_detector.tflite",
+        "memberSha256": "c7d54204ce0448474c7f3fa9af494787c0965cbdd6f20fc72867e43046bd43d5"
+      }
+    },
+    "faceSegmenter": {
+      "file": "face_segmenter.onnx",
+      "sha256": "6dd666bbca2f544dbdb2fe970db170d6b5e4b718a81df1ed6f430e8aead7c14b",
+      "name": "MediaPipe Selfie Multiclass Segmentation (256x256)",
+      "license": "Apache-2.0",
+      "modelCard": "https://storage.googleapis.com/mediapipe-assets/Model%20Card%20Multiclass%20Segmentation.pdf",
+      "source": {
+        "url": "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite",
+        "sha256": "c6748b1253a99067ef71f7e26ca71096cd449baefa8f101900ea23016507e0e0",
+        "member": null,
+        "memberSha256": "c6748b1253a99067ef71f7e26ca71096cd449baefa8f101900ea23016507e0e0"
+      }
+    }
+  }
+}
