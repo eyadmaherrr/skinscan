@@ -79,6 +79,10 @@ Copy `.env.example` to `.env.local`. All are optional.
 | `SKIN_SCAN_ONNX_THREADS` | `2` | CPU threads per model inference |
 | `SKIN_SCAN_RATE_LIMIT` / `SKIN_SCAN_RATE_LIMIT_WINDOW_SECONDS` | `8` / `600` | Scans per client per window |
 | `ONNXRUNTIME_NODE_INSTALL` | `skip` (via `.npmrc`) | Skips ONNX Runtime's optional CUDA download on Linux |
+| `SKINSCAN_ACNE_LESIONS` | `true` | Spot & acne-like mark candidates (experimental section) |
+| `SKINSCAN_PORES` | `true` | Pore-visibility estimate (experimental section) |
+| `SKINSCAN_ACNE_SEVERITY_MODEL` | *(empty = off)* | File name (in `models/optional/`) of the optional acne-severity ONNX model (licence unresolved — see docs/AI_SOURCES.md) |
+| `DERM_FOUNDATION_ENABLED` / `DERM_FOUNDATION_URL` / `DERM_FOUNDATION_TOKEN` / `DERM_FOUNDATION_TIMEOUT_MS` | off | Optional self-hosted Derm Foundation embedding service (`services/derm-foundation`) |
 
 `NEXT_PUBLIC_*` values are inlined at build time — rebuild after changing them.
 
@@ -101,6 +105,15 @@ Copy `.env.example` to `.env.local`. All are optional.
    from photo quality and usable skin; low-confidence results are withheld.
 
 Details: [docs/SCORING.md](docs/SCORING.md).
+
+## Optional / experimental components
+
+| Component | Default | Notes |
+|---|---|---|
+| Spot & acne-like mark candidates | on | Heuristic detector + fold filter; overlay and regional counts. Not a trained acne detector. |
+| Pore visibility | on | Only reported for close, sharp, low-noise photos; heat-map overlay. Appearance estimate, not pore size. |
+| Acne severity classifier | **off** | `python scripts/convert/convert_acne_classifier.py <pytorch_model.bin>` (from huggingface.co/afscomercial/dermatologic) writes `models/optional/acne_severity.onnx`; then set `SKINSCAN_ACNE_SEVERITY_MODEL=acne_severity.onnx` (a file name inside `models/optional/`). Resolve its data licence first. |
+| Derm Foundation | **off** | See `services/derm-foundation/README.md` (gated model, HAI-DEF terms, ~3 GB RAM service). No downstream task uses it yet. |
 
 ## Changing or adding models
 

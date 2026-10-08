@@ -1,8 +1,8 @@
-/* eslint-disable @next/next/no-img-element -- local object URL of the user's own photo */
 'use client';
 
 import { CalendarCheck, ChevronDown, Info, RotateCcw } from 'lucide-react';
-import { useState } from 'react';
+import { AcneSection, PoresSection } from './ExtensionSections';
+import PhotoOverlay from './PhotoOverlay';
 import { ENGINE_NAME, SITE_NAME } from '@/lib/brand';
 import { publicConfig } from '@/lib/public-config';
 import { BAND_LABELS, CONFIDENCE_LABELS, METRIC_LABELS } from '@/lib/skin-analysis/labels';
@@ -64,7 +64,6 @@ function MetricRow({ k, result }: { k: MetricKey; result: ScanSuccess }) {
 }
 
 export default function Results({ result, photoUrl, photoAspect, onScanAgain }: Props) {
-  const [showRegions, setShowRegions] = useState(true);
   const date = new Date(result.createdAt);
 
   return (
@@ -79,20 +78,7 @@ export default function Results({ result, photoUrl, photoAspect, onScanAgain }: 
 
       <div className="resultsGrid">
         <aside className="glass resultsSide">
-          <div className="photoFrame resultPhoto" style={{ aspectRatio: String(photoAspect) }}>
-            <img src={photoUrl} alt="Your analysed photo" />
-            {showRegions ? (
-              <svg className="regionOverlay" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden>
-                {result.regions.map((r) => (
-                  <polygon key={r.region} points={r.points.map(([x, y]) => `${x},${y}`).join(' ')} />
-                ))}
-              </svg>
-            ) : null}
-          </div>
-          <label className="toggle">
-            <input type="checkbox" checked={showRegions} onChange={(e) => setShowRegions(e.target.checked)} />
-            <span>Show analysed areas</span>
-          </label>
+          <PhotoOverlay result={result} photoUrl={photoUrl} photoAspect={photoAspect} />
 
           <div className="overall">
             <ConfidenceRing value={result.overallConfidence} />
@@ -124,6 +110,13 @@ export default function Results({ result, photoUrl, photoAspect, onScanAgain }: 
           </ul>
         </div>
       </div>
+
+      {result.acne || result.pores ? (
+        <div className="extGrid">
+          {result.acne ? <AcneSection acne={result.acne} /> : null}
+          {result.pores ? <PoresSection pores={result.pores} /> : null}
+        </div>
+      ) : null}
 
       <div className="glass disclaimer">
         <Info size={18} aria-hidden />
@@ -167,6 +160,11 @@ export default function Results({ result, photoUrl, photoAspect, onScanAgain }: 
               <strong>Measurements.</strong> Colour is measured in the CIELAB colour space used in skin colorimetry
               (redness and pigmentation are compared with your own surrounding skin, so they do not depend on your skin
               tone). Texture and spots are measured from fine image detail at real-world scale.
+            </li>
+            <li>
+              <strong>Experimental sections.</strong> Spot candidates come from a colour and contrast spot detector, not a
+              trained acne model, so they can include freckles, moles or marks. Pore visibility is an appearance
+              estimate that needs a close, sharp photo; it does not measure pore size.
             </li>
             <li>
               <strong>Scores and confidence.</strong> Each measurement is converted to a 0–100 visibility score. Its

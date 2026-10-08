@@ -27,7 +27,8 @@ export function detectBlobs(
   minSupport = 0.85,
 ): Blob[] {
   const best = new Float32Array(w * h);
-  const bestSigma = new Float32Array(w * h);
+  // Float64 so the stored scale equals the exact value callers used (and may look up) for each response map.
+  const bestSigma = new Float64Array(w * h);
   for (const s of sigmas) {
     const r = responses(s);
     const t = threshold(s);

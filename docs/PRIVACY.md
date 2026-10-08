@@ -24,6 +24,19 @@ possible and keep nothing.
    `blob:` URL, which is released when the user starts again or leaves.
    Nothing is saved in `localStorage` or cookies.
 
+## Optional components
+
+- The acne-severity classifier and pore analysis run inside the same server
+  process; nothing extra leaves it.
+- The **Derm Foundation** service, if enabled, receives a 448×448 face crop
+  over HTTPS (or HTTP to an internal host) with a shared secret. It must be
+  self-hosted in the clinic's infrastructure; the adapter refuses public
+  plain-HTTP URLs. It processes the image in memory and returns only an
+  embedding, which SkinScan keeps on the server and never returns or stores.
+  Do not point it at any third-party inference API.
+- Overlays (spot positions, the pore heat map) are generated per request and
+  returned only to the uploader; they are not stored.
+
 ## Consent
 
 Before taking or uploading a photo the user must tick a consent box stating

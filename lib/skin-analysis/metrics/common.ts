@@ -12,6 +12,8 @@ export interface MetricContext {
   quality: QualityAssessment;
   /** Lazily computed planes shared between metrics. */
   cache: Map<string, Float32Array>;
+  /** Spots found by the blemish metric (reused by the acne lesion summary). */
+  spots?: import('./blemishes').Spot[];
 }
 
 /**

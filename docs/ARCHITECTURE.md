@@ -132,6 +132,53 @@ Failure: `{ "success": false, "error": { "code", "message" },
 
 Model names and internal measurements are deliberately not part of the API.
 
+## Extension components (methodology 2.1)
+
+```
+core pipeline (unchanged) ──▶ ctx (aligned face, masks, quality, spots)
+        │
+        ├─ extensions/acne.ts            spot candidates (+ jawline), Hessian fold filter, overlay data
+        ├─ extensions/acne-severity.ts   optional ResNet-50 classifier (SKINSCAN_ACNE_SEVERITY_MODEL)
+        ├─ extensions/pores.ts           task-specific gate, DoG pores, regional index, heat map
+        ├─ extensions/projection.ts      crop → photo coordinates, heat-map PNG rendering
+        └─ extensions/derm-foundation.ts optional HTTP client for services/derm-foundation
+```
+
+`extensions/index.ts` runs them after the core metrics. Each is wrapped
+separately: a failure yields `status: "failed"` for that section only; the
+core analysis and other sections are returned unchanged. Spot detection is
+shared with the blemish metric (`ctx.spots`), so nothing is computed twice.
+
+Optional models load through `getOptionalSession()` (path + SHA-256 from the
+adjacent `.json`, cached per process). The Derm Foundation model runs in a
+separate self-hosted service because it is a ≈1.5 GB TensorFlow model.
+
+### Response additions (all optional, additive)
+
+```json
+"acne": {
+  "status": "ok", "method": "heuristic_spot_detection",
+  "lesionCandidateCount": 4, "redToneCount": 0, "darkToneCount": 4,
+  "lesions": [{ "x": 0.41, "y": 0.22, "r": 0.004, "tone": "dark", "region": "forehead" }],
+  "regionalSummary": { "forehead": { "count": 3, "visible": true }, "jawL": { "count": 0, "visible": false } },
+  "severity": { "status": "disabled", "label": null, "scale": null, "probabilities": null },
+  "explanation": "…", "limitations": ["…"]
+},
+"pores": {
+  "status": "ok" | "insufficient_quality" | …, "visibilityScore": 8, "scoreScale": "…",
+  "confidence": 0.42, "confidenceLabel": "low",
+  "regionalSummary": { "nose": 10, "forehead": 8 }, "heatmap": "data:image/png;base64,…",
+  "explanation": "…", "limitations": ["…"]
+},
+"dermFoundation": { "enabled": false, "featureExtractionStatus": "not_run", "downstreamTasks": [] },
+"analysisQuality": { "imageQuality": "acceptable", "limitations": ["…"] }
+```
+
+Statuses: `ok`, `insufficient_quality`, `disabled`, `not_configured`,
+`failed` (`not_run` for Derm Foundation when switched off). Values are `null`
+whenever they were not computed — never defaults. Embeddings, model paths and
+model names are never returned.
+
 ## Security
 
 - Uploads: content-length pre-check, `multipart/form-data` only, declared type

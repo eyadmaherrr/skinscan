@@ -16,13 +16,14 @@ import { measureRedness } from './metrics/redness';
 import { measureShine } from './metrics/shine';
 import { measureTexture } from './metrics/texture';
 import { measureUnderEye } from './metrics/under-eye';
+import { runExtensions, type ExtensionResults } from './extensions';
 import { assessAlignedFace, checkDetections, checkLandmarks, type QualityAssessment } from './quality';
 import { buildRegions } from './regions';
 import { band, calibrate, METHODOLOGY_VERSION } from './scoring';
 import { buildSkinMasks } from './skin-mask';
 import {
+  ALL_REGION_KEYS,
   METRIC_KEYS,
-  REGION_KEYS,
   type MetricKey,
   type MetricResult,
   type QualityIssueCode,
@@ -54,6 +55,7 @@ export interface DetailedAnalysis {
   measurements: MetricMeasurement[];
   quality: QualityAssessment;
   face: Pick<AlignedFace, 'width' | 'height' | 'pxPerMm' | 'sourceIod'>;
+  extensions: ExtensionResults['internal'];
 }
 
 /** Metrics whose measurement is distorted by smiling (cheek folds, raised under-eyes). */
@@ -92,7 +94,7 @@ function checkDeadline(deadline: number): void {
 const yieldToEventLoop = () => new Promise<void>((resolve) => setImmediate(resolve));
 
 function outlines(face: AlignedFace, image: RgbImage, regions: ReturnType<typeof buildRegions>): RegionOutline[] {
-  return REGION_KEYS.map((region) => ({
+  return ALL_REGION_KEYS.map((region) => ({
     region,
     points: regions.outlines[region].map(([x, y]) => {
       const [xs, ys] = applyAffine(face.cropToSource, x, y);
@@ -185,6 +187,11 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   // Keep a stable key order for clients.
   const ordered = Object.fromEntries(METRIC_KEYS.map((k) => [k, analysis[k]])) as Record<MetricKey, MetricResult>;
 
+  // Extension components (acne spot candidates, pores, optional models). They
+  // run after the core analysis and cannot change or break it.
+  checkDeadline(options.deadline);
+  const ext = await runExtensions(ctx, image, quality.notes);
+
   const result: ScanSuccess = {
     success: true,
     scanId: randomUUID(),
@@ -195,12 +202,17 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
     regions: outlines(face, image, regions),
     engine: ENGINE_NAME,
     methodologyVersion: METHODOLOGY_VERSION,
+    acne: ext.acne,
+    pores: ext.pores,
+    dermFoundation: ext.dermFoundation,
+    analysisQuality: ext.analysisQuality,
   };
   return {
     result,
     measurements,
     quality,
     face: { width: face.width, height: face.height, pxPerMm: face.pxPerMm, sourceIod: face.sourceIod },
+    extensions: ext.internal,
   };
 }
 

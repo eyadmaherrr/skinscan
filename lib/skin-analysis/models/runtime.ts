@@ -79,6 +79,40 @@ export async function runModel(
   return session.run(feeds);
 }
 
+const optionalSessions = ((globalThis as unknown as { __skinScanOptional?: Map<string, Promise<InferenceSession>> })
+  .__skinScanOptional ??= new Map());
+
+/**
+ * Optional model loaded from an explicit path (not part of the core
+ * manifest). Its SHA-256 must match `expectedSha256`. Cached per path.
+ */
+export function getOptionalSession(modelPath: string, expectedSha256: string): Promise<InferenceSession> {
+  let session = optionalSessions.get(modelPath);
+  if (!session) {
+    session = (async () => {
+      const bytes = await readFile(modelPath);
+      const digest = createHash('sha256').update(bytes).digest('hex');
+      if (digest !== expectedSha256) throw new Error('optional model failed checksum verification');
+      const { InferenceSession } = await ort();
+      return InferenceSession.create(bytes, {
+        executionProviders: ['cpu'],
+        graphOptimizationLevel: 'all',
+        intraOpNumThreads: serverConfig.onnxThreads,
+        interOpNumThreads: 1,
+      });
+    })();
+    session.catch(() => optionalSessions.delete(modelPath));
+    optionalSessions.set(modelPath, session);
+  }
+  return session;
+}
+
+/** Run a single-input session. */
+export async function runSession(session: InferenceSession, input: Float32Array, dims: readonly number[]): Promise<Record<string, Tensor>> {
+  const { Tensor } = await ort();
+  return session.run({ [session.inputNames[0]]: new Tensor('float32', input, dims) });
+}
+
 /** Load every model up front (used by the health check and to fail fast at start-up). */
 export async function warmUp(): Promise<void> {
   await Promise.all((['faceDetector', 'faceLandmarks', 'faceSegmenter'] as ModelName[]).map(getSession));

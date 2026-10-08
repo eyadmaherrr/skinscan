@@ -134,16 +134,29 @@ h3 {
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  overflow: hidden;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 6px 18px rgba(11, 45, 77, 0.14);
+  background: transparent;
+  transition: transform 0.25s ease, filter 0.25s ease;
 }
 
 .brandLogo img {
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   object-fit: contain;
+  background: transparent;
+  filter: drop-shadow(0 3px 7px rgba(11, 45, 77, 0.1));
+  transition: filter 0.25s ease;
+}
+
+/* Same hover as drmahermahmoud.com: a gentle lift of the logo. */
+.brand:hover .brandLogo,
+.brand:focus-visible .brandLogo {
+  transform: scale(1.045);
+}
+
+.brand:hover .brandLogo img,
+.brand:focus-visible .brandLogo img {
+  filter: drop-shadow(0 8px 14px rgba(23, 107, 156, 0.22));
 }
 
 .brandText {
@@ -161,9 +174,9 @@ h3 {
 .brandText small {
   margin-top: 3px;
   color: var(--blue);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 1.4px;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
 }
 
@@ -505,8 +518,7 @@ h3 {
   cursor: pointer;
 }
 
-.consent input,
-.toggle input {
+.consent input {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
@@ -891,16 +903,6 @@ h3 {
   vector-effect: non-scaling-stroke;
 }
 
-.toggle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 12px 4px 0;
-  color: var(--muted-strong);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
 
 .overall {
   display: flex;
@@ -1265,8 +1267,12 @@ h3 {
   }
 
   .brandLogo img {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .brandText strong {
+    font-size: 14px;
   }
 
   .navCta {
@@ -1336,5 +1342,264 @@ h3 {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Overlay layers & experimental sections ---------- */
+.photoFrame .heatmapLayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: fill;
+  pointer-events: none;
+  background: transparent;
+}
+
+.regionOverlay .spotRed,
+.regionOverlay .spotDark {
+  fill: none;
+  stroke-width: 2.2px;
+  vector-effect: non-scaling-stroke;
+}
+
+.regionOverlay .spotRed {
+  stroke: #ff6b5b;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
+}
+
+.regionOverlay .spotDark {
+  stroke: #ffd166;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
+}
+
+.layerSwitch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(11, 45, 77, 0.05);
+}
+
+.layerSwitch button {
+  flex: 1;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted-strong);
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.layerSwitch button.active {
+  background: #fff;
+  color: var(--navy);
+  box-shadow: 0 2px 8px rgba(11, 45, 77, 0.1);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 4px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.legendDot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.legendDot.red {
+  border-color: #ff6b5b;
+}
+
+.legendDot.dark {
+  margin-left: 6px;
+  border-color: #e0a800;
+}
+
+.extGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  align-items: start;
+}
+
+.extSection {
+  padding: 22px 24px;
+}
+
+.extHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.extHead h3 {
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.2px;
+}
+
+.tag.experimental {
+  background: #f4f3ff;
+  color: #5925dc;
+}
+
+.extLead {
+  margin: 4px 0 0;
+  color: var(--navy);
+  font-size: 15px;
+}
+
+.extLead strong {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.extText {
+  margin: 10px 0 0;
+  color: var(--muted-strong);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.regionChips {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.regionChips li {
+  display: inline-flex;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(11, 45, 77, 0.05);
+  color: var(--muted-strong);
+  font-size: 12.5px;
+}
+
+.regionChips li b {
+  color: var(--navy);
+}
+
+.regionChips li.hiddenRegion b {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.severityBox {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+}
+
+.severityBox strong {
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.probBars {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.probBars li {
+  display: grid;
+  grid-template-columns: 150px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted-strong);
+  font-size: 12.5px;
+}
+
+.probBars .meter {
+  margin-top: 0;
+  height: 6px;
+}
+
+.probBars .pct {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.notice {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.notice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--blue);
+}
+
+.reasonList {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--muted-strong);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.limitations {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.limitations summary {
+  color: var(--blue);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.limitations ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  line-height: 1.55;
+}
+
+@media (max-width: 960px) {
+  .extGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .extSection {
+    padding: 18px 16px;
+  }
+
+  .probBars li {
+    grid-template-columns: 110px 1fr 40px;
   }
 }

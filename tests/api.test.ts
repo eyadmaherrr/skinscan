@@ -68,5 +68,27 @@ describe('POST /api/skin-scan', () => {
     }
     const strip = (r: ScanSuccess) => ({ ...r, scanId: '', createdAt: '' });
     assert.deepEqual(strip(first), strip(second));
+
+    // Backward compatibility: the original contract is intact.
+    for (const key of ['pigmentation', 'redness', 'texture', 'blemishes', 'shine', 'underEye']) assert.ok(key in first.analysis);
+    assert.ok(first.regions.length >= 7 && first.imageQuality.acceptable && first.engine && first.methodologyVersion);
+
+    // Extensions are present, well-formed and never fabricated.
+    const statuses = ['ok', 'insufficient_quality', 'disabled', 'not_configured', 'failed'];
+    assert.ok(first.acne && statuses.includes(first.acne.status));
+    for (const l of first.acne?.lesions ?? []) {
+      assert.ok(l.x >= 0 && l.x <= 1 && l.y >= 0 && l.y <= 1 && l.r > 0 && l.r < 0.2);
+      assert.ok(l.tone === 'red' || l.tone === 'dark');
+    }
+    assert.ok(first.pores && statuses.includes(first.pores.status));
+    if (first.pores?.status !== 'ok') assert.equal(first.pores?.visibilityScore, null);
+    assert.ok(first.pores?.heatmap === null || first.pores?.heatmap?.startsWith('data:image/png;base64,'));
+    assert.equal(first.dermFoundation?.featureExtractionStatus, 'not_run');
+    assert.equal(first.acne?.severity.components?.imageClassifier.status, process.env.SKINSCAN_ACNE_SEVERITY_MODEL ? 'ok' : 'disabled');
+
+    // No internals leak to clients.
+    const text = JSON.stringify(first);
+    assert.ok(!/embedding/i.test(text));
+    assert.ok(!/[A-Za-z]:\\\\|\/models\/|node_modules|\.onnx/.test(text));
   });
 });

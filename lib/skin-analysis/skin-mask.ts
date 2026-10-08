@@ -2,7 +2,7 @@ import type { AlignedFace } from './alignment';
 import { erode } from './image/filters';
 import { maskedValues, robustSpread } from './image/stats';
 import type { FaceRegions } from './regions';
-import { REGION_KEYS, type RegionKey } from './types';
+import { ALL_REGION_KEYS, REGION_KEYS, type RegionKey } from './types';
 
 /**
  * Final skin masks. A pixel is analysed only if:
@@ -57,14 +57,16 @@ export function buildSkinMasks(face: AlignedFace, regions: FaceRegions): SkinMas
   const allWithHighlights = new Uint8Array(n);
   const geometric = new Uint8Array(n);
 
-  for (const key of REGION_KEYS) {
+  const core = new Set<RegionKey>(REGION_KEYS);
+  for (const key of ALL_REGION_KEYS) {
+    const isCore = core.has(key);
     const geo = regions.regions[key];
     const candidate = new Uint8Array(n);
     let geoCount = 0;
     for (let i = 0; i < n; i++) {
       if (!geo[i]) continue;
       geoCount++;
-      geometric[i] = 1;
+      if (isCore) geometric[i] = 1;
       if (!veto[i]) candidate[i] = 1;
     }
     // Deep shadows and stray hairs: far darker than the region's typical skin.
@@ -79,9 +81,9 @@ export function buildSkinMasks(face: AlignedFace, regions: FaceRegions): SkinMas
       if (highlights[i] && !clippedOrDark[i]) {
         colour[i] = 1;
         usable++;
-        all[i] = 1;
+        if (isCore) all[i] = 1;
       }
-      if (highlights[i]) allWithHighlights[i] = 1;
+      if (highlights[i] && isCore) allWithHighlights[i] = 1;
     }
     out[key] = colour;
     withHighlights[key] = highlights;

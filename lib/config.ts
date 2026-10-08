@@ -33,3 +33,33 @@ export const serverConfig = {
   /** Threads ONNX Runtime may use per inference. */
   onnxThreads: int('SKIN_SCAN_ONNX_THREADS', 2, 1, 16),
 } as const;
+
+function flag(name: string, fallback: boolean): boolean {
+  const raw = process.env[name]?.trim().toLowerCase();
+  if (!raw) return fallback;
+  return raw === '1' || raw === 'true' || raw === 'on' || raw === 'yes';
+}
+
+/**
+ * Extension components (acne, pores, Derm Foundation). Read on every call so
+ * tests and long-running servers pick up environment changes.
+ */
+export function extensionConfig() {
+  const acneModel = process.env.SKINSCAN_ACNE_SEVERITY_MODEL?.trim() || '';
+  return {
+    acneLesions: flag('SKINSCAN_ACNE_LESIONS', true),
+    pores: flag('SKINSCAN_PORES', true),
+    /**
+     * Optional acne-severity ONNX model (see
+     * scripts/convert/convert_acne_classifier.py), given as a file name inside
+     * models/optional/. Empty = disabled. Its checksum is read from the .json
+     * file written next to it.
+     */
+    acneSeverityModel: acneModel ? path.join(process.cwd(), 'models', 'optional', path.basename(acneModel)) : '',
+    /** Optional Derm Foundation embedding service (services/derm-foundation). */
+    dermFoundationEnabled: flag('DERM_FOUNDATION_ENABLED', false),
+    dermFoundationUrl: process.env.DERM_FOUNDATION_URL?.trim() || '',
+    dermFoundationToken: process.env.DERM_FOUNDATION_TOKEN?.trim() || '',
+    dermFoundationTimeoutMs: int('DERM_FOUNDATION_TIMEOUT_MS', 8000, 1000, 60_000),
+  };
+}

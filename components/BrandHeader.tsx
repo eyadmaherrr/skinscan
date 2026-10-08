@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { SITE_SHORT_NAME } from '@/lib/brand';
+import { CLINIC_NAME, SITE_NAME, SITE_SHORT_NAME } from '@/lib/brand';
 import { publicConfig } from '@/lib/public-config';
 
 export default function BrandHeader({ onHome }: { onHome?: () => void }) {
@@ -10,8 +10,8 @@ export default function BrandHeader({ onHome }: { onHome?: () => void }) {
           <Image src="/brand/logo.webp" alt="" width={44} height={44} priority />
         </span>
         <span className="brandText">
-          <strong>Dr. Maher Mahmoud</strong>
-          <small>{SITE_SHORT_NAME}</small>
+          <strong>{SITE_NAME}</strong>
+          <small>{CLINIC_NAME}</small>
         </span>
       </button>
       <a className="btn secondary sm navCta" href={publicConfig.bookingUrl} target="_blank" rel="noopener noreferrer">

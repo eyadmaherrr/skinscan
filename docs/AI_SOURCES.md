@@ -106,6 +106,29 @@ portraits and checking detections, landmark overlays and segmentation masks
 | Difference-of-Gaussians blob detection | Lindeberg, *Feature detection with automatic scale selection*, IJCV 1998 | Spot / blemish detection |
 | Box-filter Gaussian approximation | Kovesi / Wells, standard 3-pass box blur | Fast large-scale smoothing |
 
+## Extension candidates (acne, pores, Derm Foundation) — October 2026
+
+Each candidate was checked for code licence, weight licence, training-data
+licence, format and runtime fit before use.
+
+| Candidate | What it is | Licence findings | Decision |
+|---|---|---|---|
+| [afscomercial/dermatologic](https://huggingface.co/afscomercial/dermatologic) | torchvision ResNet-50, whole-image acne severity, 4 classes `level0`–`level3`, 224×224, ImageNet normalisation; self-reported val. accuracy 0.85; "intended for educational purposes" | Weights tagged MIT. **Training dataset not named**; the four labels match ACNE04's grading (ACNE04: academic use only, no commercial use). Provenance unresolved. | **Integrated as an optional, disabled-by-default component** (`SKINSCAN_ACNE_SEVERITY_MODEL`). Converted with our own safe loader (`scripts/convert/safe_torch_load.py` — never executes the pickle) and `convert_acne_classifier.py`; weights are **not committed** (`models/optional/`, git-ignored). Do not enable commercially until the author confirms the data licence. Evaluation below shows it labels clear studio portraits as mild/moderate acne, i.e. it is not reliable on SkinScan photos. |
+| [will702/acne-cv-models](https://huggingface.co/will702/acne-cv-models) | 21 scikit-learn/CatBoost classifiers on 42 hand-crafted features (Haar faces, LBP, GLCM, redness), 3 grades | Tagged MIT, but **trained on ACNE04** (academic use only). Weights are Python pickles (loading executes code) and need scikit-learn 1.7.2 exactly; the feature pipeline (Haar cascades, CLAHE) would have to be re-implemented bit-for-bit. | **Not integrated** (licence + security + runtime). Its published per-class F1 (moderate 0.46, severe 0.55) is also weak. |
+| [Merligus/acne-detection](https://github.com/Merligus/acne-detection) | YOLO26 lesion detector, SegFormer-B1 segmentation, DINOv3 multi-task severity/count | **No licence file** (all rights reserved). Weights on Google Drive, trained on ACNE04. YOLO (Ultralytics) is AGPL-3.0; SegFormer weights use NVIDIA's non-commercial licence; DINOv3 has its own licence. | **Not integrated.** A licensed lesion detector would need commercially usable annotated data (e.g. the clinic's own, consented and labelled photos). |
+| [DurtyDhiana/skin-scan](https://github.com/DurtyDhiana/skin-scan) | Python/OpenCV/MediaPipe; pores = DoG high-pass + Otsu threshold + 4–80 px blobs, normalised by the per-image maximum | **MIT** (code); no weights. | **Idea reused** (high-pass + blob detection + density heatmap), re-implemented in TypeScript with physical scale and absolute, noise-adaptive thresholds. Its per-image max normalisation was *not* adopted: it always "finds" pores and makes scores incomparable between photos. |
+| [google/derm-foundation](https://huggingface.co/google/derm-foundation) | BiT-M ResNet101x3 (TensorFlow SavedModel), 448×448 input, 6144-d embeddings; no predictions on its own | **Gated** — requires accepting the Health AI Developer Foundations terms with a Hugging Face account. Terms: use only per the agreement; pass the §3.2 use restrictions on to users; include a HAI-DEF notice; seek regulatory authorisation where applicable; no use that could make Google a medical-device manufacturer. | **Adapter integrated** (`lib/skin-analysis/extensions/derm-foundation.ts`, off by default) plus a self-hosted reference service (`services/derm-foundation/`). **Not executed:** access to the gated weights was not granted, the ≈1.5 GB TensorFlow model cannot run inside the Node/Vercel runtime, and there is no commercially usable labelled acne/pore data to train or validate a downstream classifier on its embeddings. No result currently uses it. |
+| [SkinCAP](https://huggingface.co/datasets/joshuachou/SkinCAP) | 4,000 images (Fitzpatrick17k, DDI) with dermatologist captions | **CC BY-NC-SA 4.0** plus a KAUST research-use agreement (non-commercial, no derivatives, no clinical use). No acne-severity, lesion-box or pore labels. | **Not used** — non-commercial, and its captions do not support the tasks. |
+| ACNE04 (Layered-Labs/ACNE04, xpwu95/LDL) | 1,457 images, severity + 18,983 lesion boxes | Academic/research use only; commercial use not permitted. | **Not used.** |
+
+**What would unblock a validated acne model:** a dataset the clinic may use
+commercially — ideally the clinic's own consented photos with dermatologist
+severity grades and lesion boxes across skin tones — or written commercial
+permission from the ACNE04 authors. With such data, a linear classifier on
+Derm Foundation embeddings (Google's recommended use) or a small detector
+could be trained and compared against the current heuristics on a held-out
+test set.
+
 ## Evaluated and NOT used
 
 | Candidate | Reason |
@@ -117,7 +140,7 @@ portraits and checking detections, landmark overlays and segmentation masks
 | An acne CNN for "acne severity" | Would be a medical grading; out of scope for a non-diagnostic tool |
 | **ACNE04** (Wu et al., ICCV 2019; Hugging Face `Layered-Labs/ACNE04`) | Considered for training/testing the blemish measurement (1,457 images, severity labels, 18,983 lesion boxes). Its card states *"academic/research use only"*, *"commercial use is not permitted"* and *"not intended for clinical deployment"*; other uses require permission from the original author (Xiaoping Wu, xpwu95/LDL). Not used. Can be used once written permission for commercial use is obtained. Note also that its images come from a single population, so results would need checking across skin tones. |
 | LLM / vision-language "skin analysis" | Not reproducible or explainable; would be pretending a model analysed the skin |
-| Pore-visibility metric (our own, DoG blob density) | Implemented and **removed**: scores changed by up to 17 points with mild camera noise and ±15 with JPEG compression or rotation (see docs/TESTING.md). Reliable pore measurement needs close-up / macro imaging. |
+| Pore-visibility metric v1 (our own, DoG blob density, in the core score list) | Removed from the core metrics in v2.0: scores changed by up to 17 points with mild camera noise. Re-introduced in v2.1 as a separate **experimental** section with a strict resolution/sharpness/noise gate, spot exclusion and noise-adaptive thresholds (see docs/SCORING.md). |
 | "Hydration / dryness" from colour | No valid visual correlate in a normal photo; would be invented |
 
 ## Attribution notice

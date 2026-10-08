@@ -27,3 +27,6 @@ scripts/convert/__pycache__
 .DS_Store
 npm-debug.log*
 .vercel
+
+# optional models with unresolved licensing (see docs/AI_SOURCES.md)
+models/optional/

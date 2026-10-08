@@ -167,10 +167,63 @@ then asks for a neutral expression).
 
 None of these thresholds depends on how light or dark the skin is.
 
+## Experimental extensions (methodology 2.1)
+
+These are reported in separate response sections (`acne`, `pores`) and are
+clearly labelled *experimental* in the interface. They never change the six
+core scores above.
+
+### Spot & acne-like mark candidates (`extensions/acne.ts`)
+
+- **Method:** the blemish detector's spots (forehead, nose, cheeks, chin) plus
+  the same detector run on the jawline, then a Hessian shape test: a
+  candidate is kept only if the smaller/larger eigenvalue ratio of the L*
+  (darker spots) or a* (redder spots) map at its scale is ≥ 0.3. Folds and
+  creases give one near-zero eigenvalue and are dropped.
+- **Outputs:** approximate count, red-toned vs darker-toned counts, positions
+  and radii (normalised to the photo) for the overlay, per-region counts with
+  a *visible* flag (regions < 30% visible are "not visible", not 0).
+- **What it is not:** not a trained acne detector; it cannot distinguish
+  blackheads, whiteheads, papules, pustules, nodules or scars, nor tell acne
+  from freckles or moles. "Red-toned" and "darker" are visual descriptions.
+
+### Acne severity grade (`extensions/acne-severity.ts`) — disabled by default
+
+Optional whole-image classifier (ResNet-50, classes level0–level3 as defined
+by its publisher). Reports the class and the model's softmax probabilities.
+It is not a lesion detector and not a clinical grade, its training data
+licence is unresolved (see docs/AI_SOURCES.md), and on the reference
+portraits it graded clear, freckled or ruddy skin as mild/moderate acne — so
+it stays disabled in production. When disabled the interface states that no
+validated grading model is available.
+
+### Pore visibility (`extensions/pores.ts`)
+
+- **Task-specific quality gate** (stricter than the core gate): ≥ 6 px/mm on
+  the face (inter-ocular distance ≥ ~380 px — a close phone selfie), blur
+  index ≤ 0.45, SNR ≥ 60, no smoothing/heavy edit detected, ≥ 40% of
+  nose/forehead/upper-cheek skin visible. Otherwise
+  `status: insufficient_quality` with the reasons. (The gate was tightened
+  after evaluation at 5–5.5 px/mm showed ±15-point changes under mild noise.)
+- **Regions:** nose, forehead, upper 60% of the cheeks (lower cheeks, chin and
+  jaw are skipped because stubble looks like pores). Spots from the blemish
+  detector (with a 2.5σ margin), brows, hair, lips and overexposed pixels are
+  excluded.
+- **Detection:** multi-scale difference of Gaussians on log luminance at
+  σ ≈ 0.08 / 0.12 / 0.17 mm; a pore must be ≥ 4% darker than its surroundings
+  and ≥ 5× the camera-noise level of the same filter.
+- **Raw value:** contrast-weighted visible pores per cm². **Index:** anchors
+  0 / 6 / 18 / 40 / 75 → 0 / 25 / 50 / 75 / 100.
+- **Heatmap:** detections smoothed over 1.5 mm, mapped through the same
+  calibration and rendered onto the full photo.
+- **Confidence:** capped at 0.62 (never "high"); reduced by blur, noise and
+  editing.
+- **Not measured:** pore size or diameter, sebum, hydration, barrier function.
+
 ## Not measured
 
-- **Pore visibility** — implemented, evaluated and removed (unstable; see
-  docs/TESTING.md).
+- **Pore size / sebum / hydration** — not measurable from a normal photo. Pore
+  *visibility* is an experimental appearance estimate (above).
 - **Dryness / hydration** — no valid visual correlate in a normal photo.
 - **Acne severity, rosacea, melasma or any condition** — these are medical
   diagnoses and out of scope.

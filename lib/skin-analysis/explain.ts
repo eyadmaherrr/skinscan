@@ -12,12 +12,14 @@ const REGION_NAMES: Record<string, string> = {
   cheeks: 'cheeks',
   chin: 'chin',
   underEyes: 'under-eye area',
+  jawline: 'jawline',
 };
 
 /** Merge left/right regions into human names. */
 export function regionGroup(region: RegionKey): string {
   if (region === 'cheekL' || region === 'cheekR') return 'cheeks';
   if (region === 'underEyeL' || region === 'underEyeR') return 'underEyes';
+  if (region === 'jawL' || region === 'jawR') return 'jawline';
   return region;
 }
 

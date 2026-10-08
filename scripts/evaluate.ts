@@ -37,6 +37,9 @@ interface Outcome {
   raw?: Record<MetricKey, number | null>;
   overall?: number;
   diagnostics?: Record<string, number>;
+  /** Extension components. */
+  pores?: { status: string; score: number | null; raw: number | null };
+  acne?: { candidates: number | null; red: number | null; severity: string | null; pSevere: number | null };
   ms: number;
 }
 
@@ -225,6 +228,47 @@ const VARIANTS: Variant[] = [
     },
   },
   {
+    id: 'pore_dots',
+    expect: 'accept',
+    make: (img, base) => {
+      // A regular pattern of tiny (0.15 mm radius), 10% darker dots on the nose and upper cheeks.
+      const mmPx = base.face.sourceIod / 63;
+      const step = Math.max(2, Math.round(1.6 * mmPx));
+      const radius = Math.max(0.6, 0.15 * mmPx);
+      const centres: [number, number][] = [];
+      for (const region of ['nose', 'cheekL', 'cheekR']) {
+        const [cx, cy] = centroid(base, region, img);
+        for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) centres.push([cx + dx * step, cy - 2 * step + dy * step]);
+      }
+      return jpeg(
+        mapLinear(img, (x, y, [r, g, b]) => {
+          let k = 1;
+          for (const [cx, cy] of centres) {
+            const d = Math.hypot(x - cx, y - cy);
+            if (d < radius * 1.5) k = Math.min(k, 1 - 0.1 * Math.max(0, 1 - d / (radius * 1.5)));
+          }
+          return [r * k, g * k, b * k];
+        }),
+        95,
+      );
+    },
+  },
+  {
+    id: 'acne_like',
+    expect: 'accept',
+    make: (img, base) => {
+      // Twenty raised-red 2–3 mm spots spread over both cheeks and the chin.
+      const mmPx = base.face.sourceIod / 63;
+      const spots: [number, number][] = [];
+      const offsets = [[-8, -6], [-3, -9], [4, -5], [9, -1], [-6, 2], [0, 4], [6, 7]];
+      for (const region of ['cheekL', 'cheekR', 'chin']) {
+        const [cx, cy] = centroid(base, region, img);
+        for (const [ox, oy] of offsets.slice(0, region === 'chin' ? 6 : 7)) spots.push([cx + ox * mmPx, cy + oy * mmPx * 0.8]);
+      }
+      return jpeg(paintDisks(img, spots, 1.3 * mmPx, [0.97, 0.6, 0.62]));
+    },
+  },
+  {
     id: 'brown_patch',
     expect: 'accept',
     make: (img, base) => {
@@ -257,9 +301,27 @@ async function run(buffer: Buffer): Promise<{ outcome: Outcome; detail?: Detaile
       confidences[k] = detail.result.analysis[k].confidence;
     }
     for (const m of detail.measurements) raw[m.key] = m.raw === null ? null : Math.round(m.raw * 1000) / 1000;
+    const sev = detail.result.acne?.severity;
+    const probs = sev?.probabilities;
     return {
       detail,
-      outcome: { accepted: true, issues: [], scores, confidences, raw, overall: detail.result.overallConfidence, diagnostics: detail.quality.diagnostics, ms: Date.now() - started },
+      outcome: {
+        accepted: true,
+        issues: [],
+        scores,
+        confidences,
+        raw,
+        overall: detail.result.overallConfidence,
+        diagnostics: detail.quality.diagnostics,
+        pores: { status: detail.result.pores?.status ?? 'missing', score: detail.result.pores?.visibilityScore ?? null, raw: detail.extensions.poresRaw },
+        acne: {
+          candidates: detail.result.acne?.lesionCandidateCount ?? null,
+          red: detail.result.acne?.redToneCount ?? null,
+          severity: sev?.label ?? null,
+          pSevere: probs ? (probs.level1 ?? 0) + (probs.level2 ?? 0) + (probs.level3 ?? 0) : null,
+        },
+        ms: Date.now() - started,
+      },
     };
   } catch (e) {
     if (e instanceof ScanError) {
@@ -369,6 +431,50 @@ function summarize(report: Record<string, { expect: string; note: string; origin
       if (deltas.length) lines.push(`| ${vid} | ${k} | ${(deltas.reduce((s, d) => s + d, 0) / deltas.length).toFixed(1)} | ${deltas.filter((d) => d > 0).length}/${deltas.length} |`);
     }
   }
+  // Extensions
+  lines.push('', '## Extension components', '');
+  lines.push('| Subject | Pores (status / score / raw) | Spot candidates (red) | Acne classifier (label, P(level≥1)) |', '|---|---|---|---|');
+  for (const [label, r] of subjects) {
+    const o = r.original;
+    if (!o.accepted) continue;
+    const pores = o.pores ? `${o.pores.status} / ${o.pores.score ?? '—'} / ${o.pores.raw?.toFixed(1) ?? '—'}` : 'n/a';
+    const acne = o.acne ? `${o.acne.candidates} (${o.acne.red})` : 'n/a';
+    const sev = o.acne?.severity ? `${o.acne.severity}, ${o.acne.pSevere?.toFixed(2)}` : 'disabled';
+    lines.push(`| ${label} | ${pores} | ${acne} | ${sev} |`);
+  }
+  const extStability = (field: (o: Outcome) => number | null | undefined, name: string) => {
+    const row: string[] = [];
+    for (const vid of ['mirror', 'rescale_85', 'reencode_q80', 'noise_mild', 'jpeg_q30', 'rotated_15', 'dark_mild']) {
+      const deltas: number[] = [];
+      for (const [, r] of subjects) {
+        const a = field(r.original);
+        const b = r.variants[vid] ? field(r.variants[vid]) : null;
+        if (a != null && b != null) deltas.push(Math.abs(a - b));
+      }
+      row.push(deltas.length ? `${(deltas.reduce((s, d) => s + d, 0) / deltas.length).toFixed(1)} / ${Math.max(...deltas).toFixed(1)} (n=${deltas.length})` : 'n/a');
+    }
+    lines.push(`| ${name} | ${row.join(' | ')} |`);
+  };
+  lines.push('', '| Stability (mean / max abs. change) | mirror | rescale_85 | reencode_q80 | noise_mild | jpeg_q30 | rotated_15 | dark_mild |', '|---|---|---|---|---|---|---|---|');
+  extStability((o) => o.pores?.score, 'pore score');
+  extStability((o) => o.acne?.candidates, 'spot candidates');
+  extStability((o) => (o.acne?.pSevere == null ? null : o.acne.pSevere * 100), 'acne classifier P(level≥1) ×100');
+  const construct = (vid: string, field: (o: Outcome) => number | null | undefined, name: string) => {
+    const deltas: number[] = [];
+    for (const [, r] of subjects) {
+      const a = field(r.original);
+      const b = r.variants[vid] ? field(r.variants[vid]) : null;
+      if (a != null && b != null) deltas.push(b - a);
+    }
+    if (deltas.length) lines.push(`| ${vid} | ${name} | ${(deltas.reduce((s, d) => s + d, 0) / deltas.length).toFixed(2)} | ${deltas.filter((d) => d > 0).length}/${deltas.length} |`);
+    else lines.push(`| ${vid} | ${name} | not measurable | 0/0 |`);
+  };
+  lines.push('', '| Edit | Measure | Mean change | Increased in |', '|---|---|---|---|');
+  construct('pore_dots', (o) => o.pores?.raw, 'pore raw (weighted pores/cm²)');
+  construct('acne_like', (o) => o.acne?.candidates, 'spot candidates');
+  construct('acne_like', (o) => o.acne?.red, 'red-toned candidates');
+  construct('acne_like', (o) => o.acne?.pSevere, 'acne classifier P(level≥1)');
+
   const times = subjects.map(([, r]) => r.original.ms).filter((ms) => ms > 0);
   lines.push('', `Median analysis time: ${times.sort((a, b) => a - b)[Math.floor(times.length / 2)] ?? 'n/a'} ms`);
   return lines.join('\n');

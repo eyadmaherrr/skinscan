@@ -14,7 +14,7 @@ import {
   LOWER_LID_IMG_LEFT,
   LOWER_LID_IMG_RIGHT,
 } from './face-topology';
-import { REGION_KEYS, type RegionKey } from './types';
+import { ALL_REGION_KEYS, type RegionKey } from './types';
 
 /**
  * Facial regions are defined from the landmarks in the aligned face crop
@@ -163,6 +163,21 @@ export function buildRegions(lm: AlignedLandmarks): FaceRegions {
     [mouthL[0] + px(0.08), chinBottom],
   ];
 
+  // Jawline (auxiliary, acne summary only): below the mouth-corner line, outside the chin.
+  const jawTop = Math.max(mouthL[1], mouthR[1]) + px(0.06);
+  const jawL: Point[] = [
+    [sideL[0] - px(0.2), jawTop],
+    [mouthL[0] - px(0.1), jawTop],
+    [mouthL[0] - px(0.02), chinPt[1]],
+    [sideL[0] - px(0.2), chinPt[1]],
+  ];
+  const jawR: Point[] = [
+    [mouthR[0] + px(0.1), jawTop],
+    [sideR[0] + px(0.2), jawTop],
+    [sideR[0] + px(0.2), chinPt[1]],
+    [mouthR[0] + px(0.02), chinPt[1]],
+  ];
+
   const outlines: Record<RegionKey, Point[]> = {
     forehead,
     nose,
@@ -171,10 +186,12 @@ export function buildRegions(lm: AlignedLandmarks): FaceRegions {
     chin,
     underEyeL,
     underEyeR,
+    jawL,
+    jawR,
   };
 
   const regions = {} as Record<RegionKey, Uint8Array>;
-  for (const key of REGION_KEYS) {
+  for (const key of ALL_REGION_KEYS) {
     regions[key] = andNot(and(mask(lm, outlines[key]), faceInner), features);
   }
   // Keep regions disjoint: under-eye bands take precedence over cheeks and nose.
@@ -185,6 +202,9 @@ export function buildRegions(lm: AlignedLandmarks): FaceRegions {
   regions.nose = andNot(regions.nose, underEyes);
   regions.cheekL = andNot(regions.cheekL, regions.nose);
   regions.cheekR = andNot(regions.cheekR, regions.nose);
+  for (const jaw of ['jawL', 'jawR'] as const) {
+    regions[jaw] = andNot(andNot(andNot(regions[jaw], regions.chin), regions.cheekL), regions.cheekR);
+  }
 
   return { regions, outlines, faceOval, features, eyes, eyeSurround };
 }

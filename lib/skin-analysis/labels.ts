@@ -32,4 +32,6 @@ export const REGION_LABELS: Record<RegionKey, string> = {
   chin: 'Chin',
   underEyeL: 'Under-eye',
   underEyeR: 'Under-eye',
+  jawL: 'Jawline',
+  jawR: 'Jawline',
 };
