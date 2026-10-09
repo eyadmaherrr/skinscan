@@ -61,7 +61,9 @@ const en = {
     blocked:
       'Camera access was blocked. You can allow camera access in your browser settings, or use your device camera or a photo instead.',
     notFound: 'No camera was found on this device.',
-    inUse: 'The camera is being used by another app. Please close it and try again.',
+    inUse:
+      'The camera couldn’t be started. Close any other app or browser tab that may be using it (for example a video call), then try again.',
+    retry: 'Try again',
     failed: 'The camera could not be started on this device.',
     unavailable: 'Live camera is not available in this browser.',
     deviceCamera: 'Use device camera',
@@ -352,7 +354,8 @@ const ar: Messages = {
     close: 'إغلاق الكاميرا',
     blocked: 'تم منع الوصول إلى الكاميرا. يمكنك السماح بذلك من إعدادات المتصفح، أو استخدام كاميرا الجهاز أو رفع صورة بدلًا من ذلك.',
     notFound: 'لم يتم العثور على كاميرا في هذا الجهاز.',
-    inUse: 'الكاميرا مستخدمة في تطبيق آخر. يُرجى إغلاقه والمحاولة مرة أخرى.',
+    inUse: 'تعذّر تشغيل الكاميرا. أغلق أي تطبيق أو علامة تبويب أخرى قد تستخدمها (مثل مكالمة فيديو)، ثم حاول مرة أخرى.',
+    retry: 'حاول مرة أخرى',
     failed: 'تعذّر تشغيل الكاميرا على هذا الجهاز.',
     unavailable: 'الكاميرا المباشرة غير متاحة في هذا المتصفح.',
     deviceCamera: 'استخدم كاميرا الجهاز',

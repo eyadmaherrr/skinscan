@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, ImageUp, Loader2, SwitchCamera, X } from 'lucide-react';
+import { AlertCircle, ImageUp, Loader2, RotateCcw, SwitchCamera, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useI18n } from './LocaleProvider';
 import type { Messages } from '@/lib/messages';
@@ -38,6 +38,36 @@ function setTorch(track: MediaStreamTrack, on: boolean): Promise<void> {
   return track.applyConstraints({ advanced: [{ torch: on } as MediaTrackConstraintSet] });
 }
 
+/**
+ * Opens the camera, from the best request to the most basic. Some laptop
+ * cameras can't start at a high resolution or with a facing mode, and on
+ * Windows a camera stays busy for a moment after a failed (or just closed)
+ * request, which shows up as "NotReadableError" — so each step waits a bit
+ * longer before asking again.
+ */
+async function openCamera(facing: Facing, cancelled: () => boolean): Promise<MediaStream> {
+  const requests: (MediaTrackConstraints | true)[] = [
+    { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1440 } },
+    { facingMode: facing },
+    true,
+    true,
+  ];
+  let lastError: unknown;
+  for (let i = 0; i < requests.length; i++) {
+    if (i) await wait(350 * i);
+    if (cancelled()) throw new DOMException('Camera request cancelled', 'AbortError');
+    try {
+      return await navigator.mediaDevices.getUserMedia({ video: requests[i], audio: false });
+    } catch (error) {
+      lastError = error;
+      const name = error instanceof Error ? error.name : '';
+      // Asking again can't help when access is refused or there is no camera.
+      if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'NotFoundError') throw error;
+    }
+  }
+  throw lastError;
+}
+
 function cameraErrorMessage(error: unknown, t: Messages['camera']): string {
   const name = error instanceof Error ? error.name : '';
   if (name === 'NotAllowedError' || name === 'SecurityError') return t.blocked;
@@ -58,6 +88,8 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
   const [flash, setFlash] = useState(false);
   const [screenFlash, setScreenFlash] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  /** Bumped by "Try again" to restart the camera. */
+  const [attempt, setAttempt] = useState(0);
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -74,20 +106,13 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
         return;
       }
       try {
-        let stream: MediaStream;
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1440 } },
-            audio: false,
-          });
-        } catch {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false });
-        }
+        // Release this page's previous stream first (switching cameras, trying again).
+        stop();
+        const stream = await openCamera(facing, () => cancelled);
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
-        stop();
         streamRef.current = stream;
         const video = videoRef.current;
         if (video) {
@@ -108,9 +133,9 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
       cancelled = true;
       stop();
     };
-    // The camera restarts only when the facing changes, not when the language object is recreated.
+    // The camera restarts when the facing changes or on "Try again", not when the language object is recreated.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [facing, stop]);
+  }, [facing, attempt, stop]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -185,7 +210,10 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
             <AlertCircle size={36} aria-hidden />
             <p>{error}</p>
             <div className="actions center">
-              <button type="button" className="btn primary" onClick={onUseDeviceCamera}>
+              <button type="button" className="btn primary" onClick={() => setAttempt((n) => n + 1)}>
+                <RotateCcw size={18} aria-hidden /> {t.retry}
+              </button>
+              <button type="button" className="btn secondary" onClick={onUseDeviceCamera}>
                 {t.deviceCamera}
               </button>
               <button type="button" className="btn secondary" onClick={onUpload}>
