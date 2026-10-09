@@ -3,6 +3,7 @@
 import { Lock, Mail, ShieldCheck, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
+import GoogleSignInButton from './GoogleSignInButton';
 import { publicConfig } from '@/lib/public-config';
 import { useAuth } from '@/lib/client/use-auth';
 
@@ -140,6 +141,8 @@ export default function AuthModal({
           <button type="submit" className="btn primary lg authSubmitBtn" disabled={isPending}>
             {isPending ? 'Signing in...' : 'Sign In to Continue'}
           </button>
+
+          <GoogleSignInButton />
         </form>
 
         <div className="authModalFooter">

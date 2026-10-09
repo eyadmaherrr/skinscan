@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import BrandHeader from '@/components/BrandHeader';
 import { CLINIC_NAME, ENGINE_NAME, SITE_NAME, SITE_SHORT_NAME } from '@/lib/brand';
 import { publicConfig } from '@/lib/public-config';
@@ -14,171 +13,227 @@ export default function PrivacyPage() {
   return (
     <>
       <BrandHeader />
-      <main className="legalContainer">
-        <div className="legalNavBack">
-          <Link href="/" className="backLink">
-            <ArrowLeft size={16} aria-hidden /> Return to {SITE_SHORT_NAME}
-          </Link>
-        </div>
 
-        <article className="legalCard glass">
-          <header className="legalHeader">
-            <span className="eyebrow">{CLINIC_NAME}</span>
-            <h1>Privacy Policy</h1>
-            <p className="legalSubtitle">Effective Date: October 9, 2026 · Version 2.0</p>
-          </header>
-
-          <div className="legalAlert privacyHighlight">
-            <ShieldCheck size={24} className="alertIcon" aria-hidden />
-            <div>
-              <strong>OUR CORE PRIVACY PROMISE:</strong>
-              <p>
-                Your facial photo is sensitive biometric data. {SITE_NAME} is engineered from the ground up with a <strong>zero-retention architecture</strong>. Your photo is analysed strictly in volatile memory (RAM) and is <strong>never stored</strong> on any hard disk, database, cloud bucket, or external server.
-              </p>
-            </div>
+      <main className="privacy-page">
+        <div className="privacy-container">
+          {/* ==================================================
+              HEADER (Matching Dr. Maher Clinics Main Site)
+              ================================================== */}
+          <div className="privacy-header">
+            <span className="privacy-badge">PRIVACY POLICY</span>
+            <h1>Privacy &amp; Data Protection</h1>
+            <p className="privacy-subtitle">
+              How {CLINIC_NAME} safeguards your sensitive facial photos and personal information
+              with strict in-memory zero-retention processing.
+            </p>
+            <span className="updated">Last updated: October 2026 · Version 2.0</span>
           </div>
 
-          <section className="legalSection">
-            <h2>1. Introduction</h2>
+          {/* ==================================================
+              CORE PRIVACY GUARANTEE
+              ================================================== */}
+          <section className="privacy-section">
+            <h2>Our Core Zero-Retention Promise</h2>
             <p>
-              {CLINIC_NAME} (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;the Clinic&rdquo;) operates {SITE_NAME}, an artificial intelligence skin screening tool powered by {ENGINE_NAME}. This Privacy Policy explains our stringent practices regarding the processing of your facial photos, account information, and technical data in accordance with Egypt&apos;s Personal Data Protection Law (Law No. 151 of 2020) and international data protection standards.
+              Your facial photograph is sensitive biometric data. {SITE_NAME} is architected
+              from the ground up with a <strong>zero-retention guarantee</strong>:
+            </p>
+            <ul>
+              <li>
+                <strong>No Disk Storage:</strong> Your photo is never written to disk, database, cloud
+                bucket (S3/GCS), or cache.
+              </li>
+              <li>
+                <strong>In-Memory Processing:</strong> Analysis runs purely in volatile server RAM and is
+                immediately purged the instant results are computed.
+              </li>
+              <li>
+                <strong>No Third-Party AI APIs:</strong> We do not send your images to OpenAI, Google
+                Cloud Vision, or any external third-party model APIs. All neural networks run within our
+                own isolated server processes.
+              </li>
+              <li>
+                <strong>Zero Photo Archival:</strong> Neither our staff, doctors, nor developers have access
+                to stored scans. Once your session finishes, your photo is gone forever.
+              </li>
+            </ul>
+          </section>
+
+          {/* ==================================================
+              1. INTRODUCTION & SCOPE
+              ================================================== */}
+          <section className="privacy-section">
+            <h2>1. Introduction &amp; Regulatory Compliance</h2>
+            <p>
+              {CLINIC_NAME} (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;the Clinic&rdquo;) operates{' '}
+              {SITE_NAME}, an artificial intelligence skin screening assessment tool powered by{' '}
+              {ENGINE_NAME}.
+            </p>
+            <p>
+              This Privacy Policy details our technical data protections and privacy rights under
+              Egypt&apos;s Personal Data Protection Law (Law No. 151 of 2020) and internationally recognized
+              health privacy principles.
             </p>
           </section>
 
-          <section className="legalSection">
-            <h2>2. What Happens to Your Photo (Zero-Retention Life Cycle)</h2>
-            <div className="lifecycleSteps">
-              <div className="lifecycleCard">
-                <span className="stepNumber">1</span>
-                <h3>On Your Device (Client-Side)</h3>
-                <p>
-                  Before any photo leaves your device, your browser draws it onto an internal HTML canvas, removes all EXIF metadata (GPS coordinates, camera serial numbers, and device details), and scales it down. The raw camera file never leaves your phone or computer.
-                </p>
-              </div>
-
-              <div className="lifecycleCard">
-                <span className="stepNumber">2</span>
-                <h3>Secure Transit</h3>
-                <p>
-                  The prepared photo is transmitted over an encrypted HTTPS connection (TLS 1.3 with HSTS enabled) directly to our own server, on the same origin as the application.
-                </p>
-              </div>
-
-              <div className="lifecycleCard">
-                <span className="stepNumber">3</span>
-                <h3>In-Memory Server Processing</h3>
-                <p>
-                  The image is decoded and analysed entirely in temporary RAM. Our local ONNX neural network models run within the server process itself. The image is <strong>never written to disk, database, or cache</strong>, and is never logged or forwarded to third-party APIs.
-                </p>
-              </div>
-
-              <div className="lifecycleCard">
-                <span className="stepNumber">4</span>
-                <h3>Instant Memory Erasure</h3>
-                <p>
-                  As soon as numerical scores, region coordinates, and explanations are computed, the in-memory image buffer is immediately dereferenced and purged from memory. Responses are served with <code>Cache-Control: no-store</code> to prevent intermediate proxies from caching results.
-                </p>
-              </div>
-
-              <div className="lifecycleCard">
-                <span className="stepNumber">5</span>
-                <h3>Local Browser Display</h3>
-                <p>
-                  Your browser renders your photo using a temporary local <code>blob:</code> URL held only in your browser tab&apos;s memory. When you navigate away or click &ldquo;Scan Again&rdquo;, that local memory handle is explicitly revoked. Nothing is persisted to your browser&apos;s permanent storage.
-                </p>
-              </div>
-            </div>
+          {/* ==================================================
+              2. ZERO-RETENTION LIFECYCLE
+              ================================================== */}
+          <section className="privacy-section">
+            <h2>2. Photo Processing Lifecycle</h2>
+            <p>
+              From the moment you capture or upload a selfie, your photo moves through a strictly ephemeral
+              pipeline:
+            </p>
+            <ul>
+              <li>
+                <strong>Client-Side Sanitization:</strong> Before transmission, your browser strips all EXIF
+                metadata (including GPS coordinates and device identifiers) on an isolated HTML canvas.
+              </li>
+              <li>
+                <strong>Encrypted Transit:</strong> Your image travels exclusively over TLS 1.3 encrypted HTTPS
+                directly to our own domain.
+              </li>
+              <li>
+                <strong>RAM-Only Computation:</strong> The image buffer is evaluated by lightweight ONNX
+                computer vision models and facial landmark algorithms inside active server memory.
+              </li>
+              <li>
+                <strong>Immediate Memory Dereference:</strong> As soon as the analysis JSON payload is
+                generated, the memory buffer is wiped and garbage-collected.
+              </li>
+              <li>
+                <strong>Local Browser Display:</strong> The photo displayed on your results screen is rendered
+                via a temporary browser <code>blob:</code> URL. Closing or navigating away releases the handle
+                instantly.
+              </li>
+            </ul>
           </section>
 
-          <section className="legalSection">
+          {/* ==================================================
+              3. PATIENT ACCOUNTS & AUTHENTICATION
+              ================================================== */}
+          <section className="privacy-section">
             <h2>3. Patient Account Data</h2>
             <p>
-              To ensure safety and prevent automated abuse, {SITE_NAME} requires sign-in with your official <strong>Dr. Maher Mahmoud Clinics Patient Account</strong>.
+              To protect the platform against automated bots and ensure clinical continuity, {SITE_NAME}{' '}
+              uses your unified <strong>Dr. Maher Mahmoud Clinics Patient Account</strong>.
             </p>
             <ul>
               <li>
-                <strong>Data We Retrieve:</strong> When you authenticate, we access your name, email address, phone verification status, and patient identifier from the clinic&apos;s central database.
+                <strong>Information Accessed:</strong> Name, verified email address, phone verification
+                status, and unique patient ID.
               </li>
               <li>
-                <strong>Purpose:</strong> To authenticate your authorized session and maintain fair usage limits across our patient community.
+                <strong>Authentication Tokens:</strong> Secure httpOnly session cookies or bearer headers
+                are validated against the main clinic authentication service.
               </li>
               <li>
-                <strong>Session Authentication Cookie:</strong> We issue an encrypted, <code>httpOnly</code> cookie named <code>patient_session</code> with a 7-day lifespan. This cookie is transmitted solely over HTTPS and is inaccessible to client-side scripts.
+                <strong>No Password Exposure:</strong> Your credentials are never stored or handled by
+                the scanning engine.
               </li>
             </ul>
           </section>
 
-          <section className="legalSection">
-            <h2>4. No Biometric Harvesting & No Commercial Sharing</h2>
+          {/* ==================================================
+              4. COOKIES & LOCAL STORAGE
+              ================================================== */}
+          <section className="privacy-section">
+            <h2>4. Cookies &amp; Storage</h2>
+            <p>
+              We prioritize minimalist data storage:
+            </p>
             <ul>
-              <li>We <strong>do not</strong> construct facial recognition profiles, identify individuals from photos, or store biometric templates.</li>
-              <li>We <strong>never sell, lease, or monetize</strong> your personal or biometric data.</li>
-              <li>We do not utilize third-party advertising trackers, session recording tools, or data brokerage networks.</li>
+              <li>
+                <strong>Essential Authentication Cookie:</strong> The <code>patient_session</code> cookie
+                maintains your secure sign-in status across requests.
+              </li>
+              <li>
+                <strong>No Tracking Cookies:</strong> We do not place advertising tracking pixels or
+                cross-site behavioural cookies.
+              </li>
+              <li>
+                <strong>No Permanent Photo Storage:</strong> Your browser local storage is never used to
+                store scanned images.
+              </li>
             </ul>
           </section>
 
-          <section className="legalSection">
-            <h2>5. Operational Logging & Security Measures</h2>
+          {/* ==================================================
+              5. YOUR RIGHTS & DATA REQUESTS
+              ================================================== */}
+          <section className="privacy-section">
+            <h2>5. Your Privacy Rights</h2>
             <p>
-              To monitor server availability and detect errors, our operational logs record only minimal, non-identifying telemetry per scan request:
+              In accordance with Egyptian data protection laws and international best practices, you hold full
+              rights to:
             </p>
             <ul>
-              <li>Execution duration in milliseconds, outcome status code (e.g., success or retake code), and overall confidence band.</li>
-              <li>Logs <strong>never contain</strong> facial images, file names, IP addresses, or patient identities.</li>
-              <li>Rate limiting is enforced via in-memory counters keyed on a one-way cryptographic SHA-256 hash of the client IP, expiring automatically every window.</li>
+              <li>Request a copy of your patient account records held at the Clinic.</li>
+              <li>Rectify or update any contact information associated with your profile.</li>
+              <li>Request erasure of your central clinic account and clinical booking history.</li>
+              <li>Revoke consent for communication at any time.</li>
             </ul>
+            <p>
+              Because facial photos from scans are deleted immediately upon processing, there is no photo
+              archive to delete—they are already erased.
+            </p>
           </section>
 
-          <section className="legalSection">
-            <h2>6. Your Rights Under Egypt Law No. 151 of 2020</h2>
+          {/* ==================================================
+              6. CONTACT & DATA PROTECTION OFFICER
+              ================================================== */}
+          <section className="privacy-section">
+            <h2>6. Contact Our Clinical Privacy Team</h2>
             <p>
-              Under the Egyptian Personal Data Protection Law and international standards, patients possess full rights over their personal data:
+              For any questions regarding this Privacy Policy or your data, please contact our administrative
+              team:
             </p>
             <ul>
-              <li><strong>Right to Access:</strong> View the patient profile details registered with {CLINIC_NAME}.</li>
-              <li><strong>Right to Rectification:</strong> Request correction of inaccurate personal contact details.</li>
-              <li><strong>Right to Erasure (&ldquo;Right to be Forgotten&rdquo;):</strong> Request the permanent deletion of your clinic patient account and associated profile records. (Note: Facial scan photos are already never stored, so there are no photos to delete).</li>
-              <li><strong>Right to Withdraw Consent:</strong> You may sign out at any time or discontinue usage of the application.</li>
-            </ul>
-          </section>
-
-          <section className="legalSection">
-            <h2>7. Contact Our Data Protection Team</h2>
-            <p>
-              If you have any questions, concerns, or requests regarding this Privacy Policy or your data protection rights, please contact our administrative team:
-            </p>
-            <div className="contactCard">
-              <strong>{CLINIC_NAME} — Data Protection Officer</strong>
-              <p>Cairo, Egypt</p>
-              <p>
-                Email:{' '}
-                <a href="mailto:clinic@drmahermahmoud.com">clinic@drmahermahmoud.com</a>
-              </p>
-              <p>
-                Main Portal:{' '}
-                <a href={publicConfig.clinicUrl} target="_blank" rel="noopener noreferrer">
-                  {publicConfig.clinicUrl}
+              <li>
+                <strong>Clinic:</strong> {CLINIC_NAME}
+              </li>
+              <li>
+                <strong>Website:</strong>{' '}
+                <a
+                  href={publicConfig.clinicUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inlineLink"
+                >
+                  {publicConfig.clinicUrl.replace(/^https?:\/\//, '')}
                 </a>
-              </p>
-            </div>
+              </li>
+              <li>
+                <strong>Hotline:</strong> 16120 (Egypt)
+              </li>
+              <li>
+                <strong>Branches:</strong> Mohandessin, Heliopolis, Zayed, Maadi, Mansoura, Alexandria
+              </li>
+            </ul>
           </section>
-        </article>
-      </main>
 
-      <footer className="footer">
-        <p>
-          {SITE_NAME} ·{' '}
-          <a href={publicConfig.clinicUrl} target="_blank" rel="noopener noreferrer">
-            {CLINIC_NAME}
-          </a>
-          . Informational only — not a medical diagnosis.
-        </p>
-        <div className="footerLinks">
-          <Link href="/terms">Terms of Use</Link>
-          <span className="dot">·</span>
-          <Link href="/privacy">Privacy Policy</Link>
+          {/* ==================================================
+              PAGE ACTIONS
+              ================================================== */}
+          <div className="privacy-actions">
+            <Link href="/" className="privacy-action">
+              ← Return to {SITE_SHORT_NAME}
+            </Link>
+            <Link href="/terms" className="privacy-action">
+              View Terms of Use
+            </Link>
+            <a
+              href={publicConfig.clinicUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="privacy-action"
+            >
+              Visit Clinic Website
+            </a>
+          </div>
         </div>
-      </footer>
+      </main>
     </>
   );
 }

@@ -901,6 +901,160 @@ h3 {
   stroke-width: 1.6px;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  transition: fill 0.16s ease, stroke 0.16s ease, filter 0.16s ease;
+}
+
+.regionOverlay polygon:hover,
+.regionOverlay polygon.isHovered {
+  fill: rgba(45, 156, 219, 0.32);
+  stroke: #2d9cdb;
+  stroke-width: 2.4px;
+  filter: drop-shadow(0 0 8px rgba(45, 156, 219, 0.65));
+}
+
+.regionOverlay circle {
+  cursor: pointer;
+  transition: stroke 0.16s ease, stroke-width 0.16s ease, filter 0.16s ease;
+}
+
+.regionOverlay circle:hover,
+.regionOverlay circle.isHovered {
+  stroke: #ffffff;
+  stroke-width: 3px;
+  filter: drop-shadow(0 0 8px rgba(235, 87, 87, 0.9));
+}
+
+.photoFrameWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.zoomPopupCard {
+  position: absolute;
+  z-index: 50;
+  width: 240px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(23, 107, 156, 0.28);
+  border-radius: 18px;
+  box-shadow:
+    0 16px 40px rgba(11, 45, 77, 0.24),
+    0 4px 12px rgba(11, 45, 77, 0.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 12px;
+  pointer-events: none;
+  animation: zoomFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: left 0.06s ease-out, top 0.06s ease-out;
+}
+
+@keyframes zoomFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.zoomPopupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.zoomPopupTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 750;
+  color: #0b2d4d;
+  letter-spacing: -0.2px;
+}
+
+.zoomPopupTitle svg {
+  color: #176b9c;
+  flex-shrink: 0;
+}
+
+.zoomBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  background: rgba(23, 107, 156, 0.1);
+  color: #176b9c;
+  text-transform: uppercase;
+}
+
+.zoomLensContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0b2d4d;
+  box-shadow: inset 0 0 0 1px rgba(11, 45, 77, 0.15);
+}
+
+.zoomLensImage {
+  width: 100%;
+  height: 100%;
+  transition: background-position 0.05s ease-out;
+}
+
+.zoomReticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border: 1.5px dashed rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(11, 45, 77, 0.4), inset 0 0 6px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.zoomReticle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  transform: translate(-50%, -50%);
+  background: #2d9cdb;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #ffffff;
+}
+
+.zoomPopupFooter {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #475467;
+  text-align: center;
+  font-weight: 550;
+}
+
+.zoomHint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: #667085;
+  text-align: center;
 }
 
 
@@ -1841,6 +1995,69 @@ h3 {
   text-decoration: underline;
 }
 
+/* ============================================================
+   CONTINUE WITH GOOGLE (login)
+   Google branding matching Dr. Maher Clinics main website
+   ============================================================ */
+
+.google-signin {
+  margin-top: 14px;
+}
+
+.google-signin-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #98a2b3;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.google-signin-divider::before,
+.google-signin-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e4e7ec;
+}
+
+.google-signin-button {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 16px;
+  border: 1px solid #747775;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1f1f1f;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.google-signin-button:hover {
+  background: #f8fafd;
+  box-shadow: 0 2px 8px rgba(11, 45, 77, 0.08);
+  transform: translateY(-1px);
+}
+
+.google-signin-button svg {
+  flex-shrink: 0;
+}
+
 /* ---------- Legal Pages & Footer Links ---------- */
 .footerLinks {
   margin-top: 8px;
@@ -2057,5 +2274,179 @@ h3 {
   }
   .authModalCard {
     padding: 26px 18px 20px;
+  }
+}
+
+/* =========================================================
+   PRIVACY POLICY & TERMS PAGES (Dr. Maher Clinics Main Site)
+   ========================================================= */
+
+.privacy-page {
+  min-height: 100vh;
+  padding: 40px 20px 90px;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(63, 130, 170, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fbfd 0%, #eef5f9 100%);
+  color: #17212b;
+}
+
+.privacy-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 46px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 30px;
+  box-shadow: 0 30px 80px rgba(11, 45, 77, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.privacy-header {
+  text-align: center;
+  padding-bottom: 34px;
+  margin-bottom: 34px;
+  border-bottom: 1px solid rgba(11, 45, 77, 0.08);
+}
+
+.privacy-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(23, 107, 156, 0.08);
+  border: 1px solid rgba(23, 107, 156, 0.12);
+  color: #176b9c;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.privacy-header h1 {
+  margin: 14px 0 0;
+  color: #0b2d4d;
+  font-size: clamp(32px, 5.5vw, 46px);
+  letter-spacing: -1.7px;
+  line-height: 1.08;
+  font-weight: 800;
+}
+
+.privacy-subtitle {
+  max-width: 620px;
+  margin: 14px auto 0;
+  color: #667085;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.updated {
+  display: block;
+  margin-top: 14px;
+  color: #98a2b3;
+  font-size: 12px;
+}
+
+.privacy-section {
+  padding-bottom: 30px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid rgba(11, 45, 77, 0.06);
+}
+
+.privacy-section:last-of-type {
+  border-bottom: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.privacy-section h2 {
+  margin: 0 0 12px;
+  color: #0b2d4d;
+  font-size: 20px;
+  letter-spacing: -0.4px;
+  font-weight: 750;
+}
+
+.privacy-section p {
+  margin: 0 0 12px;
+  color: #475467;
+  font-size: 14.5px;
+  line-height: 1.8;
+}
+
+.privacy-section p:last-child {
+  margin-bottom: 0;
+}
+
+.privacy-section ul {
+  margin: 10px 0 14px;
+  padding-left: 20px;
+  color: #475467;
+  font-size: 14.5px;
+  line-height: 1.8;
+}
+
+.privacy-section li {
+  margin-bottom: 6px;
+}
+
+.privacy-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  margin-top: 8px;
+  padding: 0 20px;
+  border-radius: 12px;
+  color: #0b2d4d;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(11, 45, 77, 0.12);
+  box-shadow: 0 4px 15px rgba(11, 45, 77, 0.05);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 700;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.privacy-action:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(11, 45, 77, 0.1);
+}
+
+.privacy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+@media (max-width: 700px) {
+  .privacy-page {
+    padding: 24px 14px 70px;
+  }
+  .privacy-container {
+    padding: 30px 20px;
+    border-radius: 22px;
+  }
+  .privacy-header h1 {
+    font-size: 30px;
+  }
+  .privacy-section h2 {
+    font-size: 18px;
+  }
+  .privacy-section p,
+  .privacy-section ul {
+    font-size: 13.5px;
+  }
+  .privacy-actions {
+    flex-direction: column;
+  }
+  .privacy-action {
+    width: 100%;
   }
 }
