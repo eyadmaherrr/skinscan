@@ -117,11 +117,17 @@ export interface ScanSuccess {
   dermFoundation?: DermFoundationReport;
   analysisQuality?: AnalysisQuality;
   /**
-   * Region-by-feature anatomical report (methodology 3.0).
+   * Region-by-feature anatomical report (methodology 3.5).
    * 24 independent anatomical regions analyzed individually.
    */
   regionsV3?: Record<import('./types-v3').RegionKeyV3, import('./types-v3').RegionReportV3>;
   v3?: import('./types-v3').DetailedV3PipelineResult;
+  /** Raw detected face landmarks normalized 0–1 in source photo space. */
+  landmarks?: [number, number][];
+  /** Skin Type & Visible Oiliness Analysis (Glamour AI ViT + Specular Highlight Analysis) */
+  skinType?: SkinTypeReport;
+  /** Skin-Tone Uniformity Analysis (CIELAB Regional Segmentation) */
+  skinToneUniformity?: SkinToneUniformityReport;
 }
 
 export * from './types-v3';
@@ -269,3 +275,77 @@ export interface ScanFailure {
 }
 
 export type ScanResponse = ScanSuccess | ScanFailure;
+
+/** Supported classes by the Glamour AI ViT skin classification model (AishaBaliyan/glamour-ai-skin-model). */
+export type GlamourSkinTypeClass = 'dry' | 'normal' | 'oily';
+
+export interface SkinTypeReport {
+  status: ComponentStatus;
+  modelName: string;
+  modelVersion: string;
+  /** Predicted overall skin type ('dry' | 'normal' | 'oily'). Null if status !== 'ok'. */
+  predictedSkinType: GlamourSkinTypeClass | null;
+  /** Predicted class probabilities (sums to 1.0). Null if status !== 'ok'. */
+  probabilities: Record<GlamourSkinTypeClass, number> | null;
+  /** Per-region skin type estimates across suitable facial regions. */
+  regionalPredictions?: Partial<Record<'forehead' | 'nose' | 'cheekLeft' | 'cheekRight', {
+    predictedType: GlamourSkinTypeClass;
+    probabilities: Record<GlamourSkinTypeClass, number>;
+  }>>;
+  /**
+   * Visible shine score (0–100) estimated from surface specular highlights.
+   * Kept strictly distinct from the classifier's biological skin-type prediction.
+   */
+  visibleShine: {
+    score: number | null;
+    tZoneScore: number | null;
+    cheeksScore: number | null;
+    regionalBreakdown: Partial<Record<'forehead' | 'nose' | 'cheekLeft' | 'cheekRight', number>>;
+  };
+  explanation: string;
+  limitations: string[];
+}
+
+export interface RegionalLabMetrics {
+  medianL: number;
+  medianA: number;
+  medianB: number;
+  lightnessSpreadIQR: number;
+  chromaSpreadIQR: number;
+  pixelCount: number;
+}
+
+export interface SkinToneUniformityReport {
+  status: ComponentStatus;
+  experimental: true;
+  methodologyVersion: string;
+  /** Normalized 0–100 score (higher = more uniform visible skin tone). Null if insufficient quality or failed. */
+  uniformityScore: number | null;
+  /** Interpretation band */
+  band: 'high' | 'moderate' | 'variable' | null;
+  /** Regional CIELAB statistics across key facial anatomical regions */
+  regionalMetrics: {
+    forehead?: RegionalLabMetrics;
+    cheekLeft?: RegionalLabMetrics;
+    cheekRight?: RegionalLabMetrics;
+    nose?: RegionalLabMetrics;
+    chin?: RegionalLabMetrics;
+  };
+  /** Between-region color distance metrics (Delta E) */
+  colorDifferences: {
+    leftRightDeltaE: number | null;
+    meanInterRegionDeltaE: number | null;
+    lightingAsymmetry: number | null;
+  };
+  /** Coverage and quality stats */
+  quality: {
+    validSkinPixelCount: number;
+    analyzedFraction: number;
+    excludedDueToQualityFraction: number;
+  };
+  /** Delta E spatial heatmap across face (PNG Data URI) */
+  heatmap?: string | null;
+  warnings: string[];
+  explanation: string;
+  limitations: string[];
+}

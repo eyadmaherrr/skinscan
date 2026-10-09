@@ -213,14 +213,17 @@ describe('pipeline deterministic repeatability and pose gating', () => {
     if (!fs.existsSync(refPath)) return;
 
     const buf = fs.readFileSync(refPath);
-    const options: AnalyzeOptions = {
+    const res1 = await analyzeImage(buf, {
       maxInputPixels: 40e6,
       maxSide: 2560,
       deadline: Date.now() + 60_000,
-    };
+    });
+    const res2 = await analyzeImage(buf, {
+      maxInputPixels: 40e6,
+      maxSide: 2560,
+      deadline: Date.now() + 60_000,
+    });
 
-    const res1 = await analyzeImage(buf, options);
-    const res2 = await analyzeImage(buf, options);
 
     assert.equal(res1.success, true);
     assert.equal(res2.success, true);
@@ -258,14 +261,17 @@ describe('pipeline deterministic repeatability and pose gating', () => {
 
     const origBuf = fs.readFileSync(refPath);
     const perturbedBuf = await sharp(origBuf).modulate({ brightness: 1.03 }).jpeg().toBuffer();
-    const options: AnalyzeOptions = {
+    const resOrig = await analyzeImage(origBuf, {
       maxInputPixels: 40e6,
       maxSide: 2560,
       deadline: Date.now() + 60_000,
-    };
+    });
+    const resPerturbed = await analyzeImage(perturbedBuf, {
+      maxInputPixels: 40e6,
+      maxSide: 2560,
+      deadline: Date.now() + 60_000,
+    });
 
-    const resOrig = await analyzeImage(origBuf, options);
-    const resPerturbed = await analyzeImage(perturbedBuf, options);
 
     assert.equal(resOrig.success, true);
     assert.equal(resPerturbed.success, true);

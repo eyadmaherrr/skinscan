@@ -1,7 +1,16 @@
 import { extensionConfig } from '../../config';
 import type { RgbImage } from '../image/decode';
 import type { MetricContext } from '../metrics/common';
-import type { AcneReport, AcneSeverity, AnalysisQuality, DermFoundationReport, PoreReport, SkinAgeReport } from '../types';
+import type {
+  AcneReport,
+  AcneSeverity,
+  AnalysisQuality,
+  DermFoundationReport,
+  PoreReport,
+  SkinAgeReport,
+  SkinToneUniformityReport,
+  SkinTypeReport,
+} from '../types';
 import { analysisText, type AnalysisText } from '../text';
 import { buildAcneReport } from './acne';
 import { classifyAcneSeverity, disabledSeverity } from './acne-severity';
@@ -9,6 +18,8 @@ import { extractDermFoundation } from './derm-foundation';
 import { analyzePores } from './pores';
 import { renderHeatmap } from './projection';
 import { estimateSkinAge } from './skin-age';
+import { analyzeSkinType } from './glamour-skin-type';
+import { analyzeSkinToneUniformity } from './skin-tone-uniformity';
 
 /**
  * Runs the extension components after the core metrics. Each component is
@@ -20,6 +31,8 @@ export interface ExtensionResults {
   acne: AcneReport;
   pores: PoreReport;
   skinAge: SkinAgeReport;
+  skinType: SkinTypeReport;
+  skinToneUniformity: SkinToneUniformityReport;
   dermFoundation: DermFoundationReport;
   analysisQuality: AnalysisQuality;
   /** Internal values for evaluation (never returned by the API). */
@@ -126,6 +139,50 @@ export async function runExtensions(ctx: MetricContext, image: RgbImage, notes: 
     timeoutMs: cfg.dermFoundationTimeoutMs,
   });
 
+  let skinType: SkinTypeReport;
+  try {
+    skinType = await analyzeSkinType(ctx, {
+      enabled: cfg.skinType,
+      modelPath: cfg.skinTypeModel,
+      serviceUrl: cfg.glamourAiUrl,
+      serviceToken: cfg.glamourAiToken,
+    });
+  } catch {
+    skinType = {
+      status: 'failed',
+      modelName: 'Glamour AI ViT Skin Type Classifier',
+      modelVersion: '1.0.0',
+      predictedSkinType: null,
+      probabilities: null,
+      visibleShine: { score: null, tZoneScore: null, cheeksScore: null, regionalBreakdown: {} },
+      explanation: text.skinType.failed,
+      limitations: text.skinType.limitations,
+    };
+  }
+
+  let skinToneUniformity: SkinToneUniformityReport;
+  try {
+    skinToneUniformity = await analyzeSkinToneUniformity(ctx, image, {
+      enabled: cfg.skinToneUniformity,
+      locale: ctx.locale,
+    });
+  } catch {
+    skinToneUniformity = {
+      status: 'failed',
+      experimental: true,
+      methodologyVersion: '3.5.0',
+      uniformityScore: null,
+      band: null,
+      regionalMetrics: {},
+      colorDifferences: { leftRightDeltaE: null, meanInterRegionDeltaE: null, lightingAsymmetry: null },
+      quality: { validSkinPixelCount: 0, analyzedFraction: 0, excludedDueToQualityFraction: 0 },
+      heatmap: null,
+      warnings: [],
+      explanation: text.skinToneUniformity.failed,
+      limitations: text.skinToneUniformity.limitations,
+    };
+  }
+
   const limitations = [...notes];
   limitations.push(...poreReasons);
 
@@ -133,6 +190,8 @@ export async function runExtensions(ctx: MetricContext, image: RgbImage, notes: 
     acne,
     pores,
     skinAge,
+    skinType,
+    skinToneUniformity,
     dermFoundation: derm.report,
     analysisQuality: { imageQuality: 'acceptable', limitations: Array.from(new Set(limitations)) },
     internal: { poresRaw, severity },

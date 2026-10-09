@@ -5,7 +5,7 @@ import FaceScanIllustration from './FaceScanIllustration';
 import { useI18n } from './LocaleProvider';
 
 export default function Landing({ onStart, signInNeeded }: { onStart: () => void; signInNeeded: boolean }) {
-  const { t } = useI18n();
+  const { t, href } = useI18n();
   return (
     <section className="hero" aria-labelledby="hero-title">
       <div className="heroText">
@@ -33,6 +33,19 @@ export default function Landing({ onStart, signInNeeded }: { onStart: () => void
             <Clock size={15} aria-hidden /> {t.landing.minute}
           </li>
         </ul>
+        <nav className="heroLearnLinks" aria-label={t.landing.about}>
+          <a href={href('/how-it-works')} className="heroLearnLink">
+            {t.nav.howItWorks}
+          </a>
+          <span className="heroLearnDot" aria-hidden>·</span>
+          <a href={href('/features')} className="heroLearnLink">
+            {t.nav.features}
+          </a>
+          <span className="heroLearnDot" aria-hidden>·</span>
+          <a href={href('/about')} className="heroLearnLink">
+            {t.nav.about}
+          </a>
+        </nav>
       </div>
       <div className="heroVisual" aria-hidden>
         <div className="glass heroCard">

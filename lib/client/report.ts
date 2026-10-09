@@ -309,6 +309,45 @@ export async function downloadReport(result: ScanSuccess, photo: PreparedImage, 
     pages.paragraph(t.skinAge.notice, { size: 17, color: MUTED });
   }
 
+  const skinType = result.skinType;
+  if (skinType && skinType.status !== 'disabled') {
+    pages.heading(t.report.skinType);
+    if (skinType.status === 'ok' && skinType.predictedSkinType) {
+      const typeLabel = t.skinType[skinType.predictedSkinType] ?? skinType.predictedSkinType;
+      pages.paragraph(`${t.skinType.skinTypeLabel}: ${typeLabel}`, { size: 20, weight: 700, color: NAVY });
+    }
+    if (skinType.visibleShine.score !== null) {
+      pages.paragraph(
+        `${t.skinType.visibleShine}: ${skinType.visibleShine.score}/100${
+          skinType.visibleShine.tZoneScore !== null ? ` · ${t.skinType.tZone}: ${skinType.visibleShine.tZoneScore}/100` : ''
+        }`,
+        { size: 19, weight: 600, color: BLUE },
+      );
+    }
+    pages.paragraph(skinType.explanation, { size: 18, color: '#475467' });
+    pages.paragraph(t.skinType.notice, { size: 17, color: MUTED });
+  }
+
+  const uniformity = result.skinToneUniformity;
+  if (uniformity && uniformity.status !== 'disabled') {
+    pages.heading(t.report.skinToneUniformity);
+    if (uniformity.status === 'ok' && uniformity.uniformityScore !== null) {
+      const bandLabel = uniformity.band ? t.skinToneUniformity[uniformity.band] : '';
+      pages.paragraph(
+        `${t.skinToneUniformity.scoreLabel}: ${uniformity.uniformityScore}/100${bandLabel ? ` · ${bandLabel}` : ''}`,
+        { size: 20, weight: 700, color: NAVY },
+      );
+      if (uniformity.colorDifferences.leftRightDeltaE !== null) {
+        pages.paragraph(
+          `${t.skinToneUniformity.leftRightSymmetry}: ΔE ${uniformity.colorDifferences.leftRightDeltaE} · ${t.skinToneUniformity.meanDeltaE}: ΔE ${uniformity.colorDifferences.meanInterRegionDeltaE ?? '-'}`,
+          { size: 18, color: BLUE },
+        );
+      }
+    }
+    pages.paragraph(uniformity.explanation, { size: 18, color: '#475467' });
+    pages.paragraph(t.skinToneUniformity.notice, { size: 17, color: MUTED });
+  }
+
   // Disclaimer and booking.
   pages.heading(locale === 'ar' ? 'تنبيه' : 'Important');
   pages.paragraph(t.report.disclaimer, { size: 18, color: TEXT, gap: 6 });

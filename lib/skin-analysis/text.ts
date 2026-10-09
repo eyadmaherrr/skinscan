@@ -67,6 +67,20 @@ export interface AnalysisText {
     disabled: string;
     notConfigured: string;
   };
+  skinType: {
+    summary(type: 'dry' | 'normal' | 'oily', shineScore: number | null): string;
+    notConfigured: string;
+    failed: string;
+    disabled: string;
+    limitations: string[];
+  };
+  skinToneUniformity: {
+    summary(score: number | null, band: 'high' | 'moderate' | 'variable' | null): string;
+    insufficientQuality: string;
+    failed: string;
+    disabled: string;
+    limitations: string[];
+  };
 }
 
 const en: AnalysisText = {
@@ -227,6 +241,32 @@ const en: AnalysisText = {
     disabled: 'Skin age estimation is switched off.',
     notConfigured: 'Skin age estimation is not available at the moment.',
   },
+  skinType: {
+    summary: (type, shineScore) =>
+      `Glamour AI classifies overall facial pattern as ${type} skin type${shineScore !== null ? ` (surface shine reflection measured at ${shineScore}/100)` : ''}.`,
+    notConfigured: 'Glamour AI skin-type model weights not configured; visible specular shine is evaluated directly.',
+    failed: 'Skin type classification could not be computed for this photo.',
+    disabled: 'Skin type classification is disabled.',
+    limitations: [
+      'The Glamour AI model classifies general facial skin pattern into three classes: dry, normal, and oily.',
+      'This output represents photographic appearance classification, not a direct clinical measurement of active sebum excretion.',
+      'Surface shine reflects specular lighting highlights and is analyzed distinctly from underlying biological skin type.',
+    ],
+  },
+  skinToneUniformity: {
+    summary: (score, band) =>
+      score !== null
+        ? `Skin-tone uniformity scored ${score}/100 (${band === 'high' ? 'highly even' : band === 'moderate' ? 'moderately even' : 'localized variation'}).`
+        : 'Skin-tone uniformity could not be reliably compared across facial zones in this photo.',
+    insufficientQuality: 'Uneven side-lighting, harsh shadows, or highlight clipping prevented an accurate regional color comparison.',
+    failed: 'Skin-tone uniformity analysis could not be computed.',
+    disabled: 'Skin-tone uniformity analysis is switched off.',
+    limitations: [
+      'Uniformity is calculated by comparing CIELAB color distributions across segmented forehead, cheeks, nose, and chin skin.',
+      'Directional illumination and shadows can increase apparent tone disparity independent of intrinsic pigmentation.',
+      'This is an image-based appearance estimate and does not constitute a clinical diagnosis of hyperpigmentation or melasma.',
+    ],
+  },
 };
 
 const ar: AnalysisText = {
@@ -379,6 +419,32 @@ const ar: AnalysisText = {
     failed: 'تعذّر تقدير عمر البشرة في هذه الصورة.',
     disabled: 'تقدير عمر البشرة متوقف.',
     notConfigured: 'تقدير عمر البشرة غير متاح حاليًا.',
+  },
+  skinType: {
+    summary: (type, shineScore) =>
+      `يصنّف نموذج Glamour AI النمط العام لبشرة الوجه كبشرة ${type === 'dry' ? 'جافة' : type === 'oily' ? 'دهنية' : 'عادية'}${shineScore !== null ? ` (مع لمعان سطحي مسجل بدرجة ${shineScore}/100)` : ''}.`,
+    notConfigured: 'لم يتم تكوين أوزان نموذج Glamour AI؛ يتم تقييم اللمعان السطحي الانعكاسي مباشرة من الصورة.',
+    failed: 'تعذّر تصنيف نوع البشرة في هذه الصورة.',
+    disabled: 'تصنيف نوع البشرة متوقف.',
+    limitations: [
+      'يصنّف نموذج Glamour AI المظهر العام للوجه إلى ثلاث فئات: جافة، عادية، ودهنية.',
+      'هذه النتيجة هي تصنيف لمظهر الصورة الفوتوغرافية وليست قياسًا طبيًا مباشرًا لمعدل إفراز الدهون الحقيقي.',
+      'اللمعان السطحي يعكس انعكاسات الإضاءة الموضعية ويتم تحليله بشكل منفصل عن نوع البشرة البيولوجي.',
+    ],
+  },
+  skinToneUniformity: {
+    summary: (score, band) =>
+      score !== null
+        ? `سجّل مؤشر تجانس لون البشرة ${score}/100 (${band === 'high' ? 'تجانس ممتاز' : band === 'moderate' ? 'تجانس معتدل' : 'تباين موضعي ملحوظ'}).`
+        : 'تعذّرت المقارنة الدقيقة لتجانس لون البشرة عبر مناطق الوجه في هذه الصورة.',
+    insufficientQuality: 'حالت الإضاءة الجانبية غير المتساوية أو الظلال الشديدة دون إجراء مقارنة لونية دقيقة وموثوقة.',
+    failed: 'تعذّر احتساب تجانس لون البشرة.',
+    disabled: 'تحليل تجانس لون البشرة متوقف.',
+    limitations: [
+      'يُحسب التجانس من خلال مقارنة التوزيع اللوني في فضاء CIELAB عبر مناطق الجبهة والخدين والأنف والذقن المستقطعة.',
+      'الإضاءة الجانبية والظلال تزيد من الفروق اللونية الظاهرة دون أن تكون ناتجة عن تصبغات حقيقية في الجلد.',
+      'هذا التقييم وصفي لمظهر الصورة ولا يشكل تشخيصًا طبيًا للتصبغات أو الكلف أو الأمراض الجلدية.',
+    ],
   },
 };
 

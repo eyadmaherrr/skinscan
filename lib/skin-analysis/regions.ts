@@ -1,5 +1,5 @@
 import { dilate, erode } from './image/filters';
-import { and, andNot, fillPolygon, lerp, type Point } from './geometry';
+import { and, andNot, fillPolygon, type Point } from './geometry';
 import {
   BROW_LOWER_IMG_LEFT,
   BROW_LOWER_IMG_RIGHT,
@@ -8,11 +8,8 @@ import {
   EYE_IMG_LEFT,
   EYE_IMG_RIGHT,
   FACE_OVAL,
-  FOREHEAD_ARC,
+  LEGACY_PRIMARY_CONTOURS,
   LIPS_OUTER,
-  LM,
-  LOWER_LID_IMG_LEFT,
-  LOWER_LID_IMG_RIGHT,
 } from './face-topology';
 import { ALL_REGION_KEYS, type RegionKey } from './types';
 
@@ -54,20 +51,10 @@ function points(lm: AlignedLandmarks, indices: readonly number[]): Point[] {
   return indices.map((i) => point(lm, i));
 }
 
-function shift(pts: Point[], dx: number, dy: number): Point[] {
-  return pts.map(([x, y]) => [x + dx, y + dy]);
-}
-
 function mask(lm: AlignedLandmarks, poly: Point[]): Uint8Array {
   const m = new Uint8Array(lm.width * lm.height);
   fillPolygon(m, lm.width, lm.height, poly);
   return m;
-}
-
-function eyeCentre(lm: AlignedLandmarks, outer: number, inner: number): Point {
-  const a = point(lm, outer);
-  const b = point(lm, inner);
-  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 }
 
 export function buildRegions(lm: AlignedLandmarks): FaceRegions {
@@ -93,118 +80,44 @@ export function buildRegions(lm: AlignedLandmarks): FaceRegions {
   for (let i = 0; i < features.length; i++) features[i] = eyesDilated[i] | browsDilated[i] | lipsDilated[i];
   const eyeSurround = andNot(dilate(eyes, w, h, Math.max(1, Math.round(px(0.22)))), brows);
 
-  const midTop = point(lm, LM.noseBridge);
-  const tip = point(lm, LM.noseTip);
-  const eyeL = eyeCentre(lm, LM.eyeOuterImgLeft, LM.eyeInnerImgLeft);
-  const eyeR = eyeCentre(lm, LM.eyeOuterImgRight, LM.eyeInnerImgRight);
-  const eyeY = (eyeL[1] + eyeR[1]) / 2;
-  const midXAt = (y: number) => {
-    const t = (y - midTop[1]) / Math.max(1, tip[1] - midTop[1]);
-    return lerp(midTop[0], tip[0], Math.max(0, Math.min(1.2, t)));
-  };
-
-  // Forehead: between the top of the face oval and the raised brow line.
-  const browRaise = px(0.07);
-  const forehead = [
-    ...points(lm, FOREHEAD_ARC),
-    ...shift(points(lm, BROW_UPPER_IMG_RIGHT), 0, -browRaise),
-    ...shift(points(lm, BROW_UPPER_IMG_LEFT), 0, -browRaise).reverse(),
-  ];
-
-  // Nose: trapezoid along the nose midline, from below the eyes down to just above the tip.
-  const noseTopY = eyeY + px(0.14);
-  const noseBottomY = tip[1] - px(0.02);
-  const nose: Point[] = [
-    [midXAt(noseTopY) - px(0.09), noseTopY],
-    [midXAt(noseTopY) + px(0.09), noseTopY],
-    [midXAt(noseBottomY) + px(0.2), noseBottomY],
-    [midXAt(noseBottomY) - px(0.2), noseBottomY],
-  ];
-
-  // Under-eye bands follow the lower lid.
-  const lidL = points(lm, LOWER_LID_IMG_LEFT).slice(0, -1);
-  const lidR = points(lm, LOWER_LID_IMG_RIGHT).slice(0, -1);
-  const underEyeL = [...shift(lidL, 0, px(0.06)), ...shift(lidL, 0, px(0.26)).reverse()];
-  const underEyeR = [...shift(lidR, 0, px(0.06)), ...shift(lidR, 0, px(0.26)).reverse()];
-
-  // Cheeks: below the under-eye band, outside the nose / nasolabial line, down to the mouth corners.
-  const lidBottomL = Math.max(...lidL.map((p) => p[1]));
-  const lidBottomR = Math.max(...lidR.map((p) => p[1]));
-  const mouthL = point(lm, LM.mouthCornerImgLeft);
-  const mouthR = point(lm, LM.mouthCornerImgRight);
-  const sideL = point(lm, LM.faceSideImgLeft);
-  const sideR = point(lm, LM.faceSideImgRight);
-  const cheekTopL = lidBottomL + px(0.08);
-  const cheekTopR = lidBottomR + px(0.08);
-  const cheekBottomL = mouthL[1];
-  const cheekBottomR = mouthR[1];
-  const cheekL: Point[] = [
-    [sideL[0] - px(0.1), cheekTopL],
-    [midXAt(cheekTopL) - px(0.18), cheekTopL],
-    [mouthL[0] - px(0.05), cheekBottomL],
-    [sideL[0] - px(0.1), cheekBottomL],
-  ];
-  const cheekR: Point[] = [
-    [midXAt(cheekTopR) + px(0.18), cheekTopR],
-    [sideR[0] + px(0.1), cheekTopR],
-    [sideR[0] + px(0.1), cheekBottomR],
-    [mouthR[0] + px(0.05), cheekBottomR],
-  ];
-
-  // Chin: below the lower lip, between the mouth corners, above the jaw line.
-  const lowerLip = point(lm, LM.lowerLipBottom);
-  const chinPt = point(lm, LM.chin);
-  const chinTop = lowerLip[1] + px(0.06);
-  const chinBottom = chinPt[1] - px(0.04);
-  const chin: Point[] = [
-    [mouthL[0] + px(0.02), chinTop],
-    [mouthR[0] - px(0.02), chinTop],
-    [mouthR[0] - px(0.05), chinBottom],
-    [mouthL[0] + px(0.05), chinBottom],
-  ];
-
-  // Jawline (auxiliary, acne summary only): below the mouth-corner line, outside the chin.
-  const jawTop = Math.max(mouthL[1], mouthR[1]) + px(0.06);
-  const jawL: Point[] = [
-    [sideL[0] - px(0.2), jawTop],
-    [mouthL[0] - px(0.1), jawTop],
-    [mouthL[0] - px(0.02), chinPt[1]],
-    [sideL[0] - px(0.2), chinPt[1]],
-  ];
-  const jawR: Point[] = [
-    [mouthR[0] + px(0.1), jawTop],
-    [sideR[0] + px(0.2), jawTop],
-    [sideR[0] + px(0.2), chinPt[1]],
-    [mouthR[0] + px(0.02), chinPt[1]],
-  ];
-
+  // Anatomical polygon outlines derived directly from MediaPipe Face Mesh landmark contours
   const outlines: Record<RegionKey, Point[]> = {
-    forehead,
-    nose,
-    cheekL,
-    cheekR,
-    chin,
-    underEyeL,
-    underEyeR,
-    jawL,
-    jawR,
+    forehead: points(lm, LEGACY_PRIMARY_CONTOURS.forehead),
+    nose: points(lm, LEGACY_PRIMARY_CONTOURS.nose),
+    cheekL: points(lm, LEGACY_PRIMARY_CONTOURS.cheekL),
+    cheekR: points(lm, LEGACY_PRIMARY_CONTOURS.cheekR),
+    chin: points(lm, LEGACY_PRIMARY_CONTOURS.chin),
+    underEyeL: points(lm, LEGACY_PRIMARY_CONTOURS.underEyeL),
+    underEyeR: points(lm, LEGACY_PRIMARY_CONTOURS.underEyeR),
+    jawL: points(lm, LEGACY_PRIMARY_CONTOURS.jawL),
+    jawR: points(lm, LEGACY_PRIMARY_CONTOURS.jawR),
   };
 
   const regions = {} as Record<RegionKey, Uint8Array>;
   for (const key of ALL_REGION_KEYS) {
     regions[key] = andNot(and(mask(lm, outlines[key]), faceInner), features);
   }
-  // Keep regions disjoint: under-eye bands take precedence over cheeks and nose.
+
+  // Keep regions strictly disjoint with zero pixel overlap:
+  // Under-eye bands take precedence over cheeks and nose.
   const underEyes = new Uint8Array(w * h);
   for (let i = 0; i < underEyes.length; i++) underEyes[i] = regions.underEyeL[i] | regions.underEyeR[i];
   regions.cheekL = andNot(regions.cheekL, underEyes);
   regions.cheekR = andNot(regions.cheekR, underEyes);
   regions.nose = andNot(regions.nose, underEyes);
+
+  // Nose takes precedence over medial cheeks
   regions.cheekL = andNot(regions.cheekL, regions.nose);
   regions.cheekR = andNot(regions.cheekR, regions.nose);
+
+  // Chin takes precedence over cheeks if any overlap
+  regions.chin = andNot(andNot(regions.chin, regions.cheekL), regions.cheekR);
+
+  // Jawlines take lowest precedence among lower face regions
   for (const jaw of ['jawL', 'jawR'] as const) {
     regions[jaw] = andNot(andNot(andNot(regions[jaw], regions.chin), regions.cheekL), regions.cheekR);
   }
 
   return { regions, outlines, faceOval, features, eyes, eyeSurround };
 }
+

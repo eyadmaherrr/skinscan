@@ -2,12 +2,22 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from 'react';
-import { Search, Sparkles } from 'lucide-react';
+import { Search, Sparkles, Bug, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useI18n } from './LocaleProvider';
 import { format } from '@/lib/messages';
-import { HEATMAP_KEYS, type HeatmapKey, type LesionCandidate, type MetricKey, type RegionKey, type RegionOutline, type ScanSuccess } from '@/lib/skin-analysis/types';
+import {
+  HEATMAP_KEYS,
+  type HeatmapKey,
+  type LesionCandidate,
+  type MetricKey,
+  type RegionKey,
+  type RegionOutline,
+  type ScanSuccess,
+  type RegionKeyV3,
+  type RegionReportV3,
+} from '@/lib/skin-analysis/types';
 
-type Layer = 'areas' | 'spots' | 'pores' | HeatmapKey | 'none';
+type Layer = 'areas' | 'anatomical' | 'spots' | 'pores' | HeatmapKey | 'none';
 
 const isHeatmapLayer = (layer: Layer): layer is HeatmapKey => (HEATMAP_KEYS as readonly string[]).includes(layer);
 
@@ -34,7 +44,34 @@ interface Lens {
 const ZOOM = 3;
 const HOVER_NONE = '(hover: none)';
 
-/** Touch screens (no hover): the hint says "tap" instead of "hover". */
+/** Distinct HSL colors for anatomical regions in diagnostic / V3 mode */
+const REGION_PALETTE = [
+  'hsl(210, 85%, 60%)',
+  'hsl(180, 85%, 55%)',
+  'hsl(150, 75%, 55%)',
+  'hsl(90, 75%, 50%)',
+  'hsl(45, 90%, 55%)',
+  'hsl(30, 95%, 60%)',
+  'hsl(15, 90%, 60%)',
+  'hsl(345, 80%, 65%)',
+  'hsl(315, 75%, 65%)',
+  'hsl(270, 75%, 65%)',
+  'hsl(240, 75%, 65%)',
+  'hsl(195, 90%, 50%)',
+  'hsl(165, 80%, 45%)',
+  'hsl(135, 70%, 45%)',
+  'hsl(75, 80%, 45%)',
+  'hsl(40, 90%, 48%)',
+  'hsl(20, 90%, 52%)',
+  'hsl(0, 85%, 58%)',
+  'hsl(330, 75%, 55%)',
+  'hsl(285, 70%, 55%)',
+  'hsl(255, 75%, 60%)',
+  'hsl(225, 80%, 60%)',
+  'hsl(170, 85%, 45%)',
+  'hsl(140, 75%, 45%)',
+];
+
 function subscribeHover(onChange: () => void) {
   const query = window.matchMedia(HOVER_NONE);
   query.addEventListener('change', onChange);
@@ -43,19 +80,26 @@ function subscribeHover(onChange: () => void) {
 const hoverNone = () => window.matchMedia(HOVER_NONE).matches;
 const CARD_WIDTH = 240;
 const LENS_SIZE = CARD_WIDTH - 24;
-/** Height of the whole card; it opens below the pointer when there is no room above. */
 const CARD_HEIGHT = LENS_SIZE + 96;
 
-/**
- * The analysed photo with switchable overlays. Pointing at (or tapping) an
- * analysed area or spot opens a magnifier with what was measured there.
- */
 export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
   const { t, locale } = useI18n();
   const [layer, setLayer] = useState<Layer>('areas');
   const [lens, setLens] = useState<Lens | null>(null);
+  const [debugMode, setDebugMode] = useState<boolean>(false);
+  const [showLandmarkNumbers, setShowLandmarkNumbers] = useState<boolean>(false);
   const touch = useSyncExternalStore(subscribeHover, hoverNone, () => false);
   const frameRef = useRef<HTMLDivElement>(null);
+
+  // Initialize debugMode from URL parameter if present (?debug=1)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('debug') === '1' || urlParams.get('debug') === 'true') {
+        setDebugMode(true);
+      }
+    }
+  }, []);
 
   // A tap outside the photo closes the magnifier on touch screens.
   useEffect(() => {
@@ -71,18 +115,19 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
   const H = W / photoAspect;
   const lesions = result.acne?.status === 'ok' ? result.acne.lesions : [];
   const heatmap = result.pores?.status === 'ok' ? result.pores.heatmap : null;
-  // Where each reported characteristic was seen (older results have none).
   const metricHeatmap = isHeatmapLayer(layer) ? (result.heatmaps?.[layer] ?? null) : null;
+  const hasV3Regions = Boolean(result.regionsV3 && Object.keys(result.regionsV3).length > 0);
 
   const options: { id: Layer; label: string; available: boolean }[] = [
     { id: 'areas', label: t.overlay.areas, available: true },
+    { id: 'anatomical', label: locale === 'ar' ? 'المناطق التشريحية (v3)' : 'Anatomical Zones (v3)', available: hasV3Regions },
     { id: 'spots', label: t.overlay.spots, available: lesions.length > 0 },
     { id: 'pores', label: t.overlay.pores, available: !!heatmap },
     ...HEATMAP_KEYS.map((k) => ({ id: k, label: t.overlay.heat[k], available: !!result.heatmaps?.[k] })),
     { id: 'none', label: t.overlay.none, available: true },
   ];
 
-  /** Metrics whose score was highest in each region. */
+  /** Metrics whose score was highest in each primary region. */
   const metricsByRegion = useMemo(() => {
     const map = new Map<RegionKey, MetricKey[]>();
     for (const [key, metric] of Object.entries(result.analysis) as [MetricKey, ScanSuccess['analysis'][MetricKey]][]) {
@@ -109,8 +154,21 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
     return parts.length ? parts.join(' · ') : t.overlay.areaDetail;
   }
 
+  function anatomicalDetail(r: RegionReportV3): string {
+    const parts: string[] = [];
+    parts.push(locale === 'ar' ? `المساحة: ${r.areaMm2} مم²` : `Area: ${r.areaMm2} mm²`);
+    parts.push(locale === 'ar' ? `تغطية الجلد: ${Math.round(r.skinCoverage * 100)}%` : `Coverage: ${Math.round(r.skinCoverage * 100)}%`);
+    if (r.status !== 'usable') {
+      parts.push(locale === 'ar' ? `الحالة: ${r.status}` : `Status: ${r.status}`);
+    }
+    return parts.join(' · ');
+  }
+
   const onRegion = (r: RegionOutline) => (e: ReactPointerEvent<SVGElement>) =>
     place(e, r.region, t.regions[r.region], regionDetail(r.region));
+
+  const onAnatomicalRegion = (r: RegionReportV3) => (e: ReactPointerEvent<SVGElement>) =>
+    place(e, r.key, locale === 'ar' ? r.nameAr : r.nameEn, anatomicalDetail(r));
 
   const onSpot = (l: LesionCandidate, i: number) => (e: ReactPointerEvent<SVGElement>) =>
     place(e, `spot-${i}`, l.tone === 'red' ? t.overlay.spotRed : t.overlay.spotDark, t.overlay.spotDetail, l.x, l.y);
@@ -118,9 +176,19 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
   // Card position: centred on the pointer, kept inside the photo's width, above the pointer when there is room.
   const cardLeft = lens ? (lens.width <= CARD_WIDTH ? lens.width / 2 : Math.min(Math.max(lens.px, CARD_WIDTH / 2), lens.width - CARD_WIDTH / 2)) : 0;
   const below = lens ? lens.py < CARD_HEIGHT + 16 : false;
-  // Background sized to ZOOM × the photo as displayed, so the lens really magnifies it ZOOM times.
   const bgW = lens ? lens.width * ZOOM : 0;
   const bgH = lens ? lens.height * ZOOM : 0;
+
+  // Landmarks & Diagnostic Geometry
+  const rawLandmarks = result.landmarks ?? result.v3?.faceGeometry?.landmarks ?? [];
+  const bbox = result.v3?.faceGeometry?.boundingBox;
+  const geom = result.v3?.faceGeometry;
+
+  // Center of pupil/eye landmarks for alignment axis display
+  const leftEyeCenter = rawLandmarks[468] ?? rawLandmarks[33];
+  const rightEyeCenter = rawLandmarks[473] ?? rawLandmarks[263];
+  const noseTip = rawLandmarks[1] ?? rawLandmarks[4];
+  const chin = rawLandmarks[152];
 
   return (
     <>
@@ -137,31 +205,131 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
           {layer === 'pores' && heatmap ? <img className="heatmapLayer" src={heatmap} alt="" aria-hidden /> : null}
           {metricHeatmap ? <img className="heatmapLayer" src={metricHeatmap} alt="" aria-hidden /> : null}
 
-          {layer === 'areas' || layer === 'spots' ? (
+          {/* Primary Regions, V3 Anatomical Regions, or Acne Spots Overlay */}
+          {layer === 'areas' || layer === 'anatomical' || layer === 'spots' ? (
             <svg className="regionOverlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden>
-              {layer === 'areas'
-                ? result.regions.map((r) => (
+              {layer === 'areas' &&
+                result.regions.map((r) => (
+                  <polygon
+                    key={r.region}
+                    className={lens?.id === r.region ? 'isHovered' : undefined}
+                    points={r.points.map(([x, y]) => `${x * W},${y * H}`).join(' ')}
+                    onPointerMove={onRegion(r)}
+                    onPointerDown={onRegion(r)}
+                  />
+                ))}
+
+              {layer === 'anatomical' &&
+                result.regionsV3 &&
+                Object.values(result.regionsV3).map((r, idx) => {
+                  const pts = r.outline ?? r.outlineSource ?? [];
+                  const color = REGION_PALETTE[idx % REGION_PALETTE.length];
+                  return (
                     <polygon
-                      key={r.region}
-                      className={lens?.id === r.region ? 'isHovered' : undefined}
-                      points={r.points.map(([x, y]) => `${x * W},${y * H}`).join(' ')}
-                      onPointerMove={onRegion(r)}
-                      onPointerDown={onRegion(r)}
+                      key={r.key}
+                      className={`v3Polygon ${lens?.id === r.key ? 'isHovered' : ''}`}
+                      points={pts.map(([x, y]) => `${x * W},${y * H}`).join(' ')}
+                      style={{
+                        fill: lens?.id === r.key ? color.replace(')', ', 0.4)').replace('hsl', 'hsla') : color.replace(')', ', 0.18)').replace('hsl', 'hsla'),
+                        stroke: color,
+                      }}
+                      onPointerMove={onAnatomicalRegion(r)}
+                      onPointerDown={onAnatomicalRegion(r)}
                     />
-                  ))
-                : lesions.map((l, i) => (
-                    <circle
-                      key={i}
-                      className={`${l.tone === 'red' ? 'spotRed' : 'spotDark'}${lens?.id === `spot-${i}` ? ' isHovered' : ''}`}
-                      cx={l.x * W}
-                      cy={l.y * H}
-                      r={Math.max(6, l.r * W * 1.6)}
-                      onPointerMove={onSpot(l, i)}
-                      onPointerDown={onSpot(l, i)}
-                    />
-                  ))}
+                  );
+                })}
+
+              {layer === 'spots' &&
+                lesions.map((l, i) => (
+                  <circle
+                    key={i}
+                    className={`${l.tone === 'red' ? 'spotRed' : 'spotDark'}${lens?.id === `spot-${i}` ? ' isHovered' : ''}`}
+                    cx={l.x * W}
+                    cy={l.y * H}
+                    r={Math.max(6, l.r * W * 1.6)}
+                    onPointerMove={onSpot(l, i)}
+                    onPointerDown={onSpot(l, i)}
+                  />
+                ))}
             </svg>
           ) : null}
+
+          {/* Development / Diagnostic Overlay */}
+          {debugMode && (
+            <svg className="diagnosticOverlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-label="Diagnostic Face Alignment Overlay">
+              {/* Face Bounding Box */}
+              {bbox && (
+                <rect
+                  className="diagnosticBBox"
+                  x={bbox[0] * W}
+                  y={bbox[1] * H}
+                  width={(bbox[2] - bbox[0]) * W}
+                  height={(bbox[3] - bbox[1]) * H}
+                />
+              )}
+
+              {/* Horizontal Eye Level Axis */}
+              {leftEyeCenter && rightEyeCenter && (
+                <line
+                  className="diagnosticAxis"
+                  x1={leftEyeCenter[0] * W - 60}
+                  y1={leftEyeCenter[1] * H}
+                  x2={rightEyeCenter[0] * W + 60}
+                  y2={rightEyeCenter[1] * H}
+                />
+              )}
+
+              {/* Facial Midline Axis */}
+              {noseTip && chin && (
+                <line
+                  className="diagnosticAxis"
+                  x1={noseTip[0] * W}
+                  y1={Math.min(noseTip[1], chin[1]) * H - 80}
+                  x2={chin[0] * W}
+                  y2={chin[1] * H + 40}
+                />
+              )}
+
+              {/* Region Label Tags */}
+              {result.regions.map((r) => {
+                const cx = r.points.reduce((acc, p) => acc + p[0], 0) / r.points.length;
+                const cy = r.points.reduce((acc, p) => acc + p[1], 0) / r.points.length;
+                return (
+                  <text key={r.region} className="diagnosticLabel" x={cx * W} y={cy * H} textAnchor="middle">
+                    {r.region}
+                  </text>
+                );
+              })}
+
+              {/* All 478 MediaPipe Face Mesh Landmarks */}
+              {rawLandmarks.map(([x, y], i) => (
+                <g key={i}>
+                  <circle
+                    className="diagnosticDot"
+                    cx={x * W}
+                    cy={y * H}
+                    r={2.2}
+                  >
+                    <title>{`LM #${i}: (${Math.round(x * W)}, ${Math.round(y * H)})`}</title>
+                  </circle>
+                  {showLandmarkNumbers && i % 4 === 0 && (
+                    <text
+                      x={x * W + 3}
+                      y={y * H - 3}
+                      fill="#00e5ff"
+                      fontSize={7}
+                      fontFamily="monospace"
+                      paintOrder="stroke"
+                      stroke="#000"
+                      strokeWidth={1.5}
+                    >
+                      {i}
+                    </text>
+                  )}
+                </g>
+              ))}
+            </svg>
+          )}
         </div>
 
         {lens ? (
@@ -223,6 +391,35 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
               {o.label}
             </button>
           ))}
+      </div>
+
+      {/* Debug & Diagnostic Mode Toolbar */}
+      <div className="debugToolbar">
+        <button
+          type="button"
+          className={debugMode ? 'active' : undefined}
+          onClick={() => setDebugMode(!debugMode)}
+          title="Toggle computer vision diagnostic overlay"
+        >
+          <Bug size={12} style={{ display: 'inline', marginInlineEnd: 4 }} />
+          {debugMode ? 'Diagnostics: ON' : 'Diagnostics: OFF'}
+        </button>
+
+        {debugMode && (
+          <button
+            type="button"
+            className={showLandmarkNumbers ? 'active' : undefined}
+            onClick={() => setShowLandmarkNumbers(!showLandmarkNumbers)}
+          >
+            {showLandmarkNumbers ? 'Hide Point IDs' : 'Show Point IDs'}
+          </button>
+        )}
+
+        {debugMode && geom && (
+          <span className="debugBadge">
+            IOD: {geom.iodPx}px · {geom.pxPerMm}px/mm · Pose: Y{geom.yaw}° P{geom.pitch}° R{geom.roll}°
+          </span>
+        )}
       </div>
 
       {layer === 'spots' ? (

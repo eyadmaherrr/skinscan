@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { CalendarDays, Home, ScanFace, UserRound } from 'lucide-react';
+import { CalendarDays, Globe, ScanFace, UserRound } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import { useI18n } from './LocaleProvider';
 import { bookingLink, clinicLink, useAuth } from '@/lib/client/use-auth';
@@ -85,9 +85,7 @@ export default function BrandHeader({ onHome, scanActive = true, hrefOverride }:
     </a>
   );
 
-  // Home, Book, Account, SkinScan — like the clinic website's navigation.
-  // Signed in: "Account" (the clinic account page, where patients also sign
-  // out). Signed out: "Sign In", which opens the sign-in dialog.
+  // Navigation items: Skin Scan at start, Book, Account/Sign In, and Clinic Website at the end.
   const items = (variant: 'desktop' | 'mobile') => {
     const itemClass = variant === 'desktop' ? 'desktopNavItem' : 'mobileNavItem';
     const size = variant === 'desktop' ? 19 : 22;
@@ -95,9 +93,14 @@ export default function BrandHeader({ onHome, scanActive = true, hrefOverride }:
     const signedIn = !!patient || !!hrefOverride;
     return (
       <>
-        <a href={clinicHome} className={itemClass}>
-          <Home size={size} strokeWidth={stroke} aria-hidden />
-          <span>{t.nav.clinicHome}</span>
+        <a
+          href={scanHome}
+          className={scanActive ? `${itemClass} active` : itemClass}
+          aria-current={scanActive ? 'page' : undefined}
+          onClick={goHome}
+        >
+          <ScanFace size={size} strokeWidth={stroke} aria-hidden />
+          <span>{t.nav.scan}</span>
         </a>
         <a href={booking} className={itemClass}>
           <CalendarDays size={size} strokeWidth={stroke} aria-hidden />
@@ -116,27 +119,9 @@ export default function BrandHeader({ onHome, scanActive = true, hrefOverride }:
             <span>{t.nav.signIn}</span>
           </button>
         )}
-        {variant === 'desktop' ? (
-          <>
-            <a href={hrefOverride ?? href('/how-it-works')} className={itemClass}>
-              <span>{t.nav.howItWorks}</span>
-            </a>
-            <a href={hrefOverride ?? href('/features')} className={itemClass}>
-              <span>{t.nav.features}</span>
-            </a>
-            <a href={hrefOverride ?? href('/about')} className={itemClass}>
-              <span>{t.nav.about}</span>
-            </a>
-          </>
-        ) : null}
-        <a
-          href={scanHome}
-          className={scanActive ? `${itemClass} active` : itemClass}
-          aria-current={scanActive ? 'page' : undefined}
-          onClick={goHome}
-        >
-          <ScanFace size={size} strokeWidth={stroke} aria-hidden />
-          <span>{t.nav.scan}</span>
+        <a href={clinicHome} className={itemClass}>
+          <Globe size={size} strokeWidth={stroke} aria-hidden />
+          <span>{t.nav.clinicHome}</span>
         </a>
       </>
     );

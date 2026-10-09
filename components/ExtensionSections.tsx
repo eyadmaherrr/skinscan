@@ -1,9 +1,19 @@
 'use client';
 
-import { FlaskConical, Info, Sparkles } from 'lucide-react';
+import { Droplets, FlaskConical, Info, Palette, Sparkles } from 'lucide-react';
 import { fill, useI18n } from './LocaleProvider';
+import { ScoreInfoButton } from './MetricInfoModal';
+import type { ExplainingMetricKey } from '@/lib/metric-explanations';
 import { format } from '@/lib/messages';
-import type { AcneReport, AcneSeverity, PoreReport, RegionKey, SkinAgeReport } from '@/lib/skin-analysis/types';
+import type {
+  AcneReport,
+  AcneSeverity,
+  PoreReport,
+  RegionKey,
+  SkinAgeReport,
+  SkinToneUniformityReport,
+  SkinTypeReport,
+} from '@/lib/skin-analysis/types';
 
 function Limitations({ items }: { items: string[] }) {
   const { t } = useI18n();
@@ -80,14 +90,23 @@ function SeverityEstimate({ severity }: { severity: AcneSeverity }) {
   );
 }
 
-export function AcneSection({ acne }: { acne: AcneReport }) {
+export function AcneSection({
+  acne,
+  onOpenInfo,
+}: {
+  acne: AcneReport;
+  onOpenInfo?: (key: ExplainingMetricKey, score?: number | null, band?: string | null) => void;
+}) {
   const { t } = useI18n();
   const regions = Object.entries(acne.regionalSummary) as [RegionKey, { count: number; visible: boolean }][];
   const count = acne.lesionCandidateCount ?? 0;
   return (
     <section className="glass extSection" aria-labelledby="acne-title">
       <div className="extHead">
-        <h3 id="acne-title">{t.acne.title}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 id="acne-title">{t.acne.title}</h3>
+          {onOpenInfo ? <ScoreInfoButton onClick={() => onOpenInfo('acne')} /> : null}
+        </div>
         <span className="tag experimental">
           <FlaskConical size={13} aria-hidden /> {t.acne.experimental}
         </span>
@@ -121,14 +140,23 @@ export function AcneSection({ acne }: { acne: AcneReport }) {
   );
 }
 
-export function PoresSection({ pores }: { pores: PoreReport }) {
+export function PoresSection({
+  pores,
+  onOpenInfo,
+}: {
+  pores: PoreReport;
+  onOpenInfo?: (key: ExplainingMetricKey, score?: number | null, band?: string | null) => void;
+}) {
   const { t } = useI18n();
   const regions = Object.entries(pores.regionalSummary) as [RegionKey, number][];
   const ok = pores.status === 'ok' && pores.visibilityScore !== null;
   return (
     <section className="glass extSection" aria-labelledby="pores-title">
       <div className="extHead">
-        <h3 id="pores-title">{t.pores.title}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 id="pores-title">{t.pores.title}</h3>
+          {onOpenInfo ? <ScoreInfoButton onClick={() => onOpenInfo('pores', pores.visibilityScore)} /> : null}
+        </div>
         <span className="tag experimental">
           <FlaskConical size={13} aria-hidden /> {t.acne.experimental}
         </span>
@@ -137,10 +165,13 @@ export function PoresSection({ pores }: { pores: PoreReport }) {
         <>
           <div className="metricHead">
             <span className="muted small">{t.pores.index}</span>
-            <span className="metricScore">
-              {pores.visibilityScore}
-              <small>/100</small>
-            </span>
+            <div className="scoreWithInfo">
+              <span className="metricScore">
+                {pores.visibilityScore}
+                <small>/100</small>
+              </span>
+              {onOpenInfo ? <ScoreInfoButton onClick={() => onOpenInfo('pores', pores.visibilityScore)} /> : null}
+            </div>
           </div>
           <div className="meter" aria-hidden>
             <span style={{ width: `${Math.max(2, pores.visibilityScore as number)}%` }} />
@@ -185,14 +216,23 @@ export function PoresSection({ pores }: { pores: PoreReport }) {
 }
 
 /** Skin age (apparent age) estimate, shown next to the photo. */
-export function SkinAgeCard({ skinAge }: { skinAge: SkinAgeReport }) {
+export function SkinAgeCard({
+  skinAge,
+  onOpenInfo,
+}: {
+  skinAge: SkinAgeReport;
+  onOpenInfo?: (key: ExplainingMetricKey, score?: number | null, band?: string | null) => void;
+}) {
   const { t } = useI18n();
   if (skinAge.status === 'disabled' || skinAge.status === 'not_configured') return null;
   const ok = skinAge.status === 'ok' && skinAge.minYears !== null && skinAge.probabilities;
   return (
     <section className="skinAge" aria-labelledby="skin-age-title">
       <div className="extHead">
-        <h3 id="skin-age-title">{t.skinAge.title}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 id="skin-age-title">{t.skinAge.title}</h3>
+          {onOpenInfo ? <ScoreInfoButton onClick={() => onOpenInfo('skinAge')} /> : null}
+        </div>
         <span className="tag experimental">
           <Sparkles size={13} aria-hidden /> {t.skinAge.tag}
         </span>
@@ -228,6 +268,247 @@ export function SkinAgeCard({ skinAge }: { skinAge: SkinAgeReport }) {
       ) : (
         <p className="extText muted">{skinAge.explanation}</p>
       )}
+    </section>
+  );
+}
+
+export function SkinTypeSection({
+  skinType,
+  onOpenInfo,
+}: {
+  skinType: SkinTypeReport;
+  onOpenInfo?: (key: ExplainingMetricKey, score?: number | null, band?: string | null) => void;
+}) {
+  const { t } = useI18n();
+  if (skinType.status === 'disabled') return null;
+
+  const ok = skinType.status === 'ok';
+  const shine = skinType.visibleShine;
+  const regions = shine.regionalBreakdown
+    ? (Object.entries(shine.regionalBreakdown) as ['forehead' | 'nose' | 'cheekLeft' | 'cheekRight', number][])
+    : [];
+
+  return (
+    <section className="glass extSection" aria-labelledby="skintype-title">
+      <div className="extHead">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 id="skintype-title">{t.skinType.title}</h3>
+          {onOpenInfo ? <ScoreInfoButton onClick={() => onOpenInfo('skinType')} /> : null}
+        </div>
+        <span className="tag experimental">
+          <Droplets size={13} aria-hidden /> {t.skinType.tag}
+        </span>
+      </div>
+
+      {ok && skinType.predictedSkinType ? (
+        <>
+          <div className="severityLead">
+            <span className="muted small">{t.skinType.skinTypeLabel}:</span>
+            <b>{t.skinType[skinType.predictedSkinType] ?? skinType.predictedSkinType}</b>
+          </div>
+          {skinType.probabilities ? (
+            <div className="probBox" style={{ marginTop: '10px' }}>
+              <span className="muted small">{t.skinType.probabilities}</span>
+              <ul className="probBars">
+                {(['dry', 'normal', 'oily'] as const).map((label) => {
+                  const p = skinType.probabilities?.[label] ?? 0;
+                  return (
+                    <li key={label}>
+                      <span>{t.skinType[label]}</span>
+                      <span className="meter" aria-hidden>
+                        <span style={{ width: `${Math.max(1, p * 100)}%` }} />
+                      </span>
+                      <span className="pct">{Math.round(p * 100)}%</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+        </>
+      ) : skinType.status === 'not_configured' ? (
+        <p className="extText small muted">{t.skinType.notConfigured}</p>
+      ) : (
+        <p className="extText muted">{skinType.explanation}</p>
+      )}
+
+      {shine.score !== null ? (
+        <div className="severityBox">
+          <div className="metricHead">
+            <span className="muted small">{t.skinType.visibleShine}</span>
+            <div className="scoreWithInfo">
+              <span className="metricScore">
+                {shine.score}
+                <small>/100</small>
+              </span>
+              {onOpenInfo ? <ScoreInfoButton onClick={() => onOpenInfo('shine', shine.score)} /> : null}
+            </div>
+          </div>
+          <div className="meter" aria-hidden>
+            <span style={{ width: `${Math.max(2, shine.score)}%` }} />
+          </div>
+          <ul className="regionChips" style={{ marginTop: '12px' }}>
+            {shine.tZoneScore !== null ? (
+              <li>
+                {t.skinType.tZone}: <b>{shine.tZoneScore}/100</b>
+              </li>
+            ) : null}
+            {shine.cheeksScore !== null ? (
+              <li>
+                {t.skinType.cheeks}: <b>{shine.cheeksScore}/100</b>
+              </li>
+            ) : null}
+          </ul>
+          {regions.length ? (
+            <ul className="regionChips" aria-label={t.skinType.regionalBreakdown}>
+              {regions.map(([k, v]) => {
+                const label =
+                  k === 'cheekLeft'
+                    ? t.skinType.leftCheek
+                    : k === 'cheekRight'
+                      ? t.skinType.rightCheek
+                      : t.skinType[k] ?? k;
+                return (
+                  <li key={k}>
+                    {label}: <b>{v}/100</b>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+
+      <p className="extText" style={{ marginTop: '12px' }}>{skinType.explanation}</p>
+
+      <p className="notice">
+        <Info size={14} aria-hidden /> {t.skinType.notice}
+      </p>
+      <Limitations items={skinType.limitations} />
+    </section>
+  );
+}
+
+export function SkinToneUniformitySection({
+  uniformity,
+  onOpenInfo,
+}: {
+  uniformity: SkinToneUniformityReport;
+  onOpenInfo?: (key: ExplainingMetricKey, score?: number | null, band?: string | null) => void;
+}) {
+  const { t } = useI18n();
+  if (uniformity.status === 'disabled') return null;
+
+  const ok = uniformity.status === 'ok' && uniformity.uniformityScore !== null;
+  const diffs = uniformity.colorDifferences;
+
+  return (
+    <section className="glass extSection" aria-labelledby="uniformity-title">
+      <div className="extHead">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 id="uniformity-title">{t.skinToneUniformity.title}</h3>
+          {onOpenInfo ? (
+            <ScoreInfoButton
+              onClick={() =>
+                onOpenInfo(
+                  'skinToneUniformity',
+                  uniformity.uniformityScore,
+                  uniformity.band ? t.skinToneUniformity[uniformity.band] : null,
+                )
+              }
+            />
+          ) : null}
+        </div>
+        <span className="tag experimental">
+          <Palette size={13} aria-hidden /> {t.skinToneUniformity.tag}
+        </span>
+      </div>
+
+      {ok ? (
+        <>
+          <div className="metricHead">
+            <span className="muted small">{t.skinToneUniformity.scoreLabel}</span>
+            <div className="scoreWithInfo">
+              <span className="metricScore">
+                {uniformity.uniformityScore}
+                <small>/100</small>
+              </span>
+              {onOpenInfo ? (
+                <ScoreInfoButton
+                  onClick={() =>
+                    onOpenInfo(
+                      'skinToneUniformity',
+                      uniformity.uniformityScore,
+                      uniformity.band ? t.skinToneUniformity[uniformity.band] : null,
+                    )
+                  }
+                />
+              ) : null}
+            </div>
+          </div>
+          <div className="meter" aria-hidden>
+            <span style={{ width: `${Math.max(2, uniformity.uniformityScore as number)}%` }} />
+          </div>
+          {uniformity.band ? (
+            <div className="metricTags" style={{ marginTop: '8px' }}>
+              <span className="tag">
+                <span className="dot" aria-hidden />
+                {t.skinToneUniformity[uniformity.band] ?? uniformity.band}
+              </span>
+            </div>
+          ) : null}
+
+          <ul className="regionChips" style={{ marginTop: '14px' }}>
+            {diffs.leftRightDeltaE !== null ? (
+              <li>
+                {t.skinToneUniformity.leftRightSymmetry}: <b>ΔE {diffs.leftRightDeltaE}</b>
+              </li>
+            ) : null}
+            {diffs.meanInterRegionDeltaE !== null ? (
+              <li>
+                {t.skinToneUniformity.meanDeltaE}: <b>ΔE {diffs.meanInterRegionDeltaE}</b>
+              </li>
+            ) : null}
+            {diffs.lightingAsymmetry !== null ? (
+              <li>
+                {t.skinToneUniformity.lightingAsymmetry}: <b>ΔL* {diffs.lightingAsymmetry}</b>
+              </li>
+            ) : null}
+          </ul>
+
+          {uniformity.heatmap ? (
+            <div style={{ marginTop: '14px' }}>
+              <details className="limitations">
+                <summary>Delta E Spatial Map</summary>
+                <div style={{ marginTop: '8px', textAlign: 'center' }}>
+                  <img
+                    src={uniformity.heatmap}
+                    alt="Skin-tone uniformity heatmap"
+                    style={{ maxWidth: '100%', borderRadius: '12px', border: '1px solid var(--line)' }}
+                  />
+                </div>
+              </details>
+            </div>
+          ) : null}
+
+          {uniformity.warnings.length ? (
+            <ul className="reasonList" style={{ marginTop: '10px' }}>
+              {uniformity.warnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          <p className="extText" style={{ marginTop: '10px' }}>{uniformity.explanation}</p>
+        </>
+      ) : (
+        <p className="extText muted">{uniformity.explanation}</p>
+      )}
+
+      <p className="notice">
+        <Info size={14} aria-hidden /> {t.skinToneUniformity.notice}
+      </p>
+      <Limitations items={uniformity.limitations} />
     </section>
   );
 }

@@ -2,8 +2,10 @@
 
 import { CalendarCheck, ChevronDown, Download, Info, Loader2, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
-import { AcneSection, PoresSection, SkinAgeCard } from './ExtensionSections';
+import { AcneSection, PoresSection, SkinAgeCard, SkinToneUniformitySection, SkinTypeSection } from './ExtensionSections';
 import { useI18n } from './LocaleProvider';
+import MetricInfoModal, { ScoreInfoButton } from './MetricInfoModal';
+import type { ExplainingMetricKey } from '@/lib/metric-explanations';
 import PhotoOverlay from './PhotoOverlay';
 import { ENGINE_NAME } from '@/lib/brand';
 import type { PreparedImage } from '@/lib/client/prepare-image';
@@ -33,7 +35,15 @@ function ConfidenceRing({ value }: { value: number }) {
   );
 }
 
-function MetricRow({ k, result }: { k: MetricKey; result: ScanSuccess }) {
+function MetricRow({
+  k,
+  result,
+  onOpenInfo,
+}: {
+  k: MetricKey;
+  result: ScanSuccess;
+  onOpenInfo: (key: ExplainingMetricKey, score?: number | null, band?: string | null) => void;
+}) {
   const { t } = useI18n();
   const m = result.analysis[k];
   const reported = m.score !== null;
@@ -41,14 +51,17 @@ function MetricRow({ k, result }: { k: MetricKey; result: ScanSuccess }) {
     <li className={`metric${reported ? '' : ' metricInsufficient'}`}>
       <div className="metricHead">
         <h3>{t.metrics[k]}</h3>
-        {reported ? (
-          <span className="metricScore">
-            {m.score}
-            <small>/100</small>
-          </span>
-        ) : (
-          <span className="metricScore none">—</span>
-        )}
+        <div className="scoreWithInfo">
+          {reported ? (
+            <span className="metricScore">
+              {m.score}
+              <small>/100</small>
+            </span>
+          ) : (
+            <span className="metricScore none">—</span>
+          )}
+          <ScoreInfoButton onClick={() => onOpenInfo(k, m.score, m.band ? t.bands[m.band] : null)} />
+        </div>
       </div>
       {reported ? (
         <div className="meter" aria-hidden>
@@ -70,7 +83,16 @@ function MetricRow({ k, result }: { k: MetricKey; result: ScanSuccess }) {
 export default function Results({ result, photo, onScanAgain }: Props) {
   const { t, locale } = useI18n();
   const [report, setReport] = useState<'idle' | 'busy' | 'failed'>('idle');
+  const [infoModal, setInfoModal] = useState<{
+    key: ExplainingMetricKey;
+    score?: number | null;
+    band?: string | null;
+  } | null>(null);
   const date = new Date(result.createdAt);
+
+  const handleOpenInfo = (key: ExplainingMetricKey, score?: number | null, band?: string | null) => {
+    setInfoModal({ key, score, band });
+  };
 
   async function download() {
     setReport('busy');
@@ -101,12 +123,17 @@ export default function Results({ result, photo, onScanAgain }: Props) {
           <div className="overall">
             <ConfidenceRing value={result.overallConfidence} />
             <div>
-              <strong>{t.results.overall}</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <strong>{t.results.overall}</strong>
+                <ScoreInfoButton
+                  onClick={() => handleOpenInfo('overallConfidence', Math.round(result.overallConfidence * 100))}
+                />
+              </div>
               <p className="muted small">{t.results.overallSub}</p>
             </div>
           </div>
 
-          {result.skinAge ? <SkinAgeCard skinAge={result.skinAge} /> : null}
+          {result.skinAge ? <SkinAgeCard skinAge={result.skinAge} onOpenInfo={handleOpenInfo} /> : null}
 
           {result.imageQuality.notes.length ? (
             <ul className="qualityNotes">
@@ -123,16 +150,20 @@ export default function Results({ result, photo, onScanAgain }: Props) {
           <p className="scaleNote">{t.results.scaleNote}</p>
           <ul className="metrics">
             {METRIC_KEYS.map((k) => (
-              <MetricRow key={k} k={k} result={result} />
+              <MetricRow key={k} k={k} result={result} onOpenInfo={handleOpenInfo} />
             ))}
           </ul>
         </div>
       </div>
 
-      {result.acne || result.pores ? (
+      {result.acne || result.pores || result.skinType || result.skinToneUniformity ? (
         <div className="extGrid">
-          {result.acne ? <AcneSection acne={result.acne} /> : null}
-          {result.pores ? <PoresSection pores={result.pores} /> : null}
+          {result.acne ? <AcneSection acne={result.acne} onOpenInfo={handleOpenInfo} /> : null}
+          {result.pores ? <PoresSection pores={result.pores} onOpenInfo={handleOpenInfo} /> : null}
+          {result.skinType ? <SkinTypeSection skinType={result.skinType} onOpenInfo={handleOpenInfo} /> : null}
+          {result.skinToneUniformity ? (
+            <SkinToneUniformitySection uniformity={result.skinToneUniformity} onOpenInfo={handleOpenInfo} />
+          ) : null}
         </div>
       ) : null}
 
@@ -176,6 +207,13 @@ export default function Results({ result, photo, onScanAgain }: Props) {
           <p className="muted small">{t.results.howFoot}</p>
         </div>
       </details>
+
+      <MetricInfoModal
+        metricKey={infoModal?.key ?? null}
+        currentScore={infoModal?.score}
+        currentBand={infoModal?.band}
+        onClose={() => setInfoModal(null)}
+      />
     </section>
   );
 }

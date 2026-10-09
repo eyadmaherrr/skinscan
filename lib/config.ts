@@ -61,6 +61,17 @@ export function extensionConfig() {
      * file written next to it.
      */
     acneSeverityModel: acneModel ? path.join(process.cwd(), 'models', 'optional', path.basename(acneModel)) : '',
+    /** Optional Glamour AI ViT skin-type ONNX model (models/optional/glamour_skin_type.onnx). */
+    skinType: flag('SKINSCAN_SKIN_TYPE', true),
+    skinTypeModel: (() => {
+      const model = process.env.SKINSCAN_SKIN_TYPE_MODEL?.trim();
+      return model ? path.join(process.cwd(), 'models', 'optional', path.basename(model)) : '';
+    })(),
+    /** Optional remote HuggingFace Inference Endpoint or microservice for Glamour AI model. */
+    glamourAiUrl: process.env.SKINSCAN_GLAMOUR_AI_URL?.trim() || '',
+    glamourAiToken: process.env.SKINSCAN_GLAMOUR_AI_TOKEN?.trim() || '',
+    /** Skin-Tone Uniformity analysis component. */
+    skinToneUniformity: flag('SKINSCAN_SKIN_TONE_UNIFORMITY', true),
     /** Optional Derm Foundation embedding service (services/derm-foundation). */
     dermFoundationEnabled: flag('DERM_FOUNDATION_ENABLED', false),
     dermFoundationUrl: process.env.DERM_FOUNDATION_URL?.trim() || '',

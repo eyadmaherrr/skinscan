@@ -209,6 +209,21 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   const ext = await runExtensions(ctx, image, notes);
   const heatmaps = await metricHeatmaps(face, image, measurements, ordered);
 
+  const normalizedLandmarks: [number, number][] = [];
+  let minNormX = 1;
+  let minNormY = 1;
+  let maxNormX = 0;
+  let maxNormY = 0;
+  for (let i = 0; i < landmarks.points.length / 3; i++) {
+    const x = Math.round((landmarks.points[i * 3] / image.width) * 10000) / 10000;
+    const y = Math.round((landmarks.points[i * 3 + 1] / image.height) * 10000) / 10000;
+    normalizedLandmarks.push([x, y]);
+    if (x < minNormX) minNormX = x;
+    if (x > maxNormX) maxNormX = x;
+    if (y < minNormY) minNormY = y;
+    if (y > maxNormY) maxNormY = y;
+  }
+
   const result: ScanSuccess = {
     success: true,
     scanId: randomUUID(),
@@ -217,18 +232,21 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
     overallConfidence: Math.round(overallConfidence(confidences) * 100) / 100,
     imageQuality: { acceptable: true, notes },
     regions: outlines(face, image, regions),
+    landmarks: normalizedLandmarks,
     engine: ENGINE_NAME,
     methodologyVersion: METHODOLOGY_VERSION,
     acne: ext.acne,
     pores: ext.pores,
     skinAge: ext.skinAge,
+    skinType: ext.skinType,
+    skinToneUniformity: ext.skinToneUniformity,
     heatmaps,
     dermFoundation: ext.dermFoundation,
     analysisQuality: ext.analysisQuality,
     regionsV3: v3Aggregate.regionsV3,
     v3: {
-      engineVersion: '3.0.0',
-      methodologyVersion: '3.0.0',
+      engineVersion: '3.5.0',
+      methodologyVersion: '3.5.0',
       imageQuality: {
         acceptable: true,
         issues: quality.issues,
@@ -240,12 +258,15 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
         yaw: Math.round(pose.yaw * 10) / 10,
         pitch: Math.round(pose.pitch * 10) / 10,
         roll: Math.round(pose.roll * 10) / 10,
+        landmarks: normalizedLandmarks,
+        boundingBox: [minNormX, minNormY, maxNormX, maxNormY],
       },
       regions: v3Aggregate.regionsV3,
       featureSummaries: v3Aggregate.featureSummaries,
       executionMs: Date.now() - pipelineStart,
     },
   };
+
   return {
     result,
     measurements,

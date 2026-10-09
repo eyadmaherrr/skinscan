@@ -143,8 +143,11 @@ export interface RegionReportV3 {
   features: Partial<Record<FeatureKeyV3, RegionFeatureResultV3>>;
   /** Normalized outline coordinates [x, y] in original photo space (0–1). */
   outline: [number, number][];
+  /** Alias for outline (normalized coordinates 0–1 in source photo space). */
+  outlineSource?: [number, number][];
   unavailableReasons: RegionUnavailableReason[];
 }
+
 
 export interface FeatureSummaryV3 {
   feature: FeatureKeyV3;
@@ -159,8 +162,8 @@ export interface FeatureSummaryV3 {
 }
 
 export interface DetailedV3PipelineResult {
-  engineVersion: '3.0.0';
-  methodologyVersion: '3.0.0';
+  engineVersion: '3.5.0';
+  methodologyVersion: '3.5.0';
   imageQuality: {
     acceptable: boolean;
     issues: string[];
@@ -172,8 +175,11 @@ export interface DetailedV3PipelineResult {
     yaw: number;
     pitch: number;
     roll: number;
+    landmarks?: [number, number][];
+    boundingBox?: [number, number, number, number];
   };
   regions: Record<RegionKeyV3, RegionReportV3>;
+
   featureSummaries: Record<FeatureKeyV3, FeatureSummaryV3>;
   executionMs: number;
 }

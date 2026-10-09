@@ -24,7 +24,7 @@ export const CALIBRATION: Record<MetricKey, { unit: string; anchors: [number, nu
   underEye: { unit: 'ΔL* (upper cheek − under-eye)', anchors: [0, 2.5, 5, 8.5, 13] },
 };
 
-export const METHODOLOGY_VERSION = '3.0.0';
+export const METHODOLOGY_VERSION = '3.5.0';
 
 export function calibrate(key: MetricKey, raw: number): number {
   const a = CALIBRATION[key].anchors;

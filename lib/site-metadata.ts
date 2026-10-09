@@ -6,8 +6,8 @@ import { publicConfig } from './public-config';
 
 /** Default descriptions by language. */
 const DEFAULT_DESCRIPTION: Record<Locale, string> = {
-  en: 'Analyze visible skin characteristics from a facial photo using Dr Maher Vision AI v3.0 computer vision. Informational only — not a medical diagnosis.',
-  ar: 'حلّل الخصائص الظاهرة لبشرتك من صورة للوجه باستخدام الرؤية الحاسوبية Dr Maher Vision AI v3.0. لأغراض المعلومات فقط، وليس تشخيصًا طبيًا.',
+  en: 'Analyze visible skin characteristics from a facial photo using Dr Maher Vision AI v3.5 computer vision. Informational only — not a medical diagnosis.',
+  ar: 'حلّل الخصائص الظاهرة لبشرتك من صورة للوجه باستخدام الرؤية الحاسوبية Dr Maher Vision AI v3.5. لأغراض المعلومات فقط، وليس تشخيصًا طبيًا.',
 };
 
 export interface PageMetaInfo {
@@ -33,48 +33,48 @@ export const ROUTE_METADATA: Record<string, Record<Locale, PageMetaInfo>> = {
   '/scan': {
     en: {
       title: `Start Skin Scan | ${SITE_NAME}`,
-      description: 'Launch the interactive camera or upload a photo for confidential in-browser facial skin analysis using Dr Maher Vision AI v3.0.',
+      description: 'Launch the interactive camera or upload a photo for confidential in-browser facial skin analysis using Dr Maher Vision AI v3.5.',
       keywords: ['skin scan online', 'take face photo', 'skin analysis camera', 'confidential skin test'],
     },
     ar: {
       title: `بدء فحص البشرة | ${SITE_NAME}`,
-      description: 'شغّل كاميرا الفحص التفاعلية أو ارفع صورة لتحليل فوري وخاص لملامح وبشرة الوجه عبر Dr Maher Vision AI v3.0.',
+      description: 'شغّل كاميرا الفحص التفاعلية أو ارفع صورة لتحليل فوري وخاص لملامح وبشرة الوجه عبر Dr Maher Vision AI v3.5.',
       keywords: ['بدء فحص البشرة', 'كاميرا فحص الوجه', 'تحليل مباشر للبشرة', 'فحص خصوصي'],
     },
   },
   '/about': {
     en: {
       title: `About Dr. Maher Mahmoud Clinics & Vision AI | ${SITE_NAME}`,
-      description: 'Learn about Dr. Maher Mahmoud Clinics, our clinical dermatology team, patient privacy pledges, and the principles behind Dr Maher Vision AI v3.0.',
+      description: 'Learn about Dr. Maher Mahmoud Clinics, our clinical dermatology team, patient privacy pledges, and the principles behind Dr Maher Vision AI v3.5.',
       keywords: ['about Dr Maher Mahmoud', 'dermatology clinics Cairo', 'skin doctor Egypt', 'AI ethics dermatology'],
     },
     ar: {
       title: `عن عيادات د. ماهر محمود وتقنية الذكاء الاصطناعي | ${SITE_NAME}`,
-      description: 'تعرف على عيادات د. ماهر محمود وفريق أطباء الجلدية، وتعهدات حماية خصوصية المرضى، والأسس العلمية لمحرك Dr Maher Vision AI v3.0.',
+      description: 'تعرف على عيادات د. ماهر محمود وفريق أطباء الجلدية، وتعهدات حماية خصوصية المرضى، والأسس العلمية لمحرك Dr Maher Vision AI v3.5.',
       keywords: ['عن دكتور ماهر محمود', 'عيادات جلدية في مصر', 'استشاري جلدية وتجميل', 'أخلاقيات الذكاء الاصطناعي'],
     },
   },
   '/how-it-works': {
     en: {
       title: `How It Works — 13-Stage Vision AI Pipeline | ${SITE_NAME}`,
-      description: 'Explore the 13-stage computer vision architecture of Dr Maher Vision AI v3.0: BlazeFace detection, 478 MediaPipe landmarks, zero-overlap 24-region segmentation, and deterministic scoring.',
+      description: 'Explore the 13-stage computer vision architecture of Dr Maher Vision AI v3.5: BlazeFace detection, 478 MediaPipe landmarks, zero-overlap 24-region segmentation, and deterministic scoring.',
       keywords: ['how skin scan works', 'facial landmarks 478', 'skin segmentation', 'computer vision pipeline', 'difference of gaussians skin'],
     },
     ar: {
       title: `كيف يعمل الفحص — مسار الذكاء الاصطناعي ذو 13 مرحلة | ${SITE_NAME}`,
-      description: 'تعرف على معمارية الرؤية الحاسوبية في Dr Maher Vision AI v3.0: كشف الوجه BlazeFace، 478 نقطة تشريحية، تقسيم 24 منطقة دون تداخل، وحسابات دقيقة غير عشوائية.',
+      description: 'تعرف على معمارية الرؤية الحاسوبية في Dr Maher Vision AI v3.5: كشف الوجه BlazeFace، 478 نقطة تشريحية، تقسيم 24 منطقة دون تداخل، وحسابات دقيقة غير عشوائية.',
       keywords: ['كيف يعمل فحص البشرة', 'معمارية الرؤية الحاسوبية', 'نقاط الوجه 478', 'تقسيم مناطق الوجه', 'خوارزميات تحليل البشرة'],
     },
   },
   '/features': {
     en: {
       title: `Features: 24 Anatomical Regions & 7 Skin Metrics | ${SITE_NAME}`,
-      description: 'Detailed overview of the 24 canonical facial regions analyzed by Dr Maher Vision AI v3.0 and the 7 evaluated skin characteristics: spots, redness, texture, shine, pores, and dark circles.',
+      description: 'Detailed overview of the 24 canonical facial regions analyzed by Dr Maher Vision AI v3.5 and the 7 evaluated skin characteristics: spots, redness, texture, shine, pores, and dark circles.',
       keywords: ['facial skin regions', 'forehead skin', 'cheek analysis', 'periorbital darkness', 'facial sebum analysis'],
     },
     ar: {
       title: `المميزات: 24 منطقة تشريحية و7 مقاييس للبشرة | ${SITE_NAME}`,
-      description: 'نظرة شاملة على الـ 24 منطقة تشريحية في الوجه التي يحللها محرك Dr Maher Vision AI v3.0 وخصائص البشرة السبع: البقع، الاحمرار، الملمس، اللمعان، المسام، والهالات.',
+      description: 'نظرة شاملة على الـ 24 منطقة تشريحية في الوجه التي يحللها محرك Dr Maher Vision AI v3.5 وخصائص البشرة السبع: البقع، الاحمرار، الملمس، اللمعان، المسام، والهالات.',
       keywords: ['مناطق تشريح الوجه', 'تحليل بشرة الخد والجبهة', 'مقاييس البشرة السبع', 'مسام الوجه', 'هالات العينين'],
     },
   },

@@ -84,8 +84,10 @@ export function aggregateV3Analysis(
       quality: rQuality,
       features: featureResults,
       outline: region.outlineSource,
+      outlineSource: region.outlineSource,
       unavailableReasons: region.unavailableReasons,
     };
+
   }
 
   // 2. Aggregate Feature Summaries across regions
