@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import type { ScanFailure, ScanSuccess } from '../lib/skin-analysis/types';
 
 process.env.SKIN_SCAN_RATE_LIMIT = '1000';
+process.env.SKINSCAN_REQUIRE_AUTH = 'true';
 
 let POST: (request: Request) => Promise<Response>;
 
@@ -13,13 +14,22 @@ before(async () => {
   ({ POST } = await import('../app/api/skin-scan/route'));
 });
 
-function upload(bytes: Uint8Array | null, type = 'image/jpeg'): Request {
+function upload(bytes: Uint8Array | null, type = 'image/jpeg', auth = true): Request {
   const form = new FormData();
   if (bytes) form.append('image', new Blob([new Uint8Array(bytes)], { type }), 'photo');
-  return new Request('http://localhost/api/skin-scan', { method: 'POST', body: form });
+  const headers = new Headers();
+  if (auth) headers.set('x-patient-session', 'test-session-token');
+  return new Request('http://localhost/api/skin-scan', { method: 'POST', body: form, headers });
 }
 
 describe('POST /api/skin-scan', () => {
+  it('rejects an unauthenticated request', async () => {
+    const res = await POST(upload(null, 'image/jpeg', false));
+    assert.equal(res.status, 401);
+    const body = (await res.json()) as ScanFailure;
+    assert.equal(body.error.code, 'unauthenticated');
+  });
+
   it('rejects a request without an image', async () => {
     const res = await POST(upload(null));
     assert.equal(res.status, 400);
@@ -29,7 +39,13 @@ describe('POST /api/skin-scan', () => {
   });
 
   it('rejects non-multipart requests', async () => {
-    const res = await POST(new Request('http://localhost/api/skin-scan', { method: 'POST', body: '{}', headers: { 'content-type': 'application/json' } }));
+    const res = await POST(
+      new Request('http://localhost/api/skin-scan', {
+        method: 'POST',
+        body: '{}',
+        headers: { 'content-type': 'application/json', 'x-patient-session': 'test-session-token' },
+      }),
+    );
     assert.equal(res.status, 400);
   });
 

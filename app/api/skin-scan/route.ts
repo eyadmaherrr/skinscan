@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { tryAcquire } from '@/lib/concurrency';
 import { serverConfig } from '@/lib/config';
+import { getPatientSessionToken, verifyPatientSession } from '@/lib/auth';
 import { clientKey, rateLimit } from '@/lib/rate-limit';
 import { analyzeImage } from '@/lib/skin-analysis';
 import { ERROR_MESSAGES, ScanError } from '@/lib/skin-analysis/errors';
@@ -11,6 +12,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 const STATUS: Record<ScanErrorCode, number> = {
+  unauthenticated: 401,
   invalid_request: 400,
   unsupported_type: 415,
   file_too_large: 413,
@@ -44,6 +46,19 @@ function log(outcome: string, startedAt: number, extra: Record<string, unknown> 
 
 export async function POST(request: Request) {
   const startedAt = Date.now();
+
+  if (serverConfig.requireAuth) {
+    const token = getPatientSessionToken(request);
+    if (!token) {
+      log('unauthenticated', startedAt);
+      return failure(new ScanError('unauthenticated'));
+    }
+    const auth = await verifyPatientSession(token);
+    if (!auth.authenticated) {
+      log('unauthenticated', startedAt);
+      return failure(new ScanError('unauthenticated'));
+    }
+  }
 
   const limit = rateLimit(clientKey(request.headers), serverConfig.rateLimitMax, serverConfig.rateLimitWindowMs);
   if (!limit.allowed) {

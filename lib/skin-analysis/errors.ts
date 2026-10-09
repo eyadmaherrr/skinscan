@@ -24,6 +24,7 @@ export function qualityIssue(code: QualityIssueCode): QualityIssue {
 }
 
 export const ERROR_MESSAGES: Record<ScanErrorCode, string> = {
+  unauthenticated: 'Please sign in to your Dr. Maher account to run a skin scan.',
   invalid_request: 'Please choose a photo to scan.',
   unsupported_type: 'This file type is not supported. Please use a JPG, PNG or WebP photo.',
   file_too_large: 'This photo is too large. Please use a photo under the size limit.',

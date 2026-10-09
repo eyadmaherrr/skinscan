@@ -207,6 +207,7 @@ export interface AnalysisQuality {
 }
 
 export type ScanErrorCode =
+  | 'unauthenticated'
   | 'invalid_request'
   | 'unsupported_type'
   | 'file_too_large'

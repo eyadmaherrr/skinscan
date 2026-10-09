@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { CLINIC_NAME, SITE_NAME } from '@/lib/brand';
 import { publicConfig } from '@/lib/public-config';
+import { AuthProvider } from '@/lib/client/use-auth';
 import './globals.css';
 
 // Self-hosted at build time by next/font: no request to Google from the visitor's browser.
@@ -32,7 +33,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={inter.variable}>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

@@ -24,7 +24,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
             <ShieldCheck size={15} aria-hidden /> Photo is not stored
           </li>
           <li>
-            <UserRound size={15} aria-hidden /> No account needed
+            <UserRound size={15} aria-hidden /> Dr. Maher account required
           </li>
           <li>
             <Clock size={15} aria-hidden /> Takes about a minute

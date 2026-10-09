@@ -1603,3 +1603,459 @@ h3 {
     grid-template-columns: 110px 1fr 40px;
   }
 }
+
+/* ---------- Authentication & Nav Actions ---------- */
+.navActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navAuthBtn {
+  min-height: 40px !important;
+  padding: 0 16px !important;
+  font-size: 13.5px !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+.userNavBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 12px;
+  background: rgba(23, 107, 156, 0.08);
+  border: 1px solid rgba(23, 107, 156, 0.18);
+  border-radius: 999px;
+}
+
+.userName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.iconOnlyBtn {
+  min-height: 32px !important;
+  width: 32px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  color: var(--muted-strong) !important;
+}
+
+.iconOnlyBtn:hover {
+  color: var(--navy) !important;
+  background: rgba(11, 45, 77, 0.08) !important;
+}
+
+/* ---------- Auth Modal ---------- */
+.authModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(11, 45, 77, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s var(--ease);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.authModalCard {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px 28px 26px;
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.82));
+  box-shadow: 0 24px 60px rgba(11, 45, 77, 0.18), 0 4px 16px rgba(11, 45, 77, 0.08);
+  animation: modalPop 0.25s var(--ease);
+}
+
+@keyframes modalPop {
+  from { transform: scale(0.96) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.authModalClose {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(11, 45, 77, 0.06);
+  color: var(--muted-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.authModalClose:hover {
+  background: rgba(11, 45, 77, 0.12);
+  color: var(--navy);
+}
+
+.authModalHeader {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.authModalIcon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 12px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #e8f4fa, #d0eaf8);
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(23, 107, 156, 0.12);
+}
+
+.authModalHeader h2 {
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.4px;
+  margin-top: 4px;
+}
+
+.authModalHeader .muted {
+  font-size: 13.5px;
+  margin-top: 6px;
+}
+
+.authModalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formField label {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--navy);
+}
+
+.fieldLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.forgotLink {
+  font-size: 12px;
+  color: var(--blue);
+  font-weight: 600;
+}
+
+.forgotLink:hover {
+  text-decoration: underline;
+}
+
+.inputWithIcon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.fieldIcon {
+  position: absolute;
+  left: 14px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.inputWithIcon input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px 0 42px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(11, 45, 77, 0.15);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14.5px;
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.inputWithIcon input:focus {
+  border-color: var(--blue-bright);
+  box-shadow: 0 0 0 3px rgba(45, 156, 219, 0.18);
+  outline: none;
+}
+
+.authSubmitBtn {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.authModalFooter {
+  margin-top: 20px;
+  text-align: center;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.registerPrompt {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted-strong);
+}
+
+.registerLink {
+  color: var(--blue);
+  font-weight: 700;
+}
+
+.registerLink:hover {
+  text-decoration: underline;
+}
+
+.authLegal {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.legalLink {
+  color: var(--blue);
+  text-decoration: underline;
+}
+
+/* ---------- Legal Pages & Footer Links ---------- */
+.footerLinks {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--blue);
+  font-weight: 600;
+}
+
+.footerLinks a:hover {
+  text-decoration: underline;
+}
+
+.footerLinks .dot {
+  color: var(--muted);
+}
+
+.inlineLink {
+  color: var(--blue);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.legalContainer {
+  width: min(900px, calc(100% - 32px));
+  margin: 24px auto 48px;
+}
+
+.legalNavBack {
+  margin-bottom: 16px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--blue);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transition: background 0.2s var(--ease);
+}
+
+.backLink:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.legalCard {
+  padding: 44px 40px;
+}
+
+.legalHeader {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+}
+
+.legalHeader h1 {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  margin-top: 6px;
+}
+
+.legalSubtitle {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.legalAlert {
+  display: flex;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: var(--radius-sm);
+  background: rgba(181, 71, 8, 0.08);
+  border: 1px solid rgba(181, 71, 8, 0.25);
+  color: #7a271a;
+  margin-bottom: 32px;
+}
+
+.legalAlert.privacyHighlight {
+  background: rgba(23, 107, 156, 0.08);
+  border-color: rgba(23, 107, 156, 0.25);
+  color: var(--navy);
+}
+
+.legalAlert .alertIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: inherit;
+}
+
+.legalAlert strong {
+  display: block;
+  font-size: 13.5px;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.legalAlert p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.legalSection {
+  margin-bottom: 32px;
+}
+
+.legalSection h2 {
+  font-size: 20px;
+  font-weight: 750;
+  margin-bottom: 12px;
+  letter-spacing: -0.2px;
+}
+
+.legalSection p {
+  margin: 0 0 12px;
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+.legalSection ul {
+  margin: 8px 0 16px;
+  padding-left: 22px;
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+.legalSection li {
+  margin-bottom: 8px;
+}
+
+.lifecycleSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.lifecycleCard {
+  position: relative;
+  padding: 16px 20px 16px 54px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(11, 45, 77, 0.08);
+}
+
+.stepNumber {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lifecycleCard h3 {
+  font-size: 15.5px;
+  font-weight: 750;
+  margin: 0 0 4px;
+}
+
+.lifecycleCard p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted-strong);
+  line-height: 1.55;
+}
+
+.contactCard {
+  margin-top: 12px;
+  padding: 18px 22px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(11, 45, 77, 0.1);
+}
+
+.contactCard strong {
+  display: block;
+  font-size: 16px;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+
+.contactCard p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: var(--muted-strong);
+}
+
+@media (max-width: 640px) {
+  .legalCard {
+    padding: 26px 18px;
+  }
+  .legalHeader h1 {
+    font-size: 26px;
+  }
+  .authModalCard {
+    padding: 26px 18px 20px;
+  }
+}

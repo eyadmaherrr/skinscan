@@ -43,8 +43,15 @@ export default function PhotoStep({ onTakePhoto, onUpload, error }: Props) {
       <label className="consent" htmlFor={consentId}>
         <input id={consentId} type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
         <span>
-          I understand this is an informational scan, not a medical diagnosis, and I agree to my photo being analysed.
-          The photo is processed for this scan only and is not stored.
+          I understand this is an informational scan, not a medical diagnosis, and I agree to the{' '}
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="inlineLink">
+            Terms of Use
+          </a>{' '}
+          and{' '}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="inlineLink">
+            Privacy Policy
+          </a>
+          . My photo is processed in memory for this scan only and is never stored.
         </span>
       </label>
 

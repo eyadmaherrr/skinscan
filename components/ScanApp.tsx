@@ -1,12 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { prepareImage, type PreparedImage } from '@/lib/client/prepare-image';
 import { requestScan } from '@/lib/client/scan-api';
+import { useAuth } from '@/lib/client/use-auth';
 import { SITE_NAME } from '@/lib/brand';
 import { publicConfig } from '@/lib/public-config';
 import type { ScanFailure, ScanSuccess } from '@/lib/skin-analysis/types';
 import Analyzing from './Analyzing';
+import AuthModal from './AuthModal';
 import BrandHeader from './BrandHeader';
 import CameraCapture from './CameraCapture';
 import Landing from './Landing';
@@ -27,6 +30,9 @@ type Step =
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif';
 
 export default function ScanApp() {
+  const { authenticated } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [pendingStart, setPendingStart] = useState(false);
   const [step, setStep] = useState<Step>({ name: 'landing' });
   const uploadRef = useRef<HTMLInputElement>(null);
   const deviceCameraRef = useRef<HTMLInputElement>(null);
@@ -52,9 +58,29 @@ export default function ScanApp() {
     setStep({ name: 'photo' });
   }, [trackPhoto]);
 
+  const handleStartScan = useCallback(() => {
+    if (!authenticated) {
+      setPendingStart(true);
+      setAuthModalOpen(true);
+      return;
+    }
+    goToPhotoStep();
+  }, [authenticated, goToPhotoStep]);
+
+  const handleAuthSuccess = useCallback(() => {
+    if (pendingStart) {
+      setPendingStart(false);
+      goToPhotoStep();
+    }
+  }, [pendingStart, goToPhotoStep]);
+
   const handleFile = useCallback(
     async (file: Blob | undefined | null) => {
       if (!file) return;
+      if (!authenticated) {
+        setAuthModalOpen(true);
+        return;
+      }
       try {
         const photo = await prepareImage(file);
         trackPhoto(photo);
@@ -66,7 +92,7 @@ export default function ScanApp() {
         });
       }
     },
-    [trackPhoto],
+    [authenticated, trackPhoto],
   );
 
   const goHome = useCallback(() => {
@@ -75,31 +101,60 @@ export default function ScanApp() {
     setStep({ name: 'landing' });
   }, [step.name, trackPhoto]);
 
-  const openUpload = useCallback(() => uploadRef.current?.click(), []);
-  const openDeviceCamera = useCallback(() => deviceCameraRef.current?.click(), []);
+  const openUpload = useCallback(() => {
+    if (!authenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    uploadRef.current?.click();
+  }, [authenticated]);
+
+  const openDeviceCamera = useCallback(() => {
+    if (!authenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    deviceCameraRef.current?.click();
+  }, [authenticated]);
 
   const takePhoto = useCallback(() => {
+    if (!authenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
     const liveCamera = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && window.isSecureContext;
     if (liveCamera) setStep({ name: 'camera' });
     else openDeviceCamera();
-  }, [openDeviceCamera]);
+  }, [authenticated, openDeviceCamera]);
 
-  const analyze = useCallback(async (photo: PreparedImage) => {
-    setStep({ name: 'analyzing', photo });
-    const [response] = await Promise.all([
-      requestScan(photo.blob),
-      // Keep the progress view on screen briefly so the transition is not jarring.
-      new Promise((resolve) => setTimeout(resolve, 1200)),
-    ]);
-    if (response.success) setStep({ name: 'results', photo, result: response });
-    else setStep({ name: 'retake', photo, failure: response });
-  }, []);
+  const analyze = useCallback(
+    async (photo: PreparedImage) => {
+      if (!authenticated) {
+        setAuthModalOpen(true);
+        return;
+      }
+      setStep({ name: 'analyzing', photo });
+      const [response] = await Promise.all([
+        requestScan(photo.blob),
+        // Keep the progress view on screen briefly so the transition is not jarring.
+        new Promise((resolve) => setTimeout(resolve, 1200)),
+      ]);
+      if (response.success) setStep({ name: 'results', photo, result: response });
+      else if (response.error.code === 'unauthenticated') {
+        setAuthModalOpen(true);
+        setStep({ name: 'landing' });
+      } else {
+        setStep({ name: 'retake', photo, failure: response });
+      }
+    },
+    [authenticated],
+  );
 
   return (
     <>
-      <BrandHeader onHome={goHome} />
+      <BrandHeader onHome={goHome} onOpenAuth={() => setAuthModalOpen(true)} />
       <main ref={mainRef} tabIndex={-1} className={`page page-${step.name}`}>
-        {step.name === 'landing' ? <Landing onStart={goToPhotoStep} /> : null}
+        {step.name === 'landing' ? <Landing onStart={handleStartScan} /> : null}
         {step.name === 'photo' ? <PhotoStep onTakePhoto={takePhoto} onUpload={openUpload} error={step.error} /> : null}
         {step.name === 'preview' ? (
           <PhotoPreview url={step.photo.url} onAnalyze={() => analyze(step.photo)} onRetake={goToPhotoStep} />
@@ -113,7 +168,7 @@ export default function ScanApp() {
             result={step.result}
             photoUrl={step.photo.url}
             photoAspect={step.photo.width / step.photo.height}
-            onScanAgain={goToPhotoStep}
+            onScanAgain={handleStartScan}
           />
         ) : null}
       </main>
@@ -126,6 +181,15 @@ export default function ScanApp() {
           onUpload={openUpload}
         />
       ) : null}
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => {
+          setAuthModalOpen(false);
+          setPendingStart(false);
+        }}
+        onSuccess={handleAuthSuccess}
+      />
 
       <input
         ref={uploadRef}
@@ -157,6 +221,11 @@ export default function ScanApp() {
           </a>
           . Informational only — not a medical diagnosis. Photos are analysed in memory and never stored.
         </p>
+        <div className="footerLinks">
+          <Link href="/terms">Terms of Use</Link>
+          <span className="dot">·</span>
+          <Link href="/privacy">Privacy Policy</Link>
+        </div>
       </footer>
     </>
   );
