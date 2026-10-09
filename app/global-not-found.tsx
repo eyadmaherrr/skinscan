@@ -1,42 +1,18 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import Link from 'next/link';
+import RootDocument from '@/components/RootDocument';
+import StatusPage from '@/components/StatusPage';
 import { messages } from '@/lib/messages';
-import './globals.css';
 
-// The site has two root layouts (English and Arabic), so unknown URLs get this standalone page.
-const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' });
-
+// English (app/(en)) and Arabic (app/ar) have their own root layouts and
+// catch-all 404s; this is the fallback for anything routed outside them.
 export const metadata: Metadata = {
-  title: `${messages('en').notFound.title} | ${messages('en').siteName}`,
-  robots: { index: false },
+  title: `${messages('en').status.notFound.meta} | ${messages('en').siteName}`,
 };
 
 export default function GlobalNotFound() {
-  const en = messages('en').notFound;
-  const ar = messages('ar').notFound;
   return (
-    <html lang="en" className={inter.variable}>
-      <body>
-        <main className="page notFound">
-          <section className="stepCard glass">
-            <h1>404</h1>
-            <h2>{en.title}</h2>
-            <p className="muted">{en.text}</p>
-            <h2 lang="ar" dir="rtl">
-              {ar.title}
-            </h2>
-            <div className="actions center">
-              <Link className="btn primary" href="/">
-                {en.home}
-              </Link>
-              <a className="btn secondary" href="/ar" lang="ar" dir="rtl">
-                {ar.home}
-              </a>
-            </div>
-          </section>
-        </main>
-      </body>
-    </html>
+    <RootDocument locale="en">
+      <StatusPage kind="notFound" />
+    </RootDocument>
   );
 }

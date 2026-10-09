@@ -226,6 +226,19 @@ Interface text is in `lib/messages.ts`; every sentence the analysis returns
 `lib/skin-analysis/text.ts` and selected by the request's `locale`
 (`?locale=ar` or a `locale` form field). Scores never depend on the language.
 
+## Maintenance (503) and missing pages (404)
+
+SkinScan follows the clinic website's maintenance switch — the admin
+panel's site lock, published at `https://www.drmahermahmoud.com/api/site/status`.
+`proxy.ts` asks for it (cached like the clinic site: 10 s fresh, 30 s
+stale-while-refreshing, fails open) and, while it is on, redirects every
+page to `/503` (`/ar/503` for Arabic pages). The API and the 503 pages are
+never redirected; on the 503 page every navigation link points back to it.
+
+Unknown URLs reach `app/(en)/[...missing]` or `app/ar/[...missing]`, which
+return a 404 with the clinic-style page in that language
+(`components/StatusPage.tsx`, shared with the 503 page).
+
 ## Downloadable report
 
 "Download report" builds a PDF in the browser (`lib/client/report.ts`):

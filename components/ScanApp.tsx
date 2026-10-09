@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { prepareImage, type PreparedImage } from '@/lib/client/prepare-image';
 import { requestScan } from '@/lib/client/scan-api';
 import { useAuth } from '@/lib/client/use-auth';
-import { publicConfig } from '@/lib/public-config';
 import type { ScanFailure, ScanSuccess } from '@/lib/skin-analysis/types';
 import Analyzing from './Analyzing';
 import BrandHeader from './BrandHeader';
@@ -15,6 +14,7 @@ import PhotoPreview from './PhotoPreview';
 import PhotoStep from './PhotoStep';
 import Results from './Results';
 import RetakeNotice from './RetakeNotice';
+import SiteFooter from './SiteFooter';
 
 type Step =
   | { name: 'landing' }
@@ -28,7 +28,7 @@ type Step =
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif';
 
 export default function ScanApp() {
-  const { t, locale, href } = useI18n();
+  const { t, locale } = useI18n();
   const { authenticated, required, loading, openSignIn, whenReady } = useAuth();
   const [step, setStep] = useState<Step>({ name: 'landing' });
   const uploadRef = useRef<HTMLInputElement>(null);
@@ -203,20 +203,7 @@ export default function ScanApp() {
         }}
       />
 
-      <footer className="footer">
-        <p>
-          {t.siteName} ·{' '}
-          <a href={`${publicConfig.clinicUrl}${href('/')}`} target="_blank" rel="noopener noreferrer">
-            {t.clinicName}
-          </a>
-          . {t.footer.text}
-        </p>
-        <div className="footerLinks">
-          <a href={href('/terms')}>{t.legal.terms}</a>
-          <span className="dot">·</span>
-          <a href={href('/privacy')}>{t.legal.privacy}</a>
-        </div>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

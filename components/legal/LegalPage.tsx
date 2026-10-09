@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import BrandHeader from '../BrandHeader';
+import SiteFooter from '../SiteFooter';
 import { messages } from '@/lib/messages';
 import { localePath, type Locale } from '@/lib/i18n';
 import { publicConfig } from '@/lib/public-config';
@@ -64,6 +65,7 @@ export default function LegalPage({ locale, content, other }: { locale: Locale; 
           </div>
         </div>
       </main>
+      <SiteFooter />
     </>
   );
 }

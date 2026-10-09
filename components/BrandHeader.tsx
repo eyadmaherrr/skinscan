@@ -52,12 +52,20 @@ interface Props {
   onHome?: () => void;
   /** Highlight "Skin Scan" (the scan page); legal pages pass false. */
   scanActive?: boolean;
+  /**
+   * When set, every navigation link points here instead (the maintenance
+   * page keeps visitors on it, as on drmahermahmoud.com's /503).
+   */
+  hrefOverride?: string;
 }
 
-export default function BrandHeader({ onHome, scanActive = true }: Props) {
+export default function BrandHeader({ onHome, scanActive = true, hrefOverride }: Props) {
   const { t, locale, href } = useI18n();
   const { patient, loading, logout, openSignIn } = useAuth();
-  const home = href('/');
+  const home = hrefOverride ?? href('/');
+  const booking = hrefOverride ?? bookingLink(locale);
+  const accountHref = hrefOverride ?? clinicLink('/account', locale);
+  const external = hrefOverride ? {} : { target: '_blank', rel: 'noopener noreferrer' };
 
   const goHome = (e: MouseEvent<HTMLAnchorElement>) => {
     if (!onHome) return;
@@ -77,9 +85,14 @@ export default function BrandHeader({ onHome, scanActive = true }: Props) {
     </a>
   );
 
-  const account = patient ? (
+  const account = hrefOverride ? (
+    <a href={hrefOverride} className="desktopNavItem">
+      <UserRound size={19} strokeWidth={2} aria-hidden />
+      <span>{patient ? t.nav.account : t.nav.signIn}</span>
+    </a>
+  ) : patient ? (
     <>
-      <a href={clinicLink('/account', locale)} className="desktopNavItem" title={patient.email}>
+      <a href={accountHref} className="desktopNavItem" title={patient.email}>
         <UserRound size={19} strokeWidth={2} aria-hidden />
         <span>{patient.name.split(' ')[0] || t.nav.account}</span>
       </a>
@@ -109,7 +122,7 @@ export default function BrandHeader({ onHome, scanActive = true }: Props) {
             <ScanFace size={19} strokeWidth={2} aria-hidden />
             <span>{t.nav.scan}</span>
           </a>
-          <a href={bookingLink(locale)} className="desktopNavItem" target="_blank" rel="noopener noreferrer">
+          <a href={booking} className="desktopNavItem" {...external}>
             <CalendarDays size={19} strokeWidth={2} aria-hidden />
             <span>{t.nav.book}</span>
           </a>
@@ -137,14 +150,14 @@ export default function BrandHeader({ onHome, scanActive = true }: Props) {
           <ScanFace size={22} aria-hidden />
           <span>{t.nav.scan}</span>
         </a>
-        <a href={bookingLink(locale)} className="mobileNavItem" target="_blank" rel="noopener noreferrer">
+        <a href={booking} className="mobileNavItem" {...external}>
           <CalendarDays size={22} aria-hidden />
           <span>{t.nav.book}</span>
         </a>
-        {patient ? (
-          <a href={clinicLink('/account', locale)} className="mobileNavItem">
+        {patient || hrefOverride ? (
+          <a href={accountHref} className="mobileNavItem">
             <UserRound size={22} aria-hidden />
-            <span>{t.nav.account}</span>
+            <span>{patient ? t.nav.account : t.nav.signIn}</span>
           </a>
         ) : (
           <button type="button" className="mobileNavItem" onClick={() => openSignIn()} disabled={loading}>
@@ -152,7 +165,7 @@ export default function BrandHeader({ onHome, scanActive = true }: Props) {
             <span>{t.nav.signIn}</span>
           </button>
         )}
-        {patient ? (
+        {patient && !hrefOverride ? (
           <button type="button" className="mobileNavItem" onClick={() => logout()}>
             <LogOut size={22} aria-hidden />
             <span>{t.nav.signOut}</span>

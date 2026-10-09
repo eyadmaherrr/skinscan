@@ -240,7 +240,20 @@ const en = {
     ok: 'OK',
   },
   footer: {
-    text: 'Informational only — not a medical diagnosis. Photos are analysed in memory and never stored.',
+    name: 'Dr. Maher Mahmoud',
+    specialty: 'Consultant of Dermatology, Laser & Aesthetic Medicine',
+    social: 'Social media',
+    navigation: 'Footer navigation',
+    skinscan: 'SkinScan',
+    home: 'Home',
+    doctor: 'About the Doctor',
+    support: 'Support',
+    book: 'Book',
+    services: 'Services',
+    clinics: 'Clinics',
+    faq: 'FAQ',
+    copyright: '© {year} Dr. Maher Mahmoud. All rights reserved.',
+    note: 'SkinScan is informational only — not a medical diagnosis. Photos are analysed in memory and never stored.',
   },
   legal: {
     terms: 'Terms of Use',
@@ -265,10 +278,24 @@ const en = {
     page: 'Page {n} of {total}',
     photo: 'Analysed photo with the measured areas',
   },
-  notFound: {
-    title: 'Page not found',
-    text: 'This page does not exist.',
-    home: 'Go to SkinScan',
+  status: {
+    needHelp: 'Need help? Visit our',
+    support: 'Support page',
+    notFound: {
+      meta: 'Page Not Found',
+      eyebrow: 'Error 404',
+      title: 'This page could not be found.',
+      description: 'The link may be broken, or the page may have been moved. Let’s get you back to your skin scan.',
+      home: 'Back to Home',
+      book: 'Book an Appointment',
+    },
+    unavailable: {
+      meta: 'Service Unavailable',
+      eyebrow: 'Error 503',
+      title: 'We’re down for scheduled maintenance.',
+      description: 'SkinScan is temporarily unavailable while we make improvements. Please check back shortly.',
+      retry: 'Try Again',
+    },
   },
 };
 
@@ -503,7 +530,20 @@ const ar: Messages = {
     ok: 'حسنًا',
   },
   footer: {
-    text: 'لأغراض المعلومات فقط — وليس تشخيصًا طبيًا. يتم تحليل الصور في الذاكرة ولا يتم حفظها أبدًا.',
+    name: 'د. ماهر محمود',
+    specialty: 'استشاري الأمراض الجلدية والليزر والطب التجميلي',
+    social: 'وسائل التواصل الاجتماعي',
+    navigation: 'روابط تذييل الصفحة',
+    skinscan: 'SkinScan',
+    home: 'الرئيسية',
+    doctor: 'عن الطبيب',
+    support: 'الدعم',
+    book: 'حجز',
+    services: 'الخدمات',
+    clinics: 'العيادات',
+    faq: 'الأسئلة الشائعة',
+    copyright: '© {year} د. ماهر محمود. جميع الحقوق محفوظة.',
+    note: 'SkinScan لأغراض المعلومات فقط — وليس تشخيصًا طبيًا. تُحلَّل الصور في الذاكرة ولا تُحفظ أبدًا.',
   },
   legal: {
     terms: 'شروط الاستخدام',
@@ -528,10 +568,24 @@ const ar: Messages = {
     page: 'صفحة {n} من {total}',
     photo: 'الصورة بعد التحليل مع المناطق التي تم قياسها',
   },
-  notFound: {
-    title: 'الصفحة غير موجودة',
-    text: 'هذه الصفحة غير موجودة.',
-    home: 'اذهب إلى SkinScan',
+  status: {
+    needHelp: 'تحتاج مساعدة؟ تفضل بزيارة',
+    support: 'صفحة الدعم',
+    notFound: {
+      meta: 'الصفحة غير موجودة',
+      eyebrow: 'خطأ 404',
+      title: 'تعذّر العثور على هذه الصفحة.',
+      description: 'قد يكون الرابط غير صحيح، أو ربما تم نقل الصفحة. دعنا نعيدك إلى فحص بشرتك.',
+      home: 'العودة إلى الرئيسية',
+      book: 'احجز موعدًا',
+    },
+    unavailable: {
+      meta: 'الخدمة غير متاحة مؤقتًا',
+      eyebrow: 'خطأ 503',
+      title: 'النظام متوقف مؤقتًا للصيانة المجدولة.',
+      description: 'SkinScan غير متاح مؤقتًا بينما نُجري بعض التحسينات. يرجى العودة قريبًا.',
+      retry: 'حاول مرة أخرى',
+    },
   },
 };
 
