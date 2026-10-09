@@ -79,7 +79,7 @@ export default function TermsPage() {
             <h2>2. Eligibility &amp; Patient Authentication</h2>
             <p>
               To ensure safety, prevent unauthorized automated scanning, and maintain clinical integrity,
-              scans require an active <strong>Dr. Maher Mahmoud Clinics Patient Account</strong>.
+              scans require an active <strong>Patient Account</strong>.
             </p>
             <ul>
               <li>You must be at least 18 years of age or possess parental or legal guardian consent.</li>
@@ -162,9 +162,6 @@ export default function TermsPage() {
                 >
                   {publicConfig.clinicUrl.replace(/^https?:\/\//, '')}/book
                 </a>
-              </li>
-              <li>
-                <strong>Clinic Hotline:</strong> 16120 (Egypt)
               </li>
             </ul>
           </section>

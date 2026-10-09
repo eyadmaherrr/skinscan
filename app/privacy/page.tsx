@@ -118,7 +118,7 @@ export default function PrivacyPage() {
             <h2>3. Patient Account Data</h2>
             <p>
               To protect the platform against automated bots and ensure clinical continuity, {SITE_NAME}{' '}
-              uses your unified <strong>Dr. Maher Mahmoud Clinics Patient Account</strong>.
+              uses your verified <strong>Patient Account</strong>.
             </p>
             <ul>
               <li>
@@ -206,9 +206,6 @@ export default function PrivacyPage() {
                 >
                   {publicConfig.clinicUrl.replace(/^https?:\/\//, '')}
                 </a>
-              </li>
-              <li>
-                <strong>Hotline:</strong> 16120 (Egypt)
               </li>
               <li>
                 <strong>Branches:</strong> Mohandessin, Heliopolis, Zayed, Maadi, Mansoura, Alexandria

@@ -20,7 +20,7 @@ export default function AuthModal({
   onClose,
   onSuccess,
   title = 'Sign In Required',
-  message = 'Please sign in to your Dr. Maher account to run a skin scan.',
+  message = 'Please sign in or create an account to start your skin scan.',
 }: AuthModalProps) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
