@@ -2,6 +2,8 @@
 
 import { AlertCircle, ImageUp, Loader2, SwitchCamera, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useI18n } from './LocaleProvider';
+import type { Messages } from '@/lib/messages';
 
 interface Props {
   onCapture: (photo: Blob) => void;
@@ -12,17 +14,17 @@ interface Props {
 
 type Facing = 'user' | 'environment';
 
-function cameraErrorMessage(error: unknown): string {
+function cameraErrorMessage(error: unknown, t: Messages['camera']): string {
   const name = error instanceof Error ? error.name : '';
-  if (name === 'NotAllowedError' || name === 'SecurityError') {
-    return 'Camera access was blocked. You can allow camera access in your browser settings, or use your device camera or a photo instead.';
-  }
-  if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'No camera was found on this device.';
-  if (name === 'NotReadableError') return 'The camera is being used by another app. Please close it and try again.';
-  return 'The camera could not be started on this device.';
+  if (name === 'NotAllowedError' || name === 'SecurityError') return t.blocked;
+  if (name === 'NotFoundError' || name === 'OverconstrainedError') return t.notFound;
+  if (name === 'NotReadableError') return t.inUse;
+  return t.failed;
 }
 
 export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, onUpload }: Props) {
+  const { t: messages } = useI18n();
+  const t = messages.camera;
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [facing, setFacing] = useState<Facing>('user');
@@ -42,7 +44,7 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
       setReady(false);
       setError(null);
       if (!navigator.mediaDevices?.getUserMedia) {
-        setError('Live camera is not available in this browser.');
+        setError(t.unavailable);
         return;
       }
       try {
@@ -72,7 +74,7 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
           setReady(true);
         }
       } catch (e) {
-        if (!cancelled) setError(cameraErrorMessage(e));
+        if (!cancelled) setError(cameraErrorMessage(e, t));
       }
     }
     start();
@@ -80,6 +82,8 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
       cancelled = true;
       stop();
     };
+    // The camera restarts only when the facing changes, not when the language object is recreated.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facing, stop]);
 
   useEffect(() => {
@@ -118,9 +122,9 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
   }
 
   return (
-    <div className="cameraOverlay" role="dialog" aria-modal="true" aria-label="Take a photo">
+    <div className="cameraOverlay" role="dialog" aria-modal="true" aria-label={t.dialog}>
       <div className="cameraFrame">
-        <button type="button" className="iconBtn cameraClose" onClick={onCancel} aria-label="Close camera">
+        <button type="button" className="iconBtn cameraClose" onClick={onCancel} aria-label={t.close}>
           <X size={20} aria-hidden />
         </button>
 
@@ -130,10 +134,10 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
             <p>{error}</p>
             <div className="actions center">
               <button type="button" className="btn primary" onClick={onUseDeviceCamera}>
-                Use device camera
+                {t.deviceCamera}
               </button>
               <button type="button" className="btn secondary" onClick={onUpload}>
-                <ImageUp size={18} aria-hidden /> Upload a photo
+                <ImageUp size={18} aria-hidden /> {t.upload}
               </button>
             </div>
           </div>
@@ -150,17 +154,17 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
               <rect width="100" height="100" fill="rgba(7,28,49,0.45)" mask="url(#ovalMask)" />
               <ellipse cx="50" cy="47" rx="23" ry="31" fill="none" stroke="white" strokeWidth="0.5" strokeDasharray="1.4 1.2" />
             </svg>
-            <p className="cameraHint">Fit your face inside the oval · even light · no glasses</p>
+            <p className="cameraHint">{t.hint}</p>
             {!ready ? (
               <div className="cameraLoading">
                 <Loader2 className="spin" size={28} aria-hidden />
-                <span>Starting camera…</span>
+                <span>{t.starting}</span>
               </div>
             ) : null}
             {flash ? <div className="cameraFlash" /> : null}
             <div className="cameraControls">
               <span className="controlSpacer" />
-              <button type="button" className="shutter" onClick={capture} disabled={!ready} aria-label="Take photo">
+              <button type="button" className="shutter" onClick={capture} disabled={!ready} aria-label={t.shutter}>
                 <span />
               </button>
               {canSwitch ? (
@@ -168,7 +172,7 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
                   type="button"
                   className="iconBtn"
                   onClick={() => setFacing((f) => (f === 'user' ? 'environment' : 'user'))}
-                  aria-label="Switch camera"
+                  aria-label={t.switch}
                 >
                   <SwitchCamera size={20} aria-hidden />
                 </button>

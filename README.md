@@ -24,7 +24,7 @@ on patient photos; see [docs/AI_SOURCES.md](docs/AI_SOURCES.md).
 
 | Doc | Contents |
 |---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Pipeline, modules, API contract, security, future account integration |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Pipeline, modules, API contract, sign-in, languages, report, security |
 | [docs/SCORING.md](docs/SCORING.md) | What each score measures, units, calibration, confidence, quality gate |
 | [docs/AI_SOURCES.md](docs/AI_SOURCES.md) | Models, libraries, papers, licences, rejected alternatives |
 | [docs/PRIVACY.md](docs/PRIVACY.md) | What happens to a photo, logging, analytics rules |
@@ -42,9 +42,14 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. On a phone on the same network the live camera
-needs HTTPS; over plain HTTP the "Take a photo" button falls back to the
-phone's own camera app.
+Open http://localhost:3000 (English) or http://localhost:3000/ar (Arabic).
+On a phone on the same network the live camera needs HTTPS; over plain HTTP
+the "Take a photo" button falls back to the phone's own camera app.
+
+Scans require a signed-in clinic patient. Sign-in happens on
+drmahermahmoud.com and is shared through a cookie on `.drmahermahmoud.com`,
+so it cannot work on localhost: put `SKINSCAN_REQUIRE_AUTH=false` in
+`.env.local` for local development.
 
 Other scripts:
 
@@ -68,8 +73,10 @@ Copy `.env.example` to `.env.local`. All are optional.
 |---|---|---|
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Canonical URL (metadata). Production: `https://skinscan.drmahermahmoud.com` |
 | `NEXT_PUBLIC_API_BASE_URL` | *(same origin)* | Only if the API is hosted elsewhere |
-| `NEXT_PUBLIC_BOOKING_URL` | `https://drmahermahmoud.com/book` | "Book a Consultation" |
-| `NEXT_PUBLIC_CLINIC_URL` | `https://drmahermahmoud.com` | Footer link |
+| `NEXT_PUBLIC_BOOKING_URL` | `https://www.drmahermahmoud.com/book` | "Book a Consultation" (Arabic pages use `/ar/book`) |
+| `NEXT_PUBLIC_CLINIC_URL` | `https://www.drmahermahmoud.com` | Clinic website: sign-in, account, footer link |
+| `SKINSCAN_REQUIRE_AUTH` | `true` | Scans require a signed-in clinic patient (`false` for local development) |
+| `CLINIC_URL` | `NEXT_PUBLIC_CLINIC_URL` | Clinic website the server checks sessions with |
 | `SKIN_SCAN_MODEL_DIR` | `./models` | Model folder |
 | `SKIN_SCAN_MAX_UPLOAD_MB` | `8` | Upload limit |
 | `SKIN_SCAN_MAX_INPUT_MEGAPIXELS` | `40` | Decompression-bomb guard |

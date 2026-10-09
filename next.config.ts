@@ -46,6 +46,9 @@ const ortExcludes = ortPlatforms
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // English (app/(en)) and Arabic (app/ar) each have their own root layout, so
+  // unknown URLs use app/global-not-found.tsx.
+  experimental: { globalNotFound: true },
   serverExternalPackages: ['onnxruntime-node', 'sharp'],
   // The models and ONNX Runtime's native library (loaded dynamically by its
   // Node binding, so not found by tracing) must ship with the API routes.

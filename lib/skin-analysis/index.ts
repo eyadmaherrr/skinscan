@@ -5,6 +5,7 @@ import { qualityFailure, ScanError } from './errors';
 import { explain, prominentRegions } from './explain';
 import { detectFaces } from './face-detection';
 import { ENGINE_NAME } from '../brand';
+import type { Locale } from '../i18n';
 import { rgbToLabImage } from './image/color';
 import { decodeImage, type RgbImage } from './image/decode';
 import { applyAffine } from './image/warp';
@@ -21,6 +22,7 @@ import { assessAlignedFace, checkDetections, checkLandmarks, type QualityAssessm
 import { buildRegions } from './regions';
 import { band, calibrate, METHODOLOGY_VERSION } from './scoring';
 import { buildSkinMasks } from './skin-mask';
+import { analysisText } from './text';
 import {
   ALL_REGION_KEYS,
   METRIC_KEYS,
@@ -48,6 +50,8 @@ export interface AnalyzeOptions {
   maxSide: number;
   /** Epoch ms after which the scan is abandoned. */
   deadline: number;
+  /** Language of the explanations (default English). */
+  locale?: Locale;
 }
 
 export interface DetailedAnalysis {
@@ -145,7 +149,8 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   if (gain !== 1) face.lab = rgbToLabImage(face.rgb, face.width * face.height, gain);
   quality.diagnostics.exposureGain = gain;
   const illumination = Number.isFinite(scleraY) && scleraY > 0 ? scleraY * gain : 0.6;
-  const ctx: MetricContext = { face, masks, quality, cache: new Map() };
+  const locale = options.locale ?? 'en';
+  const ctx: MetricContext = { face, masks, quality, cache: new Map(), locale };
   const steps: ((c: MetricContext) => MetricMeasurement)[] = [
     measurePigmentation,
     measureRedness,
@@ -180,7 +185,7 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
       band: scoreBand,
       confidence: rounded,
       confidenceLabel: reportable ? confidenceLabel(confidence) : 'insufficient',
-      explanation: explain(m, score, scoreBand, regionsShown),
+      explanation: explain(m, score, scoreBand, regionsShown, locale),
       ...(regionsShown.length ? { regions: regionsShown } : {}),
     };
   }
@@ -190,7 +195,8 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   // Extension components (acne spot candidates, pores, optional models). They
   // run after the core analysis and cannot change or break it.
   checkDeadline(options.deadline);
-  const ext = await runExtensions(ctx, image, quality.notes);
+  const notes = quality.notes.map((code) => analysisText(locale).notes[code]);
+  const ext = await runExtensions(ctx, image, notes);
 
   const result: ScanSuccess = {
     success: true,
@@ -198,7 +204,7 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
     createdAt: new Date().toISOString(),
     analysis: ordered,
     overallConfidence: Math.round(overallConfidence(confidences) * 100) / 100,
-    imageQuality: { acceptable: true, notes: quality.notes },
+    imageQuality: { acceptable: true, notes },
     regions: outlines(face, image, regions),
     engine: ENGINE_NAME,
     methodologyVersion: METHODOLOGY_VERSION,

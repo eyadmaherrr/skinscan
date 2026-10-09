@@ -4,6 +4,7 @@ import { gaussianBlur } from '../image/filters';
 import { detectSpots, type Spot } from '../metrics/blemishes';
 import { union, type MetricContext } from '../metrics/common';
 import { regionGroup } from '../explain';
+import { analysisText, type RegionGroup } from '../text';
 import type { AcneReport, AcneSeverity, LesionCandidate, RegionCount, RegionKey } from '../types';
 import { combineSeverity } from './acne-grade';
 import { cropToSourceScale, round4, toNormalized } from './projection';
@@ -64,12 +65,6 @@ export function blobness(face: AlignedFace, s: Spot): number {
   return l2 / l1;
 }
 
-export const ACNE_LIMITATIONS = [
-  'Spot candidates are found from colour and contrast. They are not acne-specific and may include freckles, moles or other marks.',
-  'Red-toned and dark-toned are visual descriptions only; they do not tell what a spot is. Only a dermatologist can identify lesions.',
-  'Counts are approximate and depend on lighting, camera and distance.',
-];
-
 export function buildAcneReport(ctx: MetricContext, image: RgbImage, classifier: AcneSeverity): AcneReport {
   const { face, masks } = ctx;
   const detected: Spot[] = [...(ctx.spots ?? [])];
@@ -97,22 +92,22 @@ export function buildAcneReport(ctx: MetricContext, image: RgbImage, classifier:
   }
   const red = spots.filter((s) => s.tone === 'red').length;
   const dark = spots.length - red;
-  const severity = combineSeverity({ redCount: red, classifier, factors: ctx.quality.factors });
+  const text = analysisText(ctx.locale);
+  const severity = combineSeverity({ redCount: red, classifier, factors: ctx.quality.factors, locale: ctx.locale });
 
   let explanation: string;
   if (spots.length === 0) {
-    explanation = 'No distinct spot candidates stood out from the surrounding skin.';
+    explanation = text.acne.none;
   } else {
-    const groups = new Map<string, number>();
+    const groups = new Map<RegionGroup, number>();
     for (const s of spots) if (s.region) groups.set(regionGroup(s.region), (groups.get(regionGroup(s.region)) ?? 0) + 1);
-    const names: Record<string, string> = { cheeks: 'cheeks', underEyes: 'under-eye area', jawline: 'jawline', forehead: 'forehead', nose: 'nose', chin: 'chin' };
     const top = [...groups.entries()].sort((a, b) => b[1] - a[1])[0];
-    const tones = red > dark ? 'Most are red-toned' : dark > red ? 'Most are darker-toned' : 'They are a mix of red-toned and darker';
-    explanation = `${tones}` + (top ? ` and most are on the ${names[top[0]] ?? top[0]}.` : '.');
+    const tones = red > dark ? text.acne.mostRed : dark > red ? text.acne.mostDark : text.acne.mixed;
+    explanation = text.acne.summary(tones, top ? text.regions[top[0]] : null);
   }
   const hidden = SUMMARY_REGIONS.filter((k) => !regionalSummary[k]?.visible);
-  const limitations = [...ACNE_LIMITATIONS];
-  if (hidden.some((k) => k === 'jawL' || k === 'jawR')) limitations.push('Part of the jawline was not clearly visible (for example hair, beard or shadow) and was not assessed.');
+  const limitations = [...text.acne.limitations];
+  if (hidden.some((k) => k === 'jawL' || k === 'jawR')) limitations.push(text.acne.jawHidden);
 
   return {
     status: 'ok',

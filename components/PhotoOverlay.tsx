@@ -1,9 +1,11 @@
 /* eslint-disable @next/next/no-img-element -- local object URL / generated data URI, never sent to an image CDN */
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from 'react';
 import { Search, Sparkles } from 'lucide-react';
-import type { LesionCandidate, RegionOutline, ScanSuccess } from '@/lib/skin-analysis/types';
+import { useI18n } from './LocaleProvider';
+import { format } from '@/lib/messages';
+import type { LesionCandidate, MetricKey, RegionKey, RegionOutline, ScanSuccess } from '@/lib/skin-analysis/types';
 
 type Layer = 'areas' | 'spots' | 'pores' | 'none';
 
@@ -13,39 +15,55 @@ interface Props {
   photoAspect: number;
 }
 
-const REGION_NAMES: Record<string, string> = {
-  forehead: 'Forehead',
-  nose: 'Nose',
-  cheekL: 'Cheek (Photo Left)',
-  cheekR: 'Cheek (Photo Right)',
-  chin: 'Chin',
-  underEyeL: 'Under-Eye (Photo Left)',
-  underEyeR: 'Under-Eye (Photo Right)',
-  jawL: 'Jawline (Photo Left)',
-  jawR: 'Jawline (Photo Right)',
-};
-
-interface HoverState {
+interface Lens {
   id: string;
   title: string;
-  subtitle?: string;
-  details?: string;
-  normX: number; // 0 to 1
-  normY: number; // 0 to 1
-  pixelX: number;
-  pixelY: number;
-  clampedX: number;
-  showBelow?: boolean;
+  detail: string;
+  /** Point to magnify, as a fraction of the photo (0–1). */
+  fx: number;
+  fy: number;
+  /** Photo size on screen and pointer position, in CSS pixels. */
+  width: number;
+  height: number;
+  px: number;
+  py: number;
 }
 
+const ZOOM = 3;
+const HOVER_NONE = '(hover: none)';
+
+/** Touch screens (no hover): the hint says "tap" instead of "hover". */
+function subscribeHover(onChange: () => void) {
+  const query = window.matchMedia(HOVER_NONE);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+const hoverNone = () => window.matchMedia(HOVER_NONE).matches;
+const CARD_WIDTH = 240;
+const LENS_SIZE = CARD_WIDTH - 24;
+/** Height of the whole card; it opens below the pointer when there is no room above. */
+const CARD_HEIGHT = LENS_SIZE + 96;
+
 /**
- * The analysed photo with switchable overlays and an interactive
- * inspection lens that pops up when hovering over analyzed skin regions or spots.
+ * The analysed photo with switchable overlays. Pointing at (or tapping) an
+ * analysed area or spot opens a magnifier with what was measured there.
  */
 export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
+  const { t, locale } = useI18n();
   const [layer, setLayer] = useState<Layer>('areas');
-  const [hovered, setHovered] = useState<HoverState | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [lens, setLens] = useState<Lens | null>(null);
+  const touch = useSyncExternalStore(subscribeHover, hoverNone, () => false);
+  const frameRef = useRef<HTMLDivElement>(null);
+
+  // A tap outside the photo closes the magnifier on touch screens.
+  useEffect(() => {
+    if (!lens) return;
+    const close = (e: PointerEvent) => {
+      if (!frameRef.current?.contains(e.target as Node)) setLens(null);
+    };
+    window.addEventListener('pointerdown', close);
+    return () => window.removeEventListener('pointerdown', close);
+  }, [lens]);
 
   const W = 1000;
   const H = W / photoAspect;
@@ -53,109 +71,64 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
   const heatmap = result.pores?.status === 'ok' ? result.pores.heatmap : null;
 
   const options: { id: Layer; label: string; available: boolean }[] = [
-    { id: 'areas', label: 'Areas', available: true },
-    { id: 'spots', label: 'Spots', available: lesions.length > 0 },
-    { id: 'pores', label: 'Pores', available: !!heatmap },
-    { id: 'none', label: 'Photo only', available: true },
+    { id: 'areas', label: t.overlay.areas, available: true },
+    { id: 'spots', label: t.overlay.spots, available: lesions.length > 0 },
+    { id: 'pores', label: t.overlay.pores, available: !!heatmap },
+    { id: 'none', label: t.overlay.none, available: true },
   ];
 
-  // Map of region names to active observations
-  const regionMetricsMap = useMemo(() => {
-    const map = new Map<string, string[]>();
-    for (const [key, metric] of Object.entries(result.analysis)) {
-      if (metric.score !== null && metric.regions?.length) {
-        for (const reg of metric.regions) {
-          const list = map.get(reg) || [];
-          list.push(key);
-          map.set(reg, list);
-        }
-      }
+  /** Metrics whose score was highest in each region. */
+  const metricsByRegion = useMemo(() => {
+    const map = new Map<RegionKey, MetricKey[]>();
+    for (const [key, metric] of Object.entries(result.analysis) as [MetricKey, ScanSuccess['analysis'][MetricKey]][]) {
+      if (metric.score === null) continue;
+      for (const region of metric.regions ?? []) map.set(region, [...(map.get(region) ?? []), key]);
     }
     return map;
   }, [result]);
 
-  const handleRegionHover = (r: RegionOutline, e: React.MouseEvent) => {
-    const rect = containerRef.current?.getBoundingClientRect();
+  function place(e: ReactPointerEvent<SVGElement>, id: string, title: string, detail: string, fx?: number, fy?: number) {
+    const rect = frameRef.current?.getBoundingClientRect();
     if (!rect) return;
+    const px = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
+    const py = Math.min(Math.max(e.clientY - rect.top, 0), rect.height);
+    setLens({ id, title, detail, fx: fx ?? px / rect.width, fy: fy ?? py / rect.height, width: rect.width, height: rect.height, px, py });
+  }
 
-    const pixelX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-    const pixelY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
-    const clampedX = Math.max(120, Math.min(pixelX, rect.width - 120));
-    const normX = pixelX / rect.width;
-    const normY = pixelY / rect.height;
+  function regionDetail(region: RegionKey): string {
+    const pores = result.pores?.regionalSummary?.[region];
+    const metrics = metricsByRegion.get(region);
+    const parts: string[] = [];
+    if (metrics?.length) parts.push(format(t.overlay.metricDetail, { list: metrics.map((k) => t.metrics[k]).join(locale === 'ar' ? '، ' : ', ') }));
+    if (pores !== undefined) parts.push(format(t.overlay.poreDetail, { n: pores }));
+    return parts.length ? parts.join(' · ') : t.overlay.areaDetail;
+  }
 
-    const name = REGION_NAMES[r.region] || r.region;
-    const associated = regionMetricsMap.get(r.region);
-    const poreScore = result.pores?.regionalSummary?.[r.region];
+  const onRegion = (r: RegionOutline) => (e: ReactPointerEvent<SVGElement>) =>
+    place(e, r.region, t.regions[r.region], regionDetail(r.region));
 
-    let details: string | undefined;
-    if (poreScore !== undefined) {
-      details = `Pore appearance index: ${poreScore}/100`;
-    } else if (associated && associated.length > 0) {
-      details = `Assessed characteristic: ${associated.join(', ')}`;
-    } else {
-      details = 'Analyzed facial zone';
-    }
+  const onSpot = (l: LesionCandidate, i: number) => (e: ReactPointerEvent<SVGElement>) =>
+    place(e, `spot-${i}`, l.tone === 'red' ? t.overlay.spotRed : t.overlay.spotDark, t.overlay.spotDetail, l.x, l.y);
 
-    setHovered({
-      id: r.region,
-      title: name,
-      details,
-      normX,
-      normY,
-      pixelX,
-      pixelY,
-      clampedX,
-      showBelow: pixelY < 230,
-    });
-  };
-
-  const handleSpotHover = (l: LesionCandidate, index: number, e: React.MouseEvent) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const pixelX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-    const pixelY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
-    const clampedX = Math.max(120, Math.min(pixelX, rect.width - 120));
-
-    const isRed = l.tone === 'red';
-    setHovered({
-      id: `spot-${index}`,
-      title: isRed ? 'Inflammatory Spot' : 'Pigmented Mark',
-      details: isRed ? 'Erythematous candidate focus' : 'Hyperpigmented spot focus',
-      normX: l.x,
-      normY: l.y,
-      pixelX,
-      pixelY,
-      clampedX,
-      showBelow: pixelY < 230,
-    });
-  };
-
-  const handlePointerLeave = () => {
-    setHovered(null);
-  };
-
-  // Zoom math for pop-up lens
-  const zoomFactor = 3.0;
-  const lensWidth = 216;
-  const lensHeight = 216;
-  const zoomedImgW = lensWidth * zoomFactor;
-  const zoomedImgH = zoomedImgW / photoAspect;
-
-  const bgX = hovered ? lensWidth / 2 - hovered.normX * zoomedImgW : 0;
-  const bgY = hovered ? lensHeight / 2 - hovered.normY * zoomedImgH : 0;
+  // Card position: centred on the pointer, kept inside the photo's width, above the pointer when there is room.
+  const cardLeft = lens ? (lens.width <= CARD_WIDTH ? lens.width / 2 : Math.min(Math.max(lens.px, CARD_WIDTH / 2), lens.width - CARD_WIDTH / 2)) : 0;
+  const below = lens ? lens.py < CARD_HEIGHT + 16 : false;
+  // Background sized to ZOOM × the photo as displayed, so the lens really magnifies it ZOOM times.
+  const bgW = lens ? lens.width * ZOOM : 0;
+  const bgH = lens ? lens.height * ZOOM : 0;
 
   return (
     <>
       <div className="photoFrameWrapper">
         <div
-          ref={containerRef}
+          ref={frameRef}
           className="photoFrame resultPhoto"
           style={{ aspectRatio: String(photoAspect) }}
-          onMouseLeave={handlePointerLeave}
+          onPointerLeave={(e) => {
+            if (e.pointerType === 'mouse') setLens(null);
+          }}
         >
-          <img src={photoUrl} alt="Your analysed photo" />
+          <img src={photoUrl} alt={t.overlay.photoAlt} />
           {layer === 'pores' && heatmap ? <img className="heatmapLayer" src={heatmap} alt="" aria-hidden /> : null}
 
           {layer === 'areas' || layer === 'spots' ? (
@@ -164,75 +137,69 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
                 ? result.regions.map((r) => (
                     <polygon
                       key={r.region}
-                      className={hovered?.id === r.region ? 'isHovered' : undefined}
+                      className={lens?.id === r.region ? 'isHovered' : undefined}
                       points={r.points.map(([x, y]) => `${x * W},${y * H}`).join(' ')}
-                      onMouseEnter={(e) => handleRegionHover(r, e)}
-                      onMouseMove={(e) => handleRegionHover(r, e)}
+                      onPointerMove={onRegion(r)}
+                      onPointerDown={onRegion(r)}
                     />
                   ))
                 : lesions.map((l, i) => (
                     <circle
                       key={i}
-                      className={`${l.tone === 'red' ? 'spotRed' : 'spotDark'} ${hovered?.id === `spot-${i}` ? 'isHovered' : ''}`}
+                      className={`${l.tone === 'red' ? 'spotRed' : 'spotDark'}${lens?.id === `spot-${i}` ? ' isHovered' : ''}`}
                       cx={l.x * W}
                       cy={l.y * H}
                       r={Math.max(6, l.r * W * 1.6)}
-                      onMouseEnter={(e) => handleSpotHover(l, i, e)}
-                      onMouseMove={(e) => handleSpotHover(l, i, e)}
+                      onPointerMove={onSpot(l, i)}
+                      onPointerDown={onSpot(l, i)}
                     />
                   ))}
             </svg>
           ) : null}
         </div>
 
-        {/* Floating Zoom Inspection Pop-up Card */}
-        {hovered ? (
+        {lens ? (
           <div
             className="zoomPopupCard"
             style={{
-              left: `${hovered.clampedX}px`,
-              top: `${hovered.pixelY}px`,
-              transform: hovered.showBelow ? 'translate(-50%, 20px)' : 'translate(-50%, -100%)',
-              marginTop: hovered.showBelow ? '0' : '-16px',
+              left: `${cardLeft}px`,
+              top: `${lens.py}px`,
+              transform: below ? 'translate(-50%, 18px)' : 'translate(-50%, calc(-100% - 18px))',
             }}
             aria-live="polite"
           >
             <div className="zoomPopupHeader">
               <div className="zoomPopupTitle">
                 <Search size={14} aria-hidden />
-                <span>{hovered.title}</span>
+                <span>{lens.title}</span>
               </div>
-              <span className="zoomBadge">3x Zoom</span>
+              <span className="zoomBadge">{format(t.overlay.zoom, { n: ZOOM })}</span>
             </div>
-
             <div className="zoomLensContainer">
               <div
                 className="zoomLensImage"
                 style={{
                   backgroundImage: `url(${photoUrl})`,
-                  backgroundSize: `${zoomedImgW}px ${zoomedImgH}px`,
-                  backgroundPosition: `${bgX}px ${bgY}px`,
+                  backgroundSize: `${bgW}px ${bgH}px`,
+                  backgroundPosition: `${LENS_SIZE / 2 - lens.fx * bgW}px ${LENS_SIZE / 2 - lens.fy * bgH}px`,
                   backgroundRepeat: 'no-repeat',
                 }}
               />
               <div className="zoomReticle" aria-hidden />
             </div>
-
-            {hovered.details ? (
-              <div className="zoomPopupFooter">
-                <span>{hovered.details}</span>
-              </div>
-            ) : null}
+            <div className="zoomPopupFooter">
+              <span>{lens.detail}</span>
+            </div>
           </div>
         ) : null}
       </div>
 
       <div className="zoomHint">
         <Sparkles size={13} aria-hidden />
-        <span>Hover over any analyzed area or spot to inspect zoomed in</span>
+        <span>{touch ? t.overlay.hintTouch : t.overlay.hintHover}</span>
       </div>
 
-      <div className="layerSwitch" role="radiogroup" aria-label="Photo overlay">
+      <div className="layerSwitch" role="radiogroup" aria-label={t.overlay.aria}>
         {options
           .filter((o) => o.available)
           .map((o) => (
@@ -244,7 +211,7 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
               className={layer === o.id ? 'active' : undefined}
               onClick={() => {
                 setLayer(o.id);
-                setHovered(null);
+                setLens(null);
               }}
             >
               {o.label}
@@ -254,10 +221,10 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
 
       {layer === 'spots' ? (
         <p className="legend">
-          <span className="legendDot red" /> red-toned <span className="legendDot dark" /> darker-toned spot candidates
+          <span className="legendDot red" /> {t.overlay.legendRed} <span className="legendDot dark" /> {t.overlay.legendDark}
         </p>
       ) : null}
-      {layer === 'pores' ? <p className="legend">Brighter violet = more visible pores (appearance estimate).</p> : null}
+      {layer === 'pores' ? <p className="legend">{t.overlay.legendPores}</p> : null}
     </>
   );
 }

@@ -2,33 +2,28 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-const STAGES = [
-  'Checking photo quality',
-  'Locating your face and facial regions',
-  'Separating skin from hair, eyes and lips',
-  'Measuring colour, texture and spots',
-  'Calculating confidence',
-];
+import { useI18n } from './LocaleProvider';
 
 export default function Analyzing({ url }: { url: string }) {
+  const { t } = useI18n();
+  const stages = t.analyzing.stages;
   const [stage, setStage] = useState(0);
 
   useEffect(() => {
-    const id = window.setInterval(() => setStage((s) => Math.min(STAGES.length - 1, s + 1)), 1400);
+    const id = window.setInterval(() => setStage((s) => Math.min(stages.length - 1, s + 1)), 1400);
     return () => window.clearInterval(id);
-  }, []);
+  }, [stages.length]);
 
   return (
     <section className="stepCard glass analyzing" aria-live="polite" aria-busy="true">
       <div className="photoFrame scanning">
-        <img src={url} alt="Your photo being analysed" />
+        <img src={url} alt={t.analyzing.alt} />
         <div className="scanGrid" aria-hidden />
         <div className="scanBeam" aria-hidden />
       </div>
-      <h2>Analysing your photo</h2>
+      <h2>{t.analyzing.title}</h2>
       <ol className="stageList">
-        {STAGES.map((label, i) => (
+        {stages.map((label, i) => (
           <li key={label} className={i < stage ? 'done' : i === stage ? 'active' : undefined}>
             <span className="stageDot" aria-hidden />
             {label}

@@ -1,31 +1,16 @@
+'use client';
+
 import { FlaskConical, Info } from 'lucide-react';
-import { CONFIDENCE_LABELS } from '@/lib/skin-analysis/labels';
-import type { AcneReport, PoreReport, RegionKey } from '@/lib/skin-analysis/types';
-
-const REGION_NAMES: Record<RegionKey, string> = {
-  forehead: 'Forehead',
-  nose: 'Nose',
-  cheekL: 'Cheek (photo left)',
-  cheekR: 'Cheek (photo right)',
-  chin: 'Chin',
-  underEyeL: 'Under-eye (photo left)',
-  underEyeR: 'Under-eye (photo right)',
-  jawL: 'Jawline (photo left)',
-  jawR: 'Jawline (photo right)',
-};
-
-const SEVERITY_NAMES: Record<string, string> = {
-  level0: 'No or minimal acne',
-  level1: 'Mild',
-  level2: 'Moderate',
-  level3: 'Severe',
-};
+import { fill, useI18n } from './LocaleProvider';
+import { format } from '@/lib/messages';
+import type { AcneReport, AcneSeverity, PoreReport, RegionKey } from '@/lib/skin-analysis/types';
 
 function Limitations({ items }: { items: string[] }) {
+  const { t } = useI18n();
   if (!items.length) return null;
   return (
     <details className="limitations">
-      <summary>Limitations</summary>
+      <summary>{t.acne.limitations}</summary>
       <ul>
         {items.map((l) => (
           <li key={l}>{l}</li>
@@ -35,29 +20,90 @@ function Limitations({ items }: { items: string[] }) {
   );
 }
 
+function ProbabilityBars({ probabilities }: { probabilities: Record<string, number> }) {
+  const { t } = useI18n();
+  return (
+    <ul className="probBars">
+      {Object.entries(probabilities).map(([label, p]) => (
+        <li key={label}>
+          <span>{t.acne.levels[label] ?? label}</span>
+          <span className="meter" aria-hidden>
+            <span style={{ width: `${Math.max(1, p * 100)}%` }} />
+          </span>
+          <span className="pct">{Math.round(p * 100)}%</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SeverityEstimate({ severity }: { severity: AcneSeverity }) {
+  const { t } = useI18n();
+  if (severity.status !== 'ok' || !severity.label || !severity.probabilities) {
+    return <p className="extText muted">{t.acne.failed}</p>;
+  }
+  const grader = severity.components?.countGrader;
+  const classifier = severity.components?.imageClassifier;
+  const combined = severity.method === 'combined';
+  return (
+    <>
+      <div className="severityLead">
+        <b>{t.acne.levels[severity.label] ?? severity.label}</b>
+        {severity.confidenceLabel ? (
+          <span className={`tag conf-${severity.confidenceLabel}`}>
+            <span className="dot" aria-hidden />
+            {t.confidence[severity.confidenceLabel]}
+          </span>
+        ) : null}
+      </div>
+      <ProbabilityBars probabilities={severity.probabilities} />
+      <p className="extText small">
+        {combined
+          ? t.acne.methodCombined
+          : format(t.acne.methodGrader, { n: grader?.inflammatoryLookingSpots ?? 0 })}
+      </p>
+      {combined && grader?.label && classifier?.label ? (
+        <ul className="regionChips">
+          <li>
+            {t.acne.grader} <b>{t.acne.levels[grader.label] ?? grader.label}</b>
+          </li>
+          <li>
+            {t.acne.classifier} <b>{t.acne.levels[classifier.label] ?? classifier.label}</b>
+          </li>
+        </ul>
+      ) : null}
+      {combined ? <p className="extText small">{severity.modelsAgree ? t.acne.agree : t.acne.disagree}</p> : null}
+      <p className="notice">
+        <Info size={14} aria-hidden /> {t.acne.notice}
+      </p>
+    </>
+  );
+}
+
 export function AcneSection({ acne }: { acne: AcneReport }) {
-  const sev = acne.severity;
+  const { t } = useI18n();
   const regions = Object.entries(acne.regionalSummary) as [RegionKey, { count: number; visible: boolean }][];
+  const count = acne.lesionCandidateCount ?? 0;
   return (
     <section className="glass extSection" aria-labelledby="acne-title">
       <div className="extHead">
-        <h3 id="acne-title">Spots & acne-like marks</h3>
+        <h3 id="acne-title">{t.acne.title}</h3>
         <span className="tag experimental">
-          <FlaskConical size={13} aria-hidden /> Experimental
+          <FlaskConical size={13} aria-hidden /> {t.acne.experimental}
         </span>
       </div>
 
       {acne.status === 'ok' ? (
         <>
           <p className="extLead">
-            <strong>{acne.lesionCandidateCount}</strong> spot candidate{acne.lesionCandidateCount === 1 ? '' : 's'}
-            <span className="muted"> · {acne.redToneCount} red-toned · {acne.darkToneCount} darker</span>
+            {fill(count === 1 ? t.acne.candidate : t.acne.candidates, { n: <strong>{count}</strong> })}
+            <span className="muted"> · {format(t.acne.tones, { red: acne.redToneCount ?? 0, dark: acne.darkToneCount ?? 0 })}</span>
           </p>
           <p className="extText">{acne.explanation}</p>
-          <ul className="regionChips" aria-label="Spot candidates by region">
+          <ul className="regionChips" aria-label={t.acne.byRegion}>
             {regions.map(([k, r]) => (
               <li key={k} className={r.visible ? undefined : 'hiddenRegion'}>
-                {REGION_NAMES[k]} <b>{r.visible ? r.count : 'not visible'}</b>
+                {t.regions[k]} <b>{r.visible ? r.count : t.acne.notVisible}</b>
               </li>
             ))}
           </ul>
@@ -67,35 +113,8 @@ export function AcneSection({ acne }: { acne: AcneReport }) {
       )}
 
       <div className="severityBox">
-        <strong>Acne severity grade</strong>
-        {sev.status === 'ok' && sev.label && sev.probabilities ? (
-          <>
-            <p className="extText">
-              Experimental classifier result: <b>{SEVERITY_NAMES[sev.label] ?? sev.label}</b>
-            </p>
-            <ul className="probBars">
-              {Object.entries(sev.probabilities).map(([label, p]) => (
-                <li key={label}>
-                  <span>{SEVERITY_NAMES[label] ?? label}</span>
-                  <span className="meter" aria-hidden>
-                    <span style={{ width: `${Math.max(1, p * 100)}%` }} />
-                  </span>
-                  <span className="pct">{Math.round(p * 100)}%</span>
-                </li>
-              ))}
-            </ul>
-            <p className="notice">
-              <Info size={14} aria-hidden /> This grade comes from an experimental model that has not been validated on
-              SkinScan photos. Model probabilities are not a guarantee of correctness and this is not a clinical grade.
-            </p>
-          </>
-        ) : (
-          <p className="extText muted">
-            {sev.status === 'failed'
-              ? 'The severity grade could not be computed for this photo.'
-              : 'Not available: SkinScan does not yet include a validated, commercially licensed acne-grading model. The spot candidates above are not a severity grade.'}
-          </p>
-        )}
+        <strong>{t.acne.severity}</strong>
+        <SeverityEstimate severity={acne.severity} />
       </div>
       <Limitations items={acne.limitations} />
     </section>
@@ -103,20 +122,21 @@ export function AcneSection({ acne }: { acne: AcneReport }) {
 }
 
 export function PoresSection({ pores }: { pores: PoreReport }) {
+  const { t } = useI18n();
   const regions = Object.entries(pores.regionalSummary) as [RegionKey, number][];
   const ok = pores.status === 'ok' && pores.visibilityScore !== null;
   return (
     <section className="glass extSection" aria-labelledby="pores-title">
       <div className="extHead">
-        <h3 id="pores-title">Pore visibility</h3>
+        <h3 id="pores-title">{t.pores.title}</h3>
         <span className="tag experimental">
-          <FlaskConical size={13} aria-hidden /> Experimental
+          <FlaskConical size={13} aria-hidden /> {t.acne.experimental}
         </span>
       </div>
       {ok ? (
         <>
           <div className="metricHead">
-            <span className="muted small">Appearance index</span>
+            <span className="muted small">{t.pores.index}</span>
             <span className="metricScore">
               {pores.visibilityScore}
               <small>/100</small>
@@ -129,16 +149,16 @@ export function PoresSection({ pores }: { pores: PoreReport }) {
             <div className="metricTags">
               <span className={`tag conf-${pores.confidenceLabel}`}>
                 <span className="dot" aria-hidden />
-                {CONFIDENCE_LABELS[pores.confidenceLabel]}
+                {t.confidence[pores.confidenceLabel]}
               </span>
             </div>
           ) : null}
           <p className="extText">{pores.explanation}</p>
           {regions.length ? (
-            <ul className="regionChips" aria-label="Pore visibility by region">
+            <ul className="regionChips" aria-label={t.pores.byRegion}>
               {regions.map(([k, v]) => (
                 <li key={k}>
-                  {REGION_NAMES[k]} <b>{v}</b>
+                  {t.regions[k]} <b>{v}</b>
                 </li>
               ))}
             </ul>
@@ -157,8 +177,7 @@ export function PoresSection({ pores }: { pores: PoreReport }) {
         </>
       )}
       <p className="notice">
-        <Info size={14} aria-hidden /> An appearance estimate from this photo — not a measurement of pore size, oil
-        production or skin health.
+        <Info size={14} aria-hidden /> {t.pores.notice}
       </p>
       {ok ? <Limitations items={pores.limitations} /> : null}
     </section>

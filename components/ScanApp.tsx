@@ -1,18 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { prepareImage, type PreparedImage } from '@/lib/client/prepare-image';
 import { requestScan } from '@/lib/client/scan-api';
 import { useAuth } from '@/lib/client/use-auth';
-import { SITE_NAME } from '@/lib/brand';
 import { publicConfig } from '@/lib/public-config';
 import type { ScanFailure, ScanSuccess } from '@/lib/skin-analysis/types';
 import Analyzing from './Analyzing';
-import AuthModal from './AuthModal';
 import BrandHeader from './BrandHeader';
 import CameraCapture from './CameraCapture';
 import Landing from './Landing';
+import { useI18n } from './LocaleProvider';
 import PhotoPreview from './PhotoPreview';
 import PhotoStep from './PhotoStep';
 import Results from './Results';
@@ -30,14 +28,17 @@ type Step =
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif';
 
 export default function ScanApp() {
-  const { authenticated } = useAuth();
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [pendingStart, setPendingStart] = useState(false);
+  const { t, locale, href } = useI18n();
+  const { authenticated, required, loading, openSignIn, whenReady } = useAuth();
   const [step, setStep] = useState<Step>({ name: 'landing' });
   const uploadRef = useRef<HTMLInputElement>(null);
   const deviceCameraRef = useRef<HTMLInputElement>(null);
   const photoUrlRef = useRef<string | null>(null);
   const mainRef = useRef<HTMLElement>(null);
+  /** "Start" was pressed before the sign-in check finished. */
+  const startWhenReady = useRef(false);
+
+  const allowed = authenticated || !required;
 
   // Free the previous photo's memory whenever it is replaced, and on unmount.
   const trackPhoto = useCallback((photo: PreparedImage | null) => {
@@ -58,41 +59,53 @@ export default function ScanApp() {
     setStep({ name: 'photo' });
   }, [trackPhoto]);
 
+  /** Every way into the scan goes through here: signed-out patients are asked to sign in first. */
+  const requireSignIn = useCallback(() => {
+    if (allowed) return false;
+    openSignIn(true);
+    return true;
+  }, [allowed, openSignIn]);
+
   const handleStartScan = useCallback(() => {
-    if (!authenticated) {
-      setPendingStart(true);
-      setAuthModalOpen(true);
+    if (loading) {
+      startWhenReady.current = true;
       return;
     }
-    goToPhotoStep();
-  }, [authenticated, goToPhotoStep]);
+    if (!requireSignIn()) goToPhotoStep();
+  }, [loading, requireSignIn, goToPhotoStep]);
 
-  const handleAuthSuccess = useCallback(() => {
-    if (pendingStart) {
-      setPendingStart(false);
-      goToPhotoStep();
-    }
-  }, [pendingStart, goToPhotoStep]);
+  // After the sign-in check: continue a start that was pressed early, or a scan
+  // started before signing in on the clinic website (it returns with ?scan=1).
+  useEffect(
+    () =>
+      whenReady(({ allowed: ok }) => {
+        const params = new URLSearchParams(window.location.search);
+        const resume = params.get('scan') === '1';
+        if (resume) {
+          params.delete('scan');
+          const query = params.toString();
+          window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+        }
+        if (!resume && !startWhenReady.current) return;
+        startWhenReady.current = false;
+        if (ok) goToPhotoStep();
+        else openSignIn(true);
+      }),
+    [whenReady, goToPhotoStep, openSignIn],
+  );
 
   const handleFile = useCallback(
     async (file: Blob | undefined | null) => {
-      if (!file) return;
-      if (!authenticated) {
-        setAuthModalOpen(true);
-        return;
-      }
+      if (!file || requireSignIn()) return;
       try {
         const photo = await prepareImage(file);
         trackPhoto(photo);
         setStep({ name: 'preview', photo });
       } catch {
-        setStep({
-          name: 'photo',
-          error: 'This photo could not be opened. Please use a JPG, PNG or WebP photo (on iPhone, choose "Most Compatible").',
-        });
+        setStep({ name: 'photo', error: t.photo.unreadable });
       }
     },
-    [authenticated, trackPhoto],
+    [requireSignIn, trackPhoto, t],
   );
 
   const goHome = useCallback(() => {
@@ -102,59 +115,44 @@ export default function ScanApp() {
   }, [step.name, trackPhoto]);
 
   const openUpload = useCallback(() => {
-    if (!authenticated) {
-      setAuthModalOpen(true);
-      return;
-    }
-    uploadRef.current?.click();
-  }, [authenticated]);
+    if (!requireSignIn()) uploadRef.current?.click();
+  }, [requireSignIn]);
 
   const openDeviceCamera = useCallback(() => {
-    if (!authenticated) {
-      setAuthModalOpen(true);
-      return;
-    }
-    deviceCameraRef.current?.click();
-  }, [authenticated]);
+    if (!requireSignIn()) deviceCameraRef.current?.click();
+  }, [requireSignIn]);
 
   const takePhoto = useCallback(() => {
-    if (!authenticated) {
-      setAuthModalOpen(true);
-      return;
-    }
+    if (requireSignIn()) return;
     const liveCamera = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && window.isSecureContext;
     if (liveCamera) setStep({ name: 'camera' });
     else openDeviceCamera();
-  }, [authenticated, openDeviceCamera]);
+  }, [requireSignIn, openDeviceCamera]);
 
   const analyze = useCallback(
     async (photo: PreparedImage) => {
-      if (!authenticated) {
-        setAuthModalOpen(true);
-        return;
-      }
+      if (requireSignIn()) return;
       setStep({ name: 'analyzing', photo });
       const [response] = await Promise.all([
-        requestScan(photo.blob),
+        requestScan(photo.blob, locale),
         // Keep the progress view on screen briefly so the transition is not jarring.
         new Promise((resolve) => setTimeout(resolve, 1200)),
       ]);
       if (response.success) setStep({ name: 'results', photo, result: response });
       else if (response.error.code === 'unauthenticated') {
-        setAuthModalOpen(true);
+        // The session ended meanwhile: sign in again, then the photo step opens.
         setStep({ name: 'landing' });
-      } else {
-        setStep({ name: 'retake', photo, failure: response });
-      }
+        openSignIn(true);
+      } else setStep({ name: 'retake', photo, failure: response });
     },
-    [authenticated],
+    [requireSignIn, openSignIn, locale],
   );
 
   return (
     <>
-      <BrandHeader onHome={goHome} onOpenAuth={() => setAuthModalOpen(true)} />
+      <BrandHeader onHome={goHome} />
       <main ref={mainRef} tabIndex={-1} className={`page page-${step.name}`}>
-        {step.name === 'landing' ? <Landing onStart={handleStartScan} /> : null}
+        {step.name === 'landing' ? <Landing onStart={handleStartScan} signInNeeded={required} /> : null}
         {step.name === 'photo' ? <PhotoStep onTakePhoto={takePhoto} onUpload={openUpload} error={step.error} /> : null}
         {step.name === 'preview' ? (
           <PhotoPreview url={step.photo.url} onAnalyze={() => analyze(step.photo)} onRetake={goToPhotoStep} />
@@ -166,9 +164,10 @@ export default function ScanApp() {
         {step.name === 'results' ? (
           <Results
             result={step.result}
-            photoUrl={step.photo.url}
-            photoAspect={step.photo.width / step.photo.height}
-            onScanAgain={handleStartScan}
+            photo={step.photo}
+            onScanAgain={() => {
+              if (!requireSignIn()) goToPhotoStep();
+            }}
           />
         ) : null}
       </main>
@@ -181,15 +180,6 @@ export default function ScanApp() {
           onUpload={openUpload}
         />
       ) : null}
-
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => {
-          setAuthModalOpen(false);
-          setPendingStart(false);
-        }}
-        onSuccess={handleAuthSuccess}
-      />
 
       <input
         ref={uploadRef}
@@ -215,16 +205,16 @@ export default function ScanApp() {
 
       <footer className="footer">
         <p>
-          {SITE_NAME} ·{' '}
-          <a href={publicConfig.clinicUrl} target="_blank" rel="noopener noreferrer">
-            Dr. Maher Mahmoud Clinics
+          {t.siteName} ·{' '}
+          <a href={`${publicConfig.clinicUrl}${href('/')}`} target="_blank" rel="noopener noreferrer">
+            {t.clinicName}
           </a>
-          . Informational only — not a medical diagnosis. Photos are analysed in memory and never stored.
+          . {t.footer.text}
         </p>
         <div className="footerLinks">
-          <Link href="/terms">Terms of Use</Link>
+          <a href={href('/terms')}>{t.legal.terms}</a>
           <span className="dot">·</span>
-          <Link href="/privacy">Privacy Policy</Link>
+          <a href={href('/privacy')}>{t.legal.privacy}</a>
         </div>
       </footer>
     </>

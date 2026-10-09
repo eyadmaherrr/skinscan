@@ -32,9 +32,9 @@ export const serverConfig = {
   rateLimitWindowMs: int('SKIN_SCAN_RATE_LIMIT_WINDOW_SECONDS', 600, 10, 86_400) * 1000,
   /** Threads ONNX Runtime may use per inference. */
   onnxThreads: int('SKIN_SCAN_ONNX_THREADS', 2, 1, 16),
-  /** Base URL of the main Dr. Maher Mahmoud Clinics site for shared authentication. */
-  clinicUrl: (process.env.CLINIC_URL || process.env.NEXT_PUBLIC_CLINIC_URL || 'https://drmahermahmoud.com').replace(/\/+$/, ''),
-  /** Require patient authentication before performing a scan. */
+  /** The clinic website, whose patient accounts SkinScan uses (sign-in, session checks). */
+  clinicUrl: (process.env.CLINIC_URL || process.env.NEXT_PUBLIC_CLINIC_URL || 'https://www.drmahermahmoud.com').replace(/\/+$/, ''),
+  /** Require a signed-in patient before a scan (SKINSCAN_REQUIRE_AUTH=false turns this off, e.g. locally). */
   requireAuth: flag('SKINSCAN_REQUIRE_AUTH', true),
 } as const;
 

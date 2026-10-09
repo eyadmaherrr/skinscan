@@ -1,66 +1,59 @@
 'use client';
 
-import { Lock, Mail, ShieldCheck, X } from 'lucide-react';
+import { Mail, ShieldCheck, X } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, useTransition } from 'react';
-import GoogleSignInButton from './GoogleSignInButton';
-import { publicConfig } from '@/lib/public-config';
-import { useAuth } from '@/lib/client/use-auth';
+import { useEffect, useRef } from 'react';
+import { fill, useI18n } from './LocaleProvider';
+import { signInLinks, useAuth } from '@/lib/client/use-auth';
 
-interface AuthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess?: () => void;
-  title?: string;
-  message?: string;
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
+    </svg>
+  );
 }
 
-export default function AuthModal({
-  isOpen,
-  onClose,
-  onSuccess,
-  title = 'Sign In Required',
-  message = 'Please sign in or create an account to start your skin scan.',
-}: AuthModalProps) {
-  const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+/**
+ * Sign-in dialog. Both options open the clinic website, which signs the
+ * patient in and sends them back to this page; SkinScan never handles a
+ * password.
+ */
+export default function AuthModal() {
+  const { t, locale, href } = useI18n();
+  const { prompt, closeSignIn, unavailable } = useAuth();
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && isOpen && !isPending) {
-        onClose();
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isPending, onClose]);
+    if (!prompt.open) return;
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeSignIn();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [prompt.open, closeSignIn]);
 
-  if (!isOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (!email || !password) {
-      setError('Please enter both your email and password.');
-      return;
-    }
-
-    startTransition(async () => {
-      const res = await login(email, password);
-      if (res.success) {
-        onClose();
-        onSuccess?.();
-      } else {
-        setError(res.error || 'Unable to sign in. Please check your credentials.');
-      }
-    });
-  };
+  if (!prompt.open) return null;
+  const links = signInLinks(locale, prompt.resumeScan);
 
   return (
-    <div className="authModalBackdrop" onClick={onClose} role="presentation">
+    <div className="authModalBackdrop" onClick={closeSignIn} role="presentation">
       <div
         className="authModalCard glass"
         role="dialog"
@@ -68,13 +61,7 @@ export default function AuthModal({
         aria-labelledby="auth-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          className="authModalClose"
-          onClick={onClose}
-          aria-label="Close dialog"
-          disabled={isPending}
-        >
+        <button ref={closeRef} type="button" className="authModalClose" onClick={closeSignIn} aria-label={t.auth.close}>
           <X size={20} aria-hidden />
         </button>
 
@@ -82,91 +69,50 @@ export default function AuthModal({
           <div className="authModalIcon">
             <ShieldCheck size={28} aria-hidden />
           </div>
-          <span className="eyebrow">Dr. Maher Mahmoud Clinics</span>
-          <h2 id="auth-modal-title">{title}</h2>
-          <p className="muted">{message}</p>
+          <span className="eyebrow">{t.clinicName}</span>
+          <h2 id="auth-modal-title">{t.auth.title}</h2>
+          <p className="muted">{t.auth.message}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="authModalForm">
-          {error ? (
-            <div className="inlineError" role="alert">
-              {error}
-            </div>
-          ) : null}
+        {unavailable ? (
+          <p className="inlineError" role="alert">
+            {t.auth.unavailable}
+          </p>
+        ) : null}
 
-          <div className="formField">
-            <label htmlFor="auth-email">Email Address</label>
-            <div className="inputWithIcon">
-              <Mail size={18} className="fieldIcon" aria-hidden />
-              <input
-                id="auth-email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isPending}
-              />
-            </div>
+        <div className="authModalForm">
+          <a href={links.google} className="google-signin-button">
+            <GoogleIcon />
+            <span>{t.auth.google}</span>
+          </a>
+          <div className="google-signin-divider" aria-hidden="true">
+            <span>{t.auth.or}</span>
           </div>
-
-          <div className="formField">
-            <div className="fieldLabelRow">
-              <label htmlFor="auth-password">Password</label>
-              <a
-                href={`${publicConfig.clinicUrl}/forgot-password`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="forgotLink"
-              >
-                Forgot?
-              </a>
-            </div>
-            <div className="inputWithIcon">
-              <Lock size={18} className="fieldIcon" aria-hidden />
-              <input
-                id="auth-password"
-                type="password"
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isPending}
-              />
-            </div>
-          </div>
-
-          <button type="submit" className="btn primary lg authSubmitBtn" disabled={isPending}>
-            {isPending ? 'Signing in...' : 'Sign In to Continue'}
-          </button>
-
-          <GoogleSignInButton />
-        </form>
+          <a href={links.email} className="btn primary authSubmitBtn">
+            <Mail size={18} aria-hidden /> {t.auth.email}
+          </a>
+        </div>
 
         <div className="authModalFooter">
           <p className="registerPrompt">
-            Don&apos;t have an account?{' '}
-            <a
-              href={`${publicConfig.clinicUrl}/register`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="registerLink"
-            >
-              Create an account
+            {t.auth.noAccount}{' '}
+            <a href={links.register} className="registerLink">
+              {t.auth.create}
             </a>
           </p>
           <p className="authLegal">
-            By signing in, you agree to our{' '}
-            <Link href="/terms" target="_blank" className="legalLink">
-              Terms of Use
-            </Link>{' '}
-            and{' '}
-            <Link href="/privacy" target="_blank" className="legalLink">
-              Privacy Policy
-            </Link>
-            .
+            {fill(t.auth.legal, {
+              terms: (
+                <Link href={href('/terms')} target="_blank" className="legalLink">
+                  {t.legal.terms}
+                </Link>
+              ),
+              privacy: (
+                <Link href={href('/privacy')} target="_blank" className="legalLink">
+                  {t.legal.privacy}
+                </Link>
+              ),
+            })}
           </p>
         </div>
       </div>

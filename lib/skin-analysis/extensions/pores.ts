@@ -3,6 +3,7 @@ import { dogNoiseGain, estimateNoiseSigma, gaussianBlur } from '../image/filters
 import { ramp } from '../image/stats';
 import { detectBlobs } from '../metrics/blobs';
 import { countPixels, mm2, union, type MetricContext } from '../metrics/common';
+import { analysisText, type AnalysisText } from '../text';
 import type { PoreReport, RegionKey } from '../types';
 
 /**
@@ -40,13 +41,6 @@ export const PORE_THRESHOLDS = {
   minCoverage: 0.4,
 } as const;
 
-export const PORE_SCALE =
-  'Pore-visibility index 0–100: how visible pores are in this photo (appearance estimate, not a measurement of pore size).';
-
-const LIMITATIONS = [
-  'This is an appearance estimate from one photo. It does not measure pore size, oil production or skin health.',
-  'Lighting, camera sharpness, make-up and distance from the camera change how visible pores look.',
-];
 
 export interface PoreAnalysis {
   report: PoreReport;
@@ -84,18 +78,18 @@ function upperPart(mask: Uint8Array, w: number, h: number, keep: number): Uint8A
   return out;
 }
 
-function unavailable(status: PoreReport['status'], explanation: string, extra: string[] = []): PoreAnalysis {
+function unavailable(text: AnalysisText, status: PoreReport['status'], explanation: string, extra: string[] = []): PoreAnalysis {
   return {
     report: {
       status,
       visibilityScore: null,
-      scoreScale: PORE_SCALE,
+      scoreScale: text.pores.scale,
       confidence: null,
       confidenceLabel: null,
       regionalSummary: {},
       heatmap: null,
       explanation,
-      limitations: [...extra, ...LIMITATIONS],
+      limitations: [...extra, ...text.pores.limitations],
     },
     heat: null,
     raw: null,
@@ -109,15 +103,14 @@ export function analyzePores(ctx: MetricContext): PoreAnalysis {
   const p = face.pxPerMm;
   const T = PORE_THRESHOLDS;
   const d = quality.diagnostics;
+  const text = analysisText(ctx.locale);
 
   // Task-specific quality gate: pores need far more detail than colour metrics.
   const reasons: string[] = [];
-  if (p < T.minPxPerMm) {
-    reasons.push('Pores are tiny: a closer photo, with your face filling more of the frame, is needed to see them.');
-  }
-  if ((d.blurIndex ?? 1) > T.maxBlurIndex) reasons.push('The photo is not sharp enough to see pores.');
-  if ((d.snr ?? 0) < T.minSnr) reasons.push('The photo is too grainy (often from dim light) to tell pores apart from camera noise.');
-  if (quality.factors.naturalDetail < T.minNaturalDetail) reasons.push('Smoothing or editing in the photo hides pores.');
+  if (p < T.minPxPerMm) reasons.push(text.pores.tooFar);
+  if ((d.blurIndex ?? 1) > T.maxBlurIndex) reasons.push(text.pores.notSharp);
+  if ((d.snr ?? 0) < T.minSnr) reasons.push(text.pores.grainy);
+  if (quality.factors.naturalDetail < T.minNaturalDetail) reasons.push(text.pores.smoothed);
 
   const regionMasks: Partial<Record<RegionKey, Uint8Array>> = {
     nose: masks.regions.nose,
@@ -126,10 +119,8 @@ export function analyzePores(ctx: MetricContext): PoreAnalysis {
     cheekR: upperPart(masks.regions.cheekR, w, h, 0.6),
   };
   const coverage = REGIONS.reduce((s, k) => s + masks.coverage[k], 0) / REGIONS.length;
-  if (coverage < T.minCoverage) reasons.push('Not enough clear skin on the nose, forehead and upper cheeks was visible.');
-  if (reasons.length) {
-    return unavailable('insufficient_quality', 'Pore visibility could not be estimated reliably from this photo.', reasons);
-  }
+  if (coverage < T.minCoverage) reasons.push(text.pores.notEnoughArea);
+  if (reasons.length) return unavailable(text, 'insufficient_quality', text.pores.unreliable, reasons);
 
   // Exclude larger spots (acne, marks, moles) found by the blemish detector.
   const mask = union(regionMasks as Record<RegionKey, Uint8Array>, REGIONS);
@@ -142,7 +133,7 @@ export function analyzePores(ctx: MetricContext): PoreAnalysis {
     }
   }
   const area = countPixels(mask);
-  if (area < 500) return unavailable('insufficient_quality', 'Not enough clear skin was visible to estimate pores.');
+  if (area < 500) return unavailable(text, 'insufficient_quality', text.pores.notEnoughSkin);
 
   const logY = face.lab.logY;
   const noise = estimateNoiseSigma(logY, mask, w, h);
@@ -206,26 +197,23 @@ export function analyzePores(ctx: MetricContext): PoreAnalysis {
     (0.4 + 0.6 * ramp(0.4, 0.8, coverage));
   const rounded = Math.round(confidence * 100) / 100;
   if (confidence < MIN_REPORTABLE) {
-    return unavailable('insufficient_quality', 'The photo conditions did not allow a reliable pore estimate.', [
-      'A sharp, close photo in even light is needed to estimate pore visibility.',
-    ]);
+    return unavailable(text, 'insufficient_quality', text.pores.conditions, [text.pores.conditionsHelp]);
   }
   const score = calibratePores(raw);
   const ranked = (Object.entries(regionalSummary) as [RegionKey, number][]).sort((a, b) => b[1] - a[1]);
   const top = ranked.length && ranked[0][1] >= 25 ? ranked[0][0] : null;
-  const where = top === 'nose' ? 'the nose' : top === 'forehead' ? 'the forehead' : top ? 'the cheeks' : null;
-  const level = score < 25 ? 'Few pores were visible' : score < 50 ? 'Some pores were visible' : score < 75 ? 'Pores were noticeably visible' : 'Many clearly visible pores were seen';
+  const where = top === 'nose' ? text.pores.where.nose : top === 'forehead' ? text.pores.where.forehead : top ? text.pores.where.cheeks : null;
   return {
     report: {
       status: 'ok',
       visibilityScore: score,
-      scoreScale: PORE_SCALE,
+      scoreScale: text.pores.scale,
       confidence: rounded,
       confidenceLabel: confidenceLabel(confidence),
       regionalSummary,
       heatmap: null,
-      explanation: `${level} at this photo's level of detail${where ? `, mostly on ${where}` : ''}.`,
-      limitations: LIMITATIONS,
+      explanation: text.pores.summary(text.pores.level(score), where),
+      limitations: text.pores.limitations,
     },
     heat,
     raw,

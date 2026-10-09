@@ -1,26 +1,29 @@
 'use client';
 
-import { CalendarCheck, ChevronDown, Info, RotateCcw } from 'lucide-react';
+import { CalendarCheck, ChevronDown, Download, Info, Loader2, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
 import { AcneSection, PoresSection } from './ExtensionSections';
+import { useI18n } from './LocaleProvider';
 import PhotoOverlay from './PhotoOverlay';
-import { ENGINE_NAME, SITE_NAME } from '@/lib/brand';
-import { publicConfig } from '@/lib/public-config';
-import { BAND_LABELS, CONFIDENCE_LABELS, METRIC_LABELS } from '@/lib/skin-analysis/labels';
+import { ENGINE_NAME } from '@/lib/brand';
+import type { PreparedImage } from '@/lib/client/prepare-image';
+import { bookingLink } from '@/lib/client/use-auth';
+import { format } from '@/lib/messages';
 import { METRIC_KEYS, type MetricKey, type ScanSuccess } from '@/lib/skin-analysis/types';
 
 interface Props {
   result: ScanSuccess;
-  photoUrl: string;
-  photoAspect: number;
+  photo: PreparedImage;
   onScanAgain: () => void;
 }
 
 function ConfidenceRing({ value }: { value: number }) {
+  const { t } = useI18n();
   const pct = Math.round(value * 100);
   const r = 34;
   const c = 2 * Math.PI * r;
   return (
-    <div className="ring" role="img" aria-label={`Overall analysis confidence ${pct}%`}>
+    <div className="ring" role="img" aria-label={format(t.results.overallAria, { pct })}>
       <svg viewBox="0 0 84 84" aria-hidden>
         <circle cx="42" cy="42" r={r} className="ringTrack" />
         <circle cx="42" cy="42" r={r} className="ringValue" strokeDasharray={`${(c * pct) / 100} ${c}`} />
@@ -31,12 +34,13 @@ function ConfidenceRing({ value }: { value: number }) {
 }
 
 function MetricRow({ k, result }: { k: MetricKey; result: ScanSuccess }) {
+  const { t } = useI18n();
   const m = result.analysis[k];
   const reported = m.score !== null;
   return (
     <li className={`metric${reported ? '' : ' metricInsufficient'}`}>
       <div className="metricHead">
-        <h3>{METRIC_LABELS[k]}</h3>
+        <h3>{t.metrics[k]}</h3>
         {reported ? (
           <span className="metricScore">
             {m.score}
@@ -52,10 +56,10 @@ function MetricRow({ k, result }: { k: MetricKey; result: ScanSuccess }) {
         </div>
       ) : null}
       <div className="metricTags">
-        {m.band ? <span className={`tag band-${m.band}`}>{BAND_LABELS[m.band]}</span> : null}
+        {m.band ? <span className={`tag band-${m.band}`}>{t.bands[m.band]}</span> : null}
         <span className={`tag conf-${m.confidenceLabel}`}>
           <span className="dot" aria-hidden />
-          {CONFIDENCE_LABELS[m.confidenceLabel]}
+          {t.confidence[m.confidenceLabel]}
         </span>
       </div>
       <p>{m.explanation}</p>
@@ -63,28 +67,42 @@ function MetricRow({ k, result }: { k: MetricKey; result: ScanSuccess }) {
   );
 }
 
-export default function Results({ result, photoUrl, photoAspect, onScanAgain }: Props) {
+export default function Results({ result, photo, onScanAgain }: Props) {
+  const { t, locale } = useI18n();
+  const [report, setReport] = useState<'idle' | 'busy' | 'failed'>('idle');
   const date = new Date(result.createdAt);
+
+  async function download() {
+    setReport('busy');
+    try {
+      // Loaded on demand: the report code is only needed when someone asks for it.
+      const { downloadReport } = await import('@/lib/client/report');
+      await downloadReport(result, photo, locale);
+      setReport('idle');
+    } catch {
+      setReport('failed');
+    }
+  }
 
   return (
     <section className="results" aria-labelledby="results-title">
       <div className="resultsHead">
-        <span className="eyebrow">{SITE_NAME}</span>
-        <h2 id="results-title">Your visible skin profile</h2>
+        <span className="eyebrow">{t.siteName}</span>
+        <h2 id="results-title">{t.results.title}</h2>
         <p className="muted small">
-          {date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
+          {date.toLocaleDateString(locale === 'ar' ? 'ar-EG' : undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
 
       <div className="resultsGrid">
         <aside className="glass resultsSide">
-          <PhotoOverlay result={result} photoUrl={photoUrl} photoAspect={photoAspect} />
+          <PhotoOverlay result={result} photoUrl={photo.url} photoAspect={photo.width / photo.height} />
 
           <div className="overall">
             <ConfidenceRing value={result.overallConfidence} />
             <div>
-              <strong>Overall analysis confidence</strong>
-              <p className="muted small">How reliable these measurements are for this photo.</p>
+              <strong>{t.results.overall}</strong>
+              <p className="muted small">{t.results.overallSub}</p>
             </div>
           </div>
 
@@ -100,9 +118,7 @@ export default function Results({ result, photoUrl, photoAspect, onScanAgain }: 
         </aside>
 
         <div className="glass resultsMain">
-          <p className="scaleNote">
-            Scores show how visible each characteristic is in this photo, from 0 (not visible) to 100 (very visible).
-          </p>
+          <p className="scaleNote">{t.results.scaleNote}</p>
           <ul className="metrics">
             {METRIC_KEYS.map((k) => (
               <MetricRow key={k} k={k} result={result} />
@@ -120,63 +136,42 @@ export default function Results({ result, photoUrl, photoAspect, onScanAgain }: 
 
       <div className="glass disclaimer">
         <Info size={18} aria-hidden />
-        <p>
-          These results describe visible characteristics detected in your image and are not a medical diagnosis. Only a
-          dermatologist can examine and diagnose skin conditions.
-        </p>
+        <p>{t.results.disclaimer}</p>
       </div>
 
-      <p className="engineNote">Analysed by {ENGINE_NAME}</p>
+      <p className="engineNote">{format(t.results.engine, { engine: ENGINE_NAME })}</p>
 
       <div className="actions center resultsActions">
-        <a className="btn primary lg" href={publicConfig.bookingUrl} target="_blank" rel="noopener noreferrer">
-          <CalendarCheck size={18} aria-hidden /> Book a Consultation
+        <a className="btn primary lg" href={bookingLink(locale)} target="_blank" rel="noopener noreferrer">
+          <CalendarCheck size={18} aria-hidden /> {t.results.book}
         </a>
+        <button type="button" className="btn secondary lg" onClick={download} disabled={report === 'busy'}>
+          {report === 'busy' ? <Loader2 className="spin" size={18} aria-hidden /> : <Download size={18} aria-hidden />}
+          {report === 'busy' ? t.results.preparing : t.results.download}
+        </button>
         <button type="button" className="btn secondary lg" onClick={onScanAgain}>
-          <RotateCcw size={17} aria-hidden /> Scan Again
+          <RotateCcw size={17} aria-hidden /> {t.results.again}
         </button>
       </div>
+      {report === 'failed' ? (
+        <p className="inlineError center" role="alert">
+          {t.results.downloadFailed}
+        </p>
+      ) : null}
 
       <details className="glass howItWorks">
         <summary>
-          How this works <ChevronDown size={18} aria-hidden />
+          {t.results.how} <ChevronDown size={18} aria-hidden />
         </summary>
         <div className="howBody">
           <ol>
-            <li>
-              <strong>{ENGINE_NAME}.</strong> SkinScan&apos;s analysis engine combines open-source computer-vision
-              models with measurement methods used in skin colorimetry. It runs on the clinic&apos;s own server.
-            </li>
-            <li>
-              <strong>Photo check.</strong> The photo is first checked for focus, exposure, lighting balance, head angle,
-              filters and glasses. If it is not clear enough, we ask for a retake instead of guessing.
-            </li>
-            <li>
-              <strong>Face and skin regions.</strong> Open-source computer-vision models locate your face and 478 facial
-              landmarks and separate skin from hair and accessories. The forehead, nose, cheeks, chin and under-eye
-              areas are analysed separately; eyes, brows and lips are excluded.
-            </li>
-            <li>
-              <strong>Measurements.</strong> Colour is measured in the CIELAB colour space used in skin colorimetry
-              (redness and pigmentation are compared with your own surrounding skin, so they do not depend on your skin
-              tone). Texture and spots are measured from fine image detail at real-world scale.
-            </li>
-            <li>
-              <strong>Experimental sections.</strong> Spot candidates come from a colour and contrast spot detector, not a
-              trained acne model, so they can include freckles, moles or marks. Pore visibility is an appearance
-              estimate that needs a close, sharp photo; it does not measure pore size.
-            </li>
-            <li>
-              <strong>Scores and confidence.</strong> Each measurement is converted to a 0–100 visibility score. Its
-              confidence reflects photo quality and how much skin could be measured. Low-confidence measurements are
-              not scored.
-            </li>
+            {t.results.howItems.map(([title, text]) => (
+              <li key={title}>
+                <strong>{format(title, { engine: ENGINE_NAME })}</strong> {text}
+              </li>
+            ))}
           </ol>
-          <p className="muted small">
-            The same photo always gives the same result. Lighting, camera and make-up can change results between photos.
-            Scores have not been clinically validated and are not medical grades. Your photo is processed in memory for
-            this scan and is not stored.
-          </p>
+          <p className="muted small">{t.results.howFoot}</p>
         </div>
       </details>
     </section>

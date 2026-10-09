@@ -1,5 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- local object URLs of the user's own photo; never uploaded to an image CDN */
+'use client';
+
 import { RefreshCw, ScanFace } from 'lucide-react';
+import { useI18n } from './LocaleProvider';
 
 interface Props {
   url: string;
@@ -8,20 +11,21 @@ interface Props {
 }
 
 export default function PhotoPreview({ url, onAnalyze, onRetake }: Props) {
+  const { t } = useI18n();
   return (
     <section className="stepCard glass" aria-labelledby="preview-title">
-      <span className="eyebrow">Step 2 of 2</span>
-      <h2 id="preview-title">Check your photo</h2>
-      <p className="muted">Make sure your whole face is visible, in focus and evenly lit.</p>
+      <span className="eyebrow">{t.preview.step}</span>
+      <h2 id="preview-title">{t.preview.title}</h2>
+      <p className="muted">{t.preview.sub}</p>
       <div className="photoFrame">
-        <img src={url} alt="Your photo" />
+        <img src={url} alt={t.preview.alt} />
       </div>
       <div className="actions">
         <button type="button" className="btn primary" onClick={onAnalyze}>
-          <ScanFace size={18} aria-hidden /> Analyze my skin
+          <ScanFace size={18} aria-hidden /> {t.preview.analyze}
         </button>
         <button type="button" className="btn secondary" onClick={onRetake}>
-          <RefreshCw size={17} aria-hidden /> Choose another photo
+          <RefreshCw size={17} aria-hidden /> {t.preview.another}
         </button>
       </div>
     </section>

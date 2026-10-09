@@ -1,5 +1,7 @@
 import { confidenceLabel } from '../confidence';
+import type { Locale } from '../../i18n';
 import type { QualityFactors } from '../quality';
+import { analysisText } from '../text';
 import type { AcneSeverity } from '../types';
 
 /**
@@ -32,8 +34,6 @@ export const LEVEL_NAMES: Record<string, string> = {
   level2: 'Moderate',
   level3: 'Severe',
 };
-export const COMBINED_SCALE =
-  'Four levels on the Hayashi count bands — level0 none or minimal (≤5 inflammatory-looking spots per half face), level1 mild (6–20), level2 moderate (21–50), level3 severe (>50). An experimental estimate from the photo, not a clinical grade.';
 
 const BOUNDS = [5.5, 20.5, 50.5];
 const SIGMA = 0.45;
@@ -69,9 +69,10 @@ export interface CombinedSeverityInput {
   redCount: number;
   classifier: AcneSeverity;
   factors: QualityFactors;
+  locale?: Locale;
 }
 
-export function combineSeverity({ redCount, classifier, factors }: CombinedSeverityInput): AcneSeverity {
+export function combineSeverity({ redCount, classifier, factors, locale }: CombinedSeverityInput): AcneSeverity {
   const grader = countGradeProbabilities(redCount);
   const graderLabel = LEVELS[argmax(grader)];
   const classifierProbs =
@@ -89,7 +90,7 @@ export function combineSeverity({ redCount, classifier, factors }: CombinedSever
   return {
     status: 'ok',
     label: LEVELS[best],
-    scale: COMBINED_SCALE,
+    scale: analysisText(locale).severityScale,
     probabilities: asRecord(combined),
     confidence: Math.round(confidence * 100) / 100,
     confidenceLabel: confidenceLabel(confidence),

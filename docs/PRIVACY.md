@@ -79,9 +79,27 @@ information. Only aggregate, anonymous events (e.g. "scan_completed",
   protection obligations (Egypt's Personal Data Protection Law No. 151 of
   2020 treats biometric and health data as sensitive).
 
-## Future patient accounts
+## Patient accounts
 
-If results are ever saved to a Dr. Maher patient account, that must be a
-separate, explicit opt-in step, storing scores (not photos) unless the
-patient gives separate consent to store the image, with retention and
-deletion rules published in the clinic privacy policy.
+Scans require a Dr. Maher Mahmoud Clinics patient account. Patients sign in
+on drmahermahmoud.com (email + password or Google); SkinScan never receives a
+password. To confirm a session, the SkinScan server sends the session token to
+the clinic website's `/api/auth/me` and keeps only the patient's name and
+email for the page header. Scan results are not stored in the account.
+
+If results are ever saved to a patient account, that must be a separate,
+explicit opt-in step, storing scores (not photos) unless the patient gives
+separate consent to store the image, with retention and deletion rules
+published in the clinic privacy policy.
+
+## Downloadable report
+
+The PDF report is generated in the patient's browser from the result already
+on screen; the photo is drawn into it locally and is not uploaded again.
+
+## Cookies
+
+The only cookie is the clinic sign-in (`patient_session`, set by
+drmahermahmoud.com for the whole domain). There are no analytics,
+advertising or tracking cookies; the browser remembers in local storage that
+the cookie notice was seen.

@@ -2,10 +2,11 @@ import { extensionConfig } from '../../config';
 import type { RgbImage } from '../image/decode';
 import type { MetricContext } from '../metrics/common';
 import type { AcneReport, AcneSeverity, AnalysisQuality, DermFoundationReport, PoreReport } from '../types';
-import { ACNE_LIMITATIONS, buildAcneReport } from './acne';
+import { analysisText, type AnalysisText } from '../text';
+import { buildAcneReport } from './acne';
 import { classifyAcneSeverity, disabledSeverity } from './acne-severity';
 import { extractDermFoundation } from './derm-foundation';
-import { analyzePores, PORE_SCALE } from './pores';
+import { analyzePores } from './pores';
 import { renderHeatmap } from './projection';
 
 /**
@@ -23,7 +24,7 @@ export interface ExtensionResults {
   internal: { poresRaw: number | null; severity: AcneSeverity };
 }
 
-function failedAcne(severity: AcneSeverity): AcneReport {
+function failedAcne(severity: AcneSeverity, text: AnalysisText): AcneReport {
   return {
     status: 'failed',
     method: 'heuristic_spot_detection',
@@ -33,16 +34,16 @@ function failedAcne(severity: AcneSeverity): AcneReport {
     lesions: [],
     regionalSummary: {},
     severity,
-    explanation: 'Spot candidates could not be analysed for this photo.',
-    limitations: ACNE_LIMITATIONS,
+    explanation: text.acne.failed,
+    limitations: text.acne.limitations,
   };
 }
 
-function failedPores(status: PoreReport['status'], explanation: string): PoreReport {
+function failedPores(status: PoreReport['status'], explanation: string, text: AnalysisText): PoreReport {
   return {
     status,
     visibilityScore: null,
-    scoreScale: PORE_SCALE,
+    scoreScale: text.pores.scale,
     confidence: null,
     confidenceLabel: null,
     regionalSummary: {},
@@ -52,8 +53,10 @@ function failedPores(status: PoreReport['status'], explanation: string): PoreRep
   };
 }
 
+/** `notes`: the photo's non-blocking quality notes, already in the result's language. */
 export async function runExtensions(ctx: MetricContext, image: RgbImage, notes: string[]): Promise<ExtensionResults> {
   const cfg = extensionConfig();
+  const text = analysisText(ctx.locale);
 
   // Optional image classifier; its output is combined with the count grader in buildAcneReport.
   let severity: AcneSeverity = disabledSeverity();
@@ -66,13 +69,13 @@ export async function runExtensions(ctx: MetricContext, image: RgbImage, notes: 
 
   let acne: AcneReport;
   if (!cfg.acneLesions) {
-    acne = { ...failedAcne(severity), status: 'disabled', explanation: 'Spot-candidate analysis is switched off.' };
+    acne = { ...failedAcne(severity, text), status: 'disabled', explanation: text.acne.disabled };
   } else {
     try {
       acne = buildAcneReport(ctx, image, severity);
       severity = acne.severity;
     } catch {
-      acne = failedAcne(severity);
+      acne = failedAcne(severity, text);
     }
   }
 
@@ -80,7 +83,7 @@ export async function runExtensions(ctx: MetricContext, image: RgbImage, notes: 
   let poresRaw: number | null = null;
   let poreReasons: string[] = [];
   if (!cfg.pores) {
-    pores = failedPores('disabled', 'Pore analysis is switched off.');
+    pores = failedPores('disabled', text.pores.disabled, text);
   } else {
     try {
       const analysis = analyzePores(ctx);
@@ -95,7 +98,7 @@ export async function runExtensions(ctx: MetricContext, image: RgbImage, notes: 
         }
       }
     } catch {
-      pores = failedPores('failed', 'Pore visibility could not be analysed for this photo.');
+      pores = failedPores('failed', text.pores.failed, text);
     }
   }
 

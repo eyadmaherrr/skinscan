@@ -187,15 +187,27 @@ core scores above.
   blackheads, whiteheads, papules, pustules, nodules or scars, nor tell acne
   from freckles or moles. "Red-toned" and "darker" are visual descriptions.
 
-### Acne severity grade (`extensions/acne-severity.ts`) — disabled by default
+### Acne severity estimate (`extensions/acne-grade.ts`)
 
-Optional whole-image classifier (ResNet-50, classes level0–level3 as defined
-by its publisher). Reports the class and the model's softmax probabilities.
-It is not a lesion detector and not a clinical grade, its training data
-licence is unresolved (see docs/AI_SOURCES.md), and on the reference
-portraits it graded clear, freckled or ruddy skin as mild/moderate acne — so
-it stays disabled in production. When disabled the interface states that no
-validated grading model is available.
+Two models on one four-level scale (level0 none/minimal … level3 severe):
+
+1. **SkinScan spot-count grader** (always on): the number of red-toned
+   (inflammatory-looking) spot candidates, halved to a half-face equivalent
+   and placed on the Hayashi count bands (≤5, 6–20, 21–50, >50 per half
+   face; Hayashi et al., J Dermatol 2008). Counting uncertainty is modelled
+   as a log-normal (σ = 0.45), giving a probability per level.
+2. **Optional image classifier** (`extensions/acne-severity.ts`, ResNet-50
+   from Hugging Face afscomercial/dermatologic, classes level0–level3; off by
+   default — training-data licence unresolved, see docs/AI_SOURCES.md).
+
+When both are available their probability vectors are averaged with weights
+0.7 (grader) and 0.3 (classifier): the evaluation found the classifier
+unstable (up to 31 points change for a mirrored photo) and insensitive to
+added acne-like spots. Without the classifier the grader is used alone
+(`method: "count_grader"`). Confidence = the winning level's probability ×
+0.7 when the two models disagree × photo sharpness/exposure/resolution
+factors, capped at 0.62 ("moderate"). Not a clinical grade: red-toned spots
+are not always acne.
 
 ### Pore visibility (`extensions/pores.ts`)
 

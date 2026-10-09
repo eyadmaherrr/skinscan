@@ -14,6 +14,8 @@ export interface MetricContext {
   cache: Map<string, Float32Array>;
   /** Spots found by the blemish metric (reused by the acne lesion summary). */
   spots?: import('./blemishes').Spot[];
+  /** Language of the sentences in the result (default English). */
+  locale?: import('../../i18n').Locale;
 }
 
 /**

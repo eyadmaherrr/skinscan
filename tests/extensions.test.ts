@@ -138,3 +138,52 @@ describe('spot shape test', () => {
     assert.ok(blobness(lineFace, spot) < 0.3);
   });
 });
+
+describe('combined acne severity', () => {
+  const factors = { sharpness: 1, exposure: 1, resolution: 1 } as unknown as import('../lib/skin-analysis/quality').QualityFactors;
+  const disabled = { status: 'disabled', label: null, scale: null, probabilities: null } as const;
+
+  it('gives a probability per level that moves up with the spot count', async () => {
+    const { countGradeProbabilities } = await import('../lib/skin-analysis/extensions/acne-grade');
+    let previousMean = -1;
+    for (const count of [0, 4, 12, 30, 60, 140]) {
+      const p = countGradeProbabilities(count);
+      assert.ok(Math.abs(p.reduce((s, v) => s + v, 0) - 1) < 1e-9);
+      assert.ok(p.every((v) => v >= 0));
+      const mean = p.reduce((s, v, i) => s + v * i, 0);
+      assert.ok(mean > previousMean, `count ${count}`);
+      previousMean = mean;
+    }
+  });
+
+  it('uses the grader alone without the classifier, and lowers confidence when the models disagree', async () => {
+    const { combineSeverity } = await import('../lib/skin-analysis/extensions/acne-grade');
+    const alone = combineSeverity({ redCount: 0, classifier: { ...disabled }, factors });
+    assert.equal(alone.method, 'count_grader');
+    assert.equal(alone.label, 'level0');
+    assert.equal(alone.modelsAgree, null);
+    assert.ok((alone.confidence ?? 1) <= 0.62);
+
+    const classifier = (label: string) => ({
+      status: 'ok' as const,
+      label,
+      scale: 'x',
+      probabilities: { level0: 0.05, level1: 0.05, level2: 0.05, level3: 0.05, [label]: 0.85 },
+    });
+    const agree = combineSeverity({ redCount: 0, classifier: classifier('level0'), factors });
+    const disagree = combineSeverity({ redCount: 0, classifier: classifier('level3'), factors });
+    assert.equal(agree.method, 'combined');
+    assert.equal(agree.modelsAgree, true);
+    assert.equal(disagree.modelsAgree, false);
+    assert.ok((disagree.confidence ?? 0) < (agree.confidence ?? 0));
+    const sum = Object.values(disagree.probabilities ?? {}).reduce((s, v) => s + v, 0);
+    assert.ok(Math.abs(sum - 1) < 0.01);
+    // The grader carries most of the weight (0.7).
+    assert.equal(disagree.label, 'level0');
+  });
+
+  it('describes the scale in the requested language', async () => {
+    const { combineSeverity } = await import('../lib/skin-analysis/extensions/acne-grade');
+    assert.match(combineSeverity({ redCount: 3, classifier: { ...disabled }, factors, locale: 'ar' }).scale ?? '', /[؀-ۿ]/);
+  });
+});

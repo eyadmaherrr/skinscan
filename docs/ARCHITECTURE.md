@@ -192,16 +192,53 @@ model names are never returned.
   DENY`, `nosniff`, `Permissions-Policy: camera=(self)`, HSTS).
 - Model files are checksum-verified before loading.
 
-## Future Dr. Maher integration (not implemented)
+## Patient sign-in (shared with drmahermahmoud.com)
 
-The app is intentionally stateless today: no accounts, no database, no
-image storage. The planned path:
+Scans require a signed-in clinic patient (`SKINSCAN_REQUIRE_AUTH`, default
+on). SkinScan has no accounts, passwords or database of its own:
 
 ```
-Scan ─▶ "Save to my account" (optional) ─▶ sign in with the drmahermahmoud.com
-account (shared session cookie on .drmahermahmoud.com, or OAuth/OIDC) ─▶
-POST results (scores + methodologyVersion, never the photo unless the
-patient explicitly consents) to a patient-records API ─▶ patient dashboard
+"Sign in" ─▶ drmahermahmoud.com/login?next=<this page>   (email + password, reCAPTCHA)
+          └▶ drmahermahmoud.com/api/auth/google?next=…    (Google)
+   └─ the clinic website sets its patient_session cookie for .drmahermahmoud.com
+      and redirects back ─▶ skinscan.drmahermahmoud.com/?scan=1 ─▶ photo step
+```
+
+- `lib/auth.ts` reads the session token (x-patient-session header, else the
+  cookie) and checks it with the clinic website's `GET /api/auth/me`. Only the
+  patient's name and email are kept, to greet them in the header.
+- `POST /api/auth/logout` revokes the session on the clinic website and
+  removes the cookie (the shared copy and any older host-only copy).
+- `GET /api/auth/me` tells the page who is signed in and whether sign-in is
+  required.
+- Requirements on the clinic website: it must accept absolute `next` URLs on
+  `*.drmahermahmoud.com` and set the cookie with `Domain=.drmahermahmoud.com`.
+  Locally (localhost) the shared cookie cannot exist, so run with
+  `SKINSCAN_REQUIRE_AUTH=false`.
+
+## Languages
+
+English at `/`, Arabic (right-to-left) at `/ar` — same convention as
+drmahermahmoud.com. `app/(en)` and `app/ar` are two root layouts (each sets
+`<html lang dir>`); unknown URLs use `app/global-not-found.tsx`.
+Interface text is in `lib/messages.ts`; every sentence the analysis returns
+(explanations, retake guidance, notes, limitations) is in
+`lib/skin-analysis/text.ts` and selected by the request's `locale`
+(`?locale=ar` or a `locale` form field). Scores never depend on the language.
+
+## Downloadable report
+
+"Download report" builds a PDF in the browser (`lib/client/report.ts`):
+pages are drawn on a canvas — so Arabic shaping and right-to-left layout are
+handled by the browser — and wrapped by a small PDF writer
+(`lib/client/report-pdf.ts`). Nothing is uploaded.
+
+## Future: saving results (not implemented)
+
+```
+Scan ─▶ "Save to my account" (optional) ─▶ POST results (scores +
+methodologyVersion, never the photo unless the patient explicitly consents)
+to a patient-records API ─▶ patient dashboard
 ```
 
 Seams prepared for this:

@@ -1,4 +1,5 @@
 import type { AlignedFace } from './alignment';
+import type { QualityNoteCode } from './text';
 import type { FaceDetection } from './face-detection';
 import { FACE_OVAL, IRIS_RING_IMG_LEFT, IRIS_RING_IMG_RIGHT, LM } from './face-topology';
 import type { FaceLandmarks } from './landmarks';
@@ -65,7 +66,8 @@ export interface QualityFactors {
 
 export interface QualityAssessment {
   issues: QualityIssueCode[];
-  notes: string[];
+  /** Non-blocking observations; turned into sentences by text.ts. */
+  notes: QualityNoteCode[];
   factors: QualityFactors;
   diagnostics: Record<string, number>;
 }
@@ -255,7 +257,7 @@ export function assessAlignedFace(
 ): QualityAssessment {
   const T = QUALITY_THRESHOLDS;
   const issues: QualityIssueCode[] = [];
-  const notes: string[] = [];
+  const notes: QualityNoteCode[] = [];
   const { width: w, height: h, rgb, lab, seg } = face;
   const diagnostics: Record<string, number> = {};
   const skin = geometricSkin;
@@ -301,7 +303,7 @@ export function assessAlignedFace(
   const cheekRatio = yL > 0 && yR > 0 ? Math.max(yL, yR) / Math.min(yL, yR) : 1;
   diagnostics.cheekRatio = cheekRatio;
   if (cheekRatio > T.maxCheekLuminanceRatio) issues.push('uneven_lighting');
-  else if (cheekRatio > 2) notes.push('One side of your face was more brightly lit than the other.');
+  else if (cheekRatio > 2) notes.push('uneven_side_light');
   const lighting = ramp(T.maxCheekLuminanceRatio, 1.4, cheekRatio);
 
   // --- Sharpness (eye area, canonical scale; computed above) -------------
@@ -351,7 +353,7 @@ export function assessAlignedFace(
   const coverage = geometricCount ? countMask(usableSkin) / geometricCount : 0;
   diagnostics.coverage = coverage;
   if (coverage < T.minSkinCoverage) issues.push('insufficient_skin');
-  else if (coverage < 0.7) notes.push('Some areas were covered (for example by hair) and were not analysed.');
+  else if (coverage < 0.7) notes.push('partly_covered');
 
   // --- Pose, resolution, noise --------------------------------------------
   const poseFactor = Math.min(
@@ -359,11 +361,11 @@ export function assessAlignedFace(
     ramp(T.maxPitchDeg, 10, Math.abs(pose.pitch)),
   );
   const resolution = ramp(1.5, 6, face.pxPerMm);
-  if (face.pxPerMm < 3) notes.push('Photo resolution limited the measurement of fine detail such as texture.');
+  if (face.pxPerMm < 3) notes.push('low_resolution');
   const noise = ramp(T.minSnr, 40, snr);
   const expr = smileScore(face);
   Object.assign(diagnostics, { smile: expr.smile, mouthWidth: expr.mouthWidth, mouthOpening: expr.opening, cornerLift: expr.cornerLift });
-  if (expr.smile > 0.5) notes.push('Smiling creates skin folds that can affect some results; a neutral expression gives the most reliable scan.');
+  if (expr.smile > 0.5) notes.push('smiling');
   const expression = 1 - expr.smile;
   Object.assign(diagnostics, { yaw: pose.yaw, pitch: pose.pitch, roll: pose.roll, pxPerMm: face.pxPerMm });
 

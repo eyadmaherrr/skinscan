@@ -1,38 +1,23 @@
-export type CookieConsent = 'granted' | 'denied';
-
-export const COOKIE_CONSENT_KEY = 'dma_cookie_consent';
-export const COOKIE_SETTINGS_EVENT = 'dma_open_cookie_settings';
-
 /**
- * Reads the visitor's cookie consent preference from localStorage.
+ * SkinScan sets no optional cookies (no analytics, advertising or tracking);
+ * the only cookie is the clinic sign-in. The notice is shown once and the
+ * acknowledgement is remembered in this browser only.
  */
-export function readCookieConsent(): CookieConsent | null {
-  if (typeof window === 'undefined') return null;
+
+const NOTICE_KEY = 'dma_cookie_notice';
+
+export function cookieNoticeSeen(): boolean {
   try {
-    const val = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (val === 'granted' || val === 'denied') return val;
-    return null;
+    return localStorage.getItem(NOTICE_KEY) === 'seen';
   } catch {
-    return null;
+    return false;
   }
 }
 
-/**
- * Persists the visitor's cookie consent choice.
- */
-export function saveCookieConsent(consent: CookieConsent): void {
-  if (typeof window === 'undefined') return;
+export function markCookieNoticeSeen(): void {
   try {
-    localStorage.setItem(COOKIE_CONSENT_KEY, consent);
+    localStorage.setItem(NOTICE_KEY, 'seen');
   } catch {
-    // ignore
+    // Storage blocked: the notice simply shows again next time.
   }
-}
-
-/**
- * Reopens the cookie settings banner from anywhere in the app (e.g. from the Privacy Policy).
- */
-export function openCookieSettings(): void {
-  if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent(COOKIE_SETTINGS_EVENT));
 }

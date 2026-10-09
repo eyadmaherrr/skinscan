@@ -1,4 +1,7 @@
+'use client';
+
 import { Camera, ImageUp, RotateCcw } from 'lucide-react';
+import { useI18n } from './LocaleProvider';
 import type { ScanFailure } from '@/lib/skin-analysis/types';
 
 interface Props {
@@ -8,6 +11,7 @@ interface Props {
 }
 
 export default function RetakeNotice({ failure, onRetake, onUpload }: Props) {
+  const { t } = useI18n();
   const quality = failure.error.code === 'image_quality';
   const issues = failure.imageQuality?.issues ?? [];
   return (
@@ -15,7 +19,7 @@ export default function RetakeNotice({ failure, onRetake, onUpload }: Props) {
       <span className="retakeIcon">
         <RotateCcw size={26} aria-hidden />
       </span>
-      <h2 id="retake-title">{quality ? 'Let’s retake that photo' : 'We couldn’t complete the scan'}</h2>
+      <h2 id="retake-title">{quality ? t.retake.quality : t.retake.error}</h2>
       {issues.length > 1 ? (
         <ul className="issueList">
           {issues.map((i) => (
@@ -26,17 +30,14 @@ export default function RetakeNotice({ failure, onRetake, onUpload }: Props) {
         <p className="muted">{failure.error.message}</p>
       )}
       {quality ? (
-        <p className="muted small">
-          We only show results when the photo is clear enough to measure reliably — this protects you from misleading
-          results.
-        </p>
+        <p className="muted small">{t.retake.why}</p>
       ) : null}
       <div className="actions center">
         <button type="button" className="btn primary" onClick={onRetake}>
-          <Camera size={18} aria-hidden /> Retake photo
+          <Camera size={18} aria-hidden /> {t.retake.retake}
         </button>
         <button type="button" className="btn secondary" onClick={onUpload}>
-          <ImageUp size={18} aria-hidden /> Upload a different photo
+          <ImageUp size={18} aria-hidden /> {t.retake.upload}
         </button>
       </div>
     </section>

@@ -1,18 +1,19 @@
 import { NextResponse } from 'next/server';
 import { getPatientSessionToken, verifyPatientSession } from '@/lib/auth';
+import { serverConfig } from '@/lib/config';
 
+export const dynamic = 'force-dynamic';
+
+/** Who is signed in, and whether scanning requires it (SKINSCAN_REQUIRE_AUTH). */
 export async function GET(request: Request) {
-  try {
-    const token = getPatientSessionToken(request);
-    if (!token) {
-      return NextResponse.json({ authenticated: false });
-    }
-
-    const result = await verifyPatientSession(token);
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('API /api/auth/me error:', error);
-    return NextResponse.json({ authenticated: false }, { status: 500 });
-  }
+  const result = await verifyPatientSession(getPatientSessionToken(request));
+  return NextResponse.json(
+    {
+      authenticated: result.authenticated,
+      required: serverConfig.requireAuth,
+      ...(result.patient ? { patient: result.patient } : {}),
+      ...(result.unavailable ? { unavailable: true } : {}),
+    },
+    { headers: { 'Cache-Control': 'no-store' } },
+  );
 }
-
