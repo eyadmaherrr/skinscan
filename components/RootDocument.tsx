@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Inter } from 'next/font/google';
+import AssistantWidget from './AssistantWidget';
 import AuthModal from './AuthModal';
 import CookieBanner from './CookieBanner';
 import { LocaleProvider } from './LocaleProvider';
@@ -18,6 +19,7 @@ export default function RootDocument({ locale, children }: { locale: Locale; chi
         <LocaleProvider locale={locale}>
           <AuthProvider>
             {children}
+            <AssistantWidget />
             <AuthModal />
             <CookieBanner />
           </AuthProvider>

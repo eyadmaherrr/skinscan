@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { CalendarDays, LogOut, ScanFace, UserRound } from 'lucide-react';
+import { CalendarDays, Home, ScanFace, UserRound } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import { useI18n } from './LocaleProvider';
 import { bookingLink, clinicLink, useAuth } from '@/lib/client/use-auth';
@@ -61,11 +61,11 @@ interface Props {
 
 export default function BrandHeader({ onHome, scanActive = true, hrefOverride }: Props) {
   const { t, locale, href } = useI18n();
-  const { patient, loading, logout, openSignIn } = useAuth();
-  const home = hrefOverride ?? href('/');
+  const { patient, loading, openSignIn } = useAuth();
+  const scanHome = hrefOverride ?? href('/');
+  const clinicHome = hrefOverride ?? clinicLink('/', locale);
   const booking = hrefOverride ?? bookingLink(locale);
   const accountHref = hrefOverride ?? clinicLink('/account', locale);
-  const external = hrefOverride ? {} : { target: '_blank', rel: 'noopener noreferrer' };
 
   const goHome = (e: MouseEvent<HTMLAnchorElement>) => {
     if (!onHome) return;
@@ -74,7 +74,7 @@ export default function BrandHeader({ onHome, scanActive = true, hrefOverride }:
   };
 
   const logo = (className: string, imageSize: number, withTitle: boolean) => (
-    <a href={home} className={className} aria-label={t.nav.home} onClick={goHome}>
+    <a href={scanHome} className={className} aria-label={t.nav.home} onClick={goHome}>
       <Image src="/brand/logo.webp" alt="" width={imageSize} height={imageSize} priority />
       {withTitle ? (
         <span className="navTitle" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
@@ -85,48 +85,56 @@ export default function BrandHeader({ onHome, scanActive = true, hrefOverride }:
     </a>
   );
 
-  const account = hrefOverride ? (
-    <a href={hrefOverride} className="desktopNavItem">
-      <UserRound size={19} strokeWidth={2} aria-hidden />
-      <span>{patient ? t.nav.account : t.nav.signIn}</span>
-    </a>
-  ) : patient ? (
-    <>
-      <a href={accountHref} className="desktopNavItem" title={patient.email}>
-        <UserRound size={19} strokeWidth={2} aria-hidden />
-        <span>{patient.name.split(' ')[0] || t.nav.account}</span>
-      </a>
-      <button type="button" className="desktopNavItem iconOnly" onClick={() => logout()} title={t.nav.signOut}>
-        <LogOut size={18} strokeWidth={2} aria-hidden />
-        <span className="srOnly">{t.nav.signOut}</span>
-      </button>
-    </>
-  ) : (
-    <button type="button" className="desktopNavItem" onClick={() => openSignIn()}>
-      <UserRound size={19} strokeWidth={2} aria-hidden />
-      <span>{t.nav.signIn}</span>
-    </button>
-  );
+  // Home, Book, Account, SkinScan — like the clinic website's navigation.
+  // Signed in: "Account" (the clinic account page, where patients also sign
+  // out). Signed out: "Sign In", which opens the sign-in dialog.
+  const items = (variant: 'desktop' | 'mobile') => {
+    const itemClass = variant === 'desktop' ? 'desktopNavItem' : 'mobileNavItem';
+    const size = variant === 'desktop' ? 19 : 22;
+    const stroke = variant === 'desktop' ? 2 : undefined;
+    const signedIn = !!patient || !!hrefOverride;
+    return (
+      <>
+        <a href={clinicHome} className={itemClass}>
+          <Home size={size} strokeWidth={stroke} aria-hidden />
+          <span>{t.nav.clinicHome}</span>
+        </a>
+        <a href={booking} className={itemClass}>
+          <CalendarDays size={size} strokeWidth={stroke} aria-hidden />
+          <span>{t.nav.book}</span>
+        </a>
+        {variant === 'desktop' && loading && !hrefOverride ? (
+          <span className="desktopNavAuthLoading" aria-hidden />
+        ) : signedIn ? (
+          <a href={accountHref} className={itemClass}>
+            <UserRound size={size} strokeWidth={stroke} aria-hidden />
+            <span>{patient || !hrefOverride ? t.nav.account : t.nav.signIn}</span>
+          </a>
+        ) : (
+          <button type="button" className={itemClass} onClick={() => openSignIn()} disabled={loading}>
+            <UserRound size={size} strokeWidth={stroke} aria-hidden />
+            <span>{t.nav.signIn}</span>
+          </button>
+        )}
+        <a
+          href={scanHome}
+          className={scanActive ? `${itemClass} active` : itemClass}
+          aria-current={scanActive ? 'page' : undefined}
+          onClick={goHome}
+        >
+          <ScanFace size={size} strokeWidth={stroke} aria-hidden />
+          <span>{t.nav.scan}</span>
+        </a>
+      </>
+    );
+  };
 
   return (
     <>
       <header className="desktopNav" dir="ltr">
         {logo('desktopNavLogo', 44, true)}
         <nav className="desktopNavLinks" aria-label={t.nav.navigation} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-          <a
-            href={home}
-            className={scanActive ? 'desktopNavItem active' : 'desktopNavItem'}
-            aria-current={scanActive ? 'page' : undefined}
-            onClick={goHome}
-          >
-            <ScanFace size={19} strokeWidth={2} aria-hidden />
-            <span>{t.nav.scan}</span>
-          </a>
-          <a href={booking} className="desktopNavItem" {...external}>
-            <CalendarDays size={19} strokeWidth={2} aria-hidden />
-            <span>{t.nav.book}</span>
-          </a>
-          {loading ? <span className="desktopNavAuthLoading" aria-hidden /> : account}
+          {items('desktop')}
         </nav>
         <div className="desktopNavLanguage">
           <LanguageSwitcher />
@@ -141,36 +149,7 @@ export default function BrandHeader({ onHome, scanActive = true, hrefOverride }:
       </header>
 
       <nav className="mobileBottomNav" aria-label={t.nav.navigation}>
-        <a
-          href={home}
-          className={scanActive ? 'mobileNavItem active' : 'mobileNavItem'}
-          aria-current={scanActive ? 'page' : undefined}
-          onClick={goHome}
-        >
-          <ScanFace size={22} aria-hidden />
-          <span>{t.nav.scan}</span>
-        </a>
-        <a href={booking} className="mobileNavItem" {...external}>
-          <CalendarDays size={22} aria-hidden />
-          <span>{t.nav.book}</span>
-        </a>
-        {patient || hrefOverride ? (
-          <a href={accountHref} className="mobileNavItem">
-            <UserRound size={22} aria-hidden />
-            <span>{patient ? t.nav.account : t.nav.signIn}</span>
-          </a>
-        ) : (
-          <button type="button" className="mobileNavItem" onClick={() => openSignIn()} disabled={loading}>
-            <UserRound size={22} aria-hidden />
-            <span>{t.nav.signIn}</span>
-          </button>
-        )}
-        {patient && !hrefOverride ? (
-          <button type="button" className="mobileNavItem" onClick={() => logout()}>
-            <LogOut size={22} aria-hidden />
-            <span>{t.nav.signOut}</span>
-          </button>
-        ) : null}
+        {items('mobile')}
       </nav>
     </>
   );

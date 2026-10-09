@@ -14,11 +14,11 @@ const en = {
   nav: {
     home: 'SkinScan home',
     navigation: 'Main navigation',
+    clinicHome: 'Home',
     scan: 'Skin Scan',
     book: 'Book',
     account: 'Account',
     signIn: 'Sign In',
-    signOut: 'Sign out',
     language: 'Language selection',
   },
   landing: {
@@ -307,11 +307,11 @@ const ar: Messages = {
   nav: {
     home: 'الصفحة الرئيسية لـ SkinScan',
     navigation: 'التنقل الرئيسي',
+    clinicHome: 'الرئيسية',
     scan: 'فحص البشرة',
     book: 'احجز',
     account: 'حسابي',
     signIn: 'تسجيل الدخول',
-    signOut: 'تسجيل الخروج',
     language: 'اختيار اللغة',
   },
   landing: {

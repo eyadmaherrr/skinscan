@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { localePath, stripLocale } from '../lib/i18n';
+import { assistantText } from '../lib/assistant/messages';
 import { format, messages } from '../lib/messages';
 import { explain, formatRegions } from '../lib/skin-analysis/explain';
 import type { MetricMeasurement } from '../lib/skin-analysis/metrics/common';
@@ -19,6 +20,11 @@ function shape(value: unknown, prefix = ''): string[] {
 describe('languages', () => {
   it('has every interface text in Arabic', () => {
     assert.deepEqual(shape(messages('ar')), shape(messages('en')));
+  });
+
+  it('has every assistant text in Arabic', () => {
+    assert.deepEqual(shape(assistantText('ar')), shape(assistantText('en')));
+    assert.match(assistantText('ar').choice.title, ARABIC);
   });
 
   it('has every analysis sentence in Arabic', () => {

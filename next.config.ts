@@ -1,13 +1,16 @@
 import type { NextConfig } from 'next';
 
 const isProd = process.env.NODE_ENV === 'production';
-const apiOrigin = (() => {
+const originOf = (url: string | undefined) => {
   try {
-    return process.env.NEXT_PUBLIC_API_BASE_URL ? new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin : '';
+    return url ? new URL(url).origin : '';
   } catch {
     return '';
   }
-})();
+};
+const apiOrigin = originOf(process.env.NEXT_PUBLIC_API_BASE_URL);
+// The assistant asks the clinic website's /api/assistant (its FAQ).
+const clinicOrigin = originOf(process.env.NEXT_PUBLIC_CLINIC_URL || 'https://www.drmahermahmoud.com');
 
 const csp = [
   "default-src 'self'",
@@ -15,7 +18,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data:",
   "font-src 'self'",
-  `connect-src 'self'${apiOrigin ? ` ${apiOrigin}` : ''}`,
+  `connect-src 'self'${apiOrigin ? ` ${apiOrigin}` : ''}${clinicOrigin ? ` ${clinicOrigin}` : ''}`,
   "media-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
