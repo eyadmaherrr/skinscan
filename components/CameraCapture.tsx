@@ -14,6 +14,30 @@ interface Props {
 
 type Facing = 'user' | 'environment';
 
+/**
+ * Lighting for the photo:
+ * - front camera (phones and laptops): the screen turns white for a moment
+ *   and lights the face, like a phone's selfie flash;
+ * - back camera: the phone's flash (torch), where the browser allows it
+ *   (Chrome on Android; not Safari on iPhone).
+ * The camera needs a moment to adjust its exposure to the light first.
+ */
+const SCREEN_FLASH_MS = 450;
+const TORCH_MS = 650;
+
+const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+
+/** The back camera's video track if it has a controllable torch. */
+function torchTrack(stream: MediaStream | null): MediaStreamTrack | null {
+  const track = stream?.getVideoTracks()[0];
+  const capabilities = track?.getCapabilities?.() as (MediaTrackCapabilities & { torch?: boolean }) | undefined;
+  return track && capabilities?.torch ? track : null;
+}
+
+function setTorch(track: MediaStreamTrack, on: boolean): Promise<void> {
+  return track.applyConstraints({ advanced: [{ torch: on } as MediaTrackConstraintSet] });
+}
+
 function cameraErrorMessage(error: unknown, t: Messages['camera']): string {
   const name = error instanceof Error ? error.name : '';
   if (name === 'NotAllowedError' || name === 'SecurityError') return t.blocked;
@@ -32,6 +56,8 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
   const [error, setError] = useState<string | null>(null);
   const [canSwitch, setCanSwitch] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [screenFlash, setScreenFlash] = useState(false);
+  const [capturing, setCapturing] = useState(false);
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -94,22 +120,48 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
     return () => window.removeEventListener('keydown', onKey);
   }, [onCancel]);
 
-  function capture() {
+  /** The current frame; front-camera photos the same way round as the mirrored preview. */
+  function drawFrame(): HTMLCanvasElement | null {
     const video = videoRef.current;
-    if (!video || !video.videoWidth) return;
+    if (!video || !video.videoWidth) return null;
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) return null;
     if (facing === 'user') {
-      // Keep the photo the same way round as the mirrored preview the user saw.
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
     ctx.drawImage(video, 0, 0);
-    setFlash(true);
-    window.setTimeout(() => setFlash(false), 180);
+    return canvas;
+  }
+
+  async function capture() {
+    if (capturing) return;
+    setCapturing(true);
+    const torch = facing === 'environment' ? torchTrack(streamRef.current) : null;
+    let canvas: HTMLCanvasElement | null = null;
+    try {
+      if (facing === 'user') {
+        setScreenFlash(true);
+        await wait(SCREEN_FLASH_MS);
+      } else if (torch) {
+        await setTorch(torch, true).catch(() => undefined);
+        await wait(TORCH_MS);
+      }
+      canvas = drawFrame();
+    } finally {
+      setScreenFlash(false);
+      if (torch) await setTorch(torch, false).catch(() => undefined);
+      setCapturing(false);
+    }
+    if (!canvas) return;
+    // Shutter feedback where the screen didn't already light up.
+    if (facing !== 'user') {
+      setFlash(true);
+      window.setTimeout(() => setFlash(false), 180);
+    }
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
@@ -164,7 +216,13 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
             {flash ? <div className="cameraFlash" /> : null}
             <div className="cameraControls">
               <span className="controlSpacer" />
-              <button type="button" className="shutter" onClick={capture} disabled={!ready} aria-label={t.shutter}>
+              <button
+                type="button"
+                className="shutter"
+                onClick={capture}
+                disabled={!ready || capturing}
+                aria-label={t.shutter}
+              >
                 <span />
               </button>
               {canSwitch ? (
@@ -183,6 +241,8 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
           </>
         )}
       </div>
+      {/* Front-camera flash: the whole screen white while the photo is taken. */}
+      {screenFlash ? <div className="cameraScreenFlash" aria-hidden /> : null}
     </div>
   );
 }
