@@ -60,6 +60,13 @@ export interface AnalysisText {
     disabled: string;
   };
   severityScale: string;
+  skinAge: {
+    summary(min: number, max: number | null, pct: number): string;
+    limitations: string[];
+    failed: string;
+    disabled: string;
+    notConfigured: string;
+  };
 }
 
 const en: AnalysisText = {
@@ -208,6 +215,18 @@ const en: AnalysisText = {
   },
   severityScale:
     'Four levels on the Hayashi count bands — level0 none or minimal (≤5 inflammatory-looking spots per half face), level1 mild (6–20), level2 moderate (21–50), level3 severe (>50). An experimental estimate from the photo, not a clinical grade.',
+  skinAge: {
+    summary: (min, max, pct) =>
+      `In this photo, your skin and face look about ${max === null ? `${min} or older` : `${min}–${max}`} years old (the AI model gives this a ${pct}% probability).`,
+    limitations: [
+      'This is how old the face looks in this photo, estimated by an AI model — not your real age and not a biological or medical measurement.',
+      'The model looks at the whole face, so features such as facial hair, hairline, make-up and expression also play a part, as do lighting and camera.',
+      'On its published test set (10,000 faces) the model picked the right 10-year range about 6 times in 10; when it is wrong it is usually one range off.',
+    ],
+    failed: 'Skin age could not be estimated for this photo.',
+    disabled: 'Skin age estimation is switched off.',
+    notConfigured: 'Skin age estimation is not available at the moment.',
+  },
 };
 
 const ar: AnalysisText = {
@@ -349,6 +368,18 @@ const ar: AnalysisText = {
   },
   severityScale:
     'أربعة مستويات حسب فئات العدّ في مقياس هاياشي: المستوى 0 لا يوجد أو بسيط جدًا (5 بقع أو أقل تبدو ملتهبة في نصف الوجه)، المستوى 1 خفيف (6–20)، المستوى 2 متوسط (21–50)، المستوى 3 شديد (أكثر من 50). تقدير تجريبي من الصورة، وليس تقييمًا طبيًا.',
+  skinAge: {
+    summary: (min, max, pct) =>
+      `في هذه الصورة، تبدو بشرتك ووجهك بعمر ${max === null ? `${min} سنة أو أكثر` : `${min}–${max} سنة`} تقريبًا (يعطي نموذج الذكاء الاصطناعي هذا التقدير احتمالًا بنسبة ${pct}٪).`,
+    limitations: [
+      'هذا هو العمر الذي يبدو عليه الوجه في هذه الصورة كما يقدّره نموذج ذكاء اصطناعي — وليس عمرك الحقيقي ولا قياسًا بيولوجيًا أو طبيًا.',
+      'ينظر النموذج إلى الوجه كله، لذلك تؤثر أيضًا ملامح مثل شعر الوجه وخط الشعر والمكياج وتعبير الوجه، وكذلك الإضاءة والكاميرا.',
+      'في مجموعة الاختبار المنشورة (10,000 وجه) اختار النموذج الفئة العمرية الصحيحة (10 سنوات) في نحو 6 من كل 10 مرات، وعندما يخطئ يكون الفرق غالبًا فئة واحدة.',
+    ],
+    failed: 'تعذّر تقدير عمر البشرة في هذه الصورة.',
+    disabled: 'تقدير عمر البشرة متوقف.',
+    notConfigured: 'تقدير عمر البشرة غير متاح حاليًا.',
+  },
 };
 
 const TEXT: Record<Locale, AnalysisText> = { en, ar };

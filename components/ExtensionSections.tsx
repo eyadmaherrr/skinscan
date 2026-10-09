@@ -1,9 +1,9 @@
 'use client';
 
-import { FlaskConical, Info } from 'lucide-react';
+import { FlaskConical, Info, Sparkles } from 'lucide-react';
 import { fill, useI18n } from './LocaleProvider';
 import { format } from '@/lib/messages';
-import type { AcneReport, AcneSeverity, PoreReport, RegionKey } from '@/lib/skin-analysis/types';
+import type { AcneReport, AcneSeverity, PoreReport, RegionKey, SkinAgeReport } from '@/lib/skin-analysis/types';
 
 function Limitations({ items }: { items: string[] }) {
   const { t } = useI18n();
@@ -180,6 +180,54 @@ export function PoresSection({ pores }: { pores: PoreReport }) {
         <Info size={14} aria-hidden /> {t.pores.notice}
       </p>
       {ok ? <Limitations items={pores.limitations} /> : null}
+    </section>
+  );
+}
+
+/** Skin age (apparent age) estimate, shown next to the photo. */
+export function SkinAgeCard({ skinAge }: { skinAge: SkinAgeReport }) {
+  const { t } = useI18n();
+  if (skinAge.status === 'disabled' || skinAge.status === 'not_configured') return null;
+  const ok = skinAge.status === 'ok' && skinAge.minYears !== null && skinAge.probabilities;
+  return (
+    <section className="skinAge" aria-labelledby="skin-age-title">
+      <div className="extHead">
+        <h3 id="skin-age-title">{t.skinAge.title}</h3>
+        <span className="tag experimental">
+          <Sparkles size={13} aria-hidden /> {t.skinAge.tag}
+        </span>
+      </div>
+      {ok ? (
+        <>
+          <p className="muted small">{t.skinAge.lead}</p>
+          <p className="skinAgeValue">
+            {skinAge.maxYears === null
+              ? format(t.skinAge.yearsPlus, { min: skinAge.minYears as number })
+              : format(t.skinAge.years, { min: skinAge.minYears as number, max: skinAge.maxYears })}
+          </p>
+          <p className="muted small">{format(t.skinAge.probability, { pct: Math.round((skinAge.probability ?? 0) * 100) })}</p>
+          <details className="limitations">
+            <summary>{t.skinAge.ranges}</summary>
+            <ul className="probBars">
+              {Object.entries(skinAge.probabilities as Record<string, number>).map(([range, p]) => (
+                <li key={range}>
+                  <span dir="ltr">{range}</span>
+                  <span className="meter" aria-hidden>
+                    <span style={{ width: `${Math.max(1, p * 100)}%` }} />
+                  </span>
+                  <span className="pct">{Math.round(p * 100)}%</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+          <p className="notice">
+            <Info size={14} aria-hidden /> {t.skinAge.notice}
+          </p>
+          <Limitations items={skinAge.limitations} />
+        </>
+      ) : (
+        <p className="extText muted">{skinAge.explanation}</p>
+      )}
     </section>
   );
 }

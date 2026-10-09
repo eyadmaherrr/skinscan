@@ -6,16 +6,17 @@ against the official model cards and package metadata (October 2026). This
 is an engineering summary, not legal advice — have the clinic's counsel
 confirm before commercial launch.
 
-## Dr Maher Vision AI v2.0 — what it consists of
+## Dr Maher Vision AI v3.0 — what it consists of
 
-"Dr Maher Vision AI v2.0" is the name of SkinScan's analysis engine. It is
+"Dr Maher Vision AI v3.0" is the name of SkinScan's analysis engine. It is
 made of:
 
 1. the three open-source MediaPipe models below (unchanged weights, Apache
    2.0) for face detection, facial landmarks and hair/skin/accessory
    segmentation, and
 2. the clinic's own code in `lib/skin-analysis/`: the image-quality gate,
-   region geometry, exposure normalisation and the colorimetric / texture
+   24-region canonical anatomical segmentation, region-by-region measurement
+   engine, local quality assessment, and the colorimetric / texture
    measurements described in docs/SCORING.md.
 
 No part of it was trained on patient photos or on any restricted dataset.
@@ -68,6 +69,20 @@ model whose checksum does not match.
 | Fairness (model card) | Mean IoU 77.2% overall; **68.3% for Monk skin tones 9–10** (vs 73.5–79.2% for tones 1–8) |
 | How we compensate | Because the mask is less accurate for the darkest skin tones, the segmenter is used **only to veto** pixels it is confident are hair / accessory / background / clothing. Skin regions themselves come from the landmarks, so segmentation errors on darker skin cannot shrink or shift the analysed area. |
 | Commercial use | Yes (Apache 2.0) |
+
+### 4. FairFace ViT-B/16 Age Classifier (int8 ONNX) — apparent skin age
+
+| | |
+|---|---|
+| Source | https://huggingface.co/onnx-community/fairface_age_image_detection-ONNX |
+| Model card | https://huggingface.co/dima806/fairface_age_image_detection |
+| Architecture | Vision Transformer (ViT-B/16), quantized to int8 ONNX (≈85 MB) |
+| Licence | **Apache License 2.0** |
+| Training dataset | FairFace (Karkkainen & Joo, WACV 2021), CC BY 4.0; 108,501 images balanced across 7 race/ethnic groups |
+| Classes | 9 age brackets: 0-2, 3-9, 10-19, 20-29, 30-39, 40-49, 50-59, 60-69, 70+ |
+| Used for | Non-diagnostic apparent skin age span estimation with transparent probabilities and medical disclaimers |
+| Fairness | Explicitly designed and trained for demographic balance across race and gender |
+| Commercial use | Yes (Apache 2.0 model, CC BY 4.0 training dataset) |
 
 ### Conversion (TFLite → ONNX)
 

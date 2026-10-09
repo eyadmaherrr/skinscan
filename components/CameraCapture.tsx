@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, ImageUp, Loader2, RotateCcw, SwitchCamera, X } from 'lucide-react';
+import { AlertCircle, ImageUp, Loader2, RotateCcw, SwitchCamera, X, Zap, ZapOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useI18n } from './LocaleProvider';
 import type { Messages } from '@/lib/messages';
@@ -13,11 +13,18 @@ interface Props {
 }
 
 type Facing = 'user' | 'environment';
+export type FlashIntensity = 'low' | 'medium' | 'high';
+
+const FLASH_OPACITIES: Record<FlashIntensity, number> = {
+  low: 0.35,
+  medium: 0.70,
+  high: 1.0,
+};
 
 /**
  * Lighting for the photo:
  * - front camera (phones and laptops): the screen turns white for a moment
- *   and lights the face, like a phone's selfie flash;
+ *   and lights the face, like a phone's selfie flash, with selectable intensity;
  * - back camera: the phone's flash (torch), where the browser allows it
  *   (Chrome on Android; not Safari on iPhone).
  * The camera needs a moment to adjust its exposure to the light first.
@@ -85,6 +92,8 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canSwitch, setCanSwitch] = useState(false);
+  const [flashEnabled, setFlashEnabled] = useState(true);
+  const [flashIntensity, setFlashIntensity] = useState<FlashIntensity>('medium');
   const [flash, setFlash] = useState(false);
   const [screenFlash, setScreenFlash] = useState(false);
   const [capturing, setCapturing] = useState(false);
@@ -165,10 +174,10 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
   async function capture() {
     if (capturing) return;
     setCapturing(true);
-    const torch = facing === 'environment' ? torchTrack(streamRef.current) : null;
+    const torch = facing === 'environment' && flashEnabled ? torchTrack(streamRef.current) : null;
     let canvas: HTMLCanvasElement | null = null;
     try {
-      if (facing === 'user') {
+      if (flashEnabled && facing === 'user') {
         setScreenFlash(true);
         await wait(SCREEN_FLASH_MS);
       } else if (torch) {
@@ -183,7 +192,7 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
     }
     if (!canvas) return;
     // Shutter feedback where the screen didn't already light up.
-    if (facing !== 'user') {
+    if (!flashEnabled || facing !== 'user') {
       setFlash(true);
       window.setTimeout(() => setFlash(false), 180);
     }
@@ -201,9 +210,41 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
   return (
     <div className="cameraOverlay" role="dialog" aria-modal="true" aria-label={t.dialog}>
       <div className="cameraFrame">
-        <button type="button" className="iconBtn cameraClose" onClick={onCancel} aria-label={t.close}>
-          <X size={20} aria-hidden />
-        </button>
+        <div className="cameraTopBar">
+          <div className="cameraFlashControls">
+            <button
+              type="button"
+              className={`iconBtn cameraFlashToggle ${flashEnabled ? 'active' : ''}`}
+              onClick={() => setFlashEnabled((prev) => !prev)}
+              aria-label={flashEnabled ? t.flashOff : t.flashOn}
+              title={flashEnabled ? t.flashOff : t.flashOn}
+            >
+              {flashEnabled ? <Zap size={20} aria-hidden /> : <ZapOff size={20} aria-hidden />}
+            </button>
+
+            {flashEnabled ? (
+              <div className="cameraIntensityPills" role="radiogroup" aria-label={t.flashIntensity}>
+                {(['low', 'medium', 'high'] as const).map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    role="radio"
+                    aria-checked={flashIntensity === level}
+                    className={`intensityBtn ${flashIntensity === level ? 'active' : ''}`}
+                    onClick={() => setFlashIntensity(level)}
+                    title={`${t.flashIntensity}: ${level === 'low' ? t.flashLow : level === 'medium' ? t.flashMedium : t.flashHigh}`}
+                  >
+                    {level === 'low' ? t.flashLow : level === 'medium' ? t.flashMedium : t.flashHigh}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <button type="button" className="iconBtn cameraClose" onClick={onCancel} aria-label={t.close}>
+            <X size={20} aria-hidden />
+          </button>
+        </div>
 
         {error ? (
           <div className="cameraError">
@@ -269,8 +310,14 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
           </>
         )}
       </div>
-      {/* Front-camera flash: the whole screen white while the photo is taken. */}
-      {screenFlash ? <div className="cameraScreenFlash" aria-hidden /> : null}
+      {/* Front-camera flash: screen brightness lights the face with chosen intensity */}
+      {screenFlash ? (
+        <div
+          className="cameraScreenFlash"
+          style={{ opacity: FLASH_OPACITIES[flashIntensity] }}
+          aria-hidden
+        />
+      ) : null}
     </div>
   );
 }

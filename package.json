@@ -8,13 +8,15 @@
   },
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/fetch-models.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "evaluate": "tsx scripts/evaluate.ts",
-    "verify-models": "tsx scripts/verify-models.ts"
+    "verify-models": "tsx scripts/verify-models.ts",
+    "fetch-models": "node scripts/fetch-models.mjs"
   },
   "dependencies": {
     "lucide-react": "1.53.0",

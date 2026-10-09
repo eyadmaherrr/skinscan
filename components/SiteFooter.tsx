@@ -8,11 +8,12 @@ import { SOCIAL_ICON_PATHS, SOCIAL_LINKS } from '@/lib/social';
 /**
  * Footer, the same as drmahermahmoud.com's: the clinic, its social
  * accounts and its pages (in the visitor's language), plus SkinScan's own
- * Terms and Privacy Policy and its informational-use note.
+ * Terms and Privacy Policy, educational routes, and its informational-use note.
  */
 export default function SiteFooter() {
   const { t, locale, href } = useI18n();
   const f = t.footer;
+  const isAr = locale === 'ar';
   const clinic = (path: string) => clinicLink(path, locale);
   const clinicHome = clinic('/');
 
@@ -42,13 +43,15 @@ export default function SiteFooter() {
 
         <nav className="siteFooterLinks" aria-label={f.navigation}>
           <a href={href('/')}>{f.skinscan}</a>
+          <a href={href('/scan')}>{isAr ? 'بدء الفحص' : 'Start Scan'}</a>
+          <a href={href('/how-it-works')}>{t.nav.howItWorks}</a>
+          <a href={href('/features')}>{t.nav.features}</a>
+          <a href={href('/skin-analysis')}>{isAr ? 'تحليل البشرة' : 'Skin Analysis'}</a>
+          <a href={href('/about')}>{isAr ? 'عن العيادة' : 'About'}</a>
+          <a href={href('/contact')}>{t.nav.contact}</a>
           <a href={clinicHome}>{f.home}</a>
           <a href={clinic('/doctor')}>{f.doctor}</a>
-          <a href={clinic('/support')}>{f.support}</a>
           <a href={clinic('/book')}>{f.book}</a>
-          <a href={`${clinicHome}#services`}>{f.services}</a>
-          <a href={`${clinicHome}#branches`}>{f.clinics}</a>
-          <a href={clinic('/faq')}>{f.faq}</a>
           <a href={href('/terms')}>{t.legal.terms}</a>
           <a href={href('/privacy')}>{t.legal.privacy}</a>
         </nav>

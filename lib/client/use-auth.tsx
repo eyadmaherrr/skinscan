@@ -30,17 +30,8 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/** A page on the clinic website, in the visitor's language ("/login" -> ".../ar/login"). */
-export function clinicLink(path: string, locale: Locale): string {
-  return `${publicConfig.clinicUrl}${localePath(path, locale)}`;
-}
-
-/** The booking page, in Arabic for Arabic visitors when it is the clinic's own. */
-export function bookingLink(locale: Locale): string {
-  const url = publicConfig.bookingUrl;
-  const base = publicConfig.clinicUrl;
-  return locale === 'ar' && url.startsWith(`${base}/`) ? `${base}/ar${url.slice(base.length)}` : url;
-}
+import { clinicLink, bookingLink } from '@/lib/public-config';
+export { clinicLink, bookingLink };
 
 /** Where the clinic website sends the patient after signing in: back to this page. */
 function returnUrl(resumeScan: boolean): string {

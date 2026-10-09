@@ -11,7 +11,8 @@ import { serverConfig } from '../../config';
  * pre/post-processing module that uses it.
  */
 
-export type ModelName = 'faceDetector' | 'faceLandmarks' | 'faceSegmenter';
+/** skinAge is fetched at build time (scripts/fetch-models.mjs) and not loaded by warmUp(). */
+export type ModelName = 'faceDetector' | 'faceLandmarks' | 'faceSegmenter' | 'skinAge';
 
 interface ManifestEntry {
   file: string;

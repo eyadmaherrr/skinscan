@@ -39,6 +39,21 @@
         "member": null,
         "memberSha256": "c6748b1253a99067ef71f7e26ca71096cd449baefa8f101900ea23016507e0e0"
       }
+    },
+    "skinAge": {
+      "file": "skin_age.onnx",
+      "sha256": "c6a6c231140e2111267d9ade2017543c86ff4e685795be4006f1e94e0534c8c0",
+      "name": "FairFace age-range classifier (ViT-B/16, int8 ONNX)",
+      "license": "Apache-2.0",
+      "modelCard": "https://huggingface.co/dima806/fairface_age_image_detection",
+      "trainingData": "FairFace (Karkkainen & Joo, WACV 2021), CC BY 4.0",
+      "fetchedAtBuild": true,
+      "source": {
+        "url": "https://huggingface.co/onnx-community/fairface_age_image_detection-ONNX/resolve/fd04cddf04982f6acc1ac76fb1a31b44c9285596/onnx/model_int8.onnx",
+        "sha256": "c6a6c231140e2111267d9ade2017543c86ff4e685795be4006f1e94e0534c8c0",
+        "member": null,
+        "memberSha256": null
+      }
     }
   }
 }

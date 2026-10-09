@@ -860,11 +860,90 @@ h3 {
   -webkit-backdrop-filter: blur(10px);
 }
 
-.cameraClose {
+.cameraTopBar {
   position: absolute;
   top: 12px;
-  inset-inline-end: 12px;
-  z-index: 3;
+  left: 12px;
+  right: 12px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.cameraTopBar > * {
+  pointer-events: auto;
+}
+
+.cameraFlashControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cameraFlashToggle {
+  transition: all 0.2s ease;
+}
+
+.cameraFlashToggle.active {
+  background: #facc15;
+  color: #071c31;
+  border-color: #facc15;
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.45);
+}
+
+.cameraIntensityPills {
+  display: flex;
+  align-items: center;
+  background: rgba(7, 28, 49, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+  padding: 3px;
+  gap: 3px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.intensityBtn {
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.intensityBtn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.intensityBtn.active {
+  background: #fff;
+  color: #071c31;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.cameraClose {
+  /* Inherits iconBtn styles within cameraTopBar */
 }
 
 .cameraControls {
@@ -1198,6 +1277,36 @@ h3 {
 
 .overall .muted {
   margin-top: 4px;
+}
+
+/* Skin age estimate (next to the photo). */
+.skinAge {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--line);
+}
+
+.skinAge .extHead h3 {
+  font-size: 15px;
+}
+
+.skinAge > .muted {
+  margin: 4px 0 0;
+}
+
+.skinAgeValue {
+  margin: 6px 0 2px;
+  color: var(--navy);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.skinAge .probBars li {
+  grid-template-columns: 48px 1fr 40px;
 }
 
 .ring {
@@ -3468,3 +3577,284 @@ html[dir='rtl'] .flipRtl {
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   Multi-Page Educational & Content Styles (Dr Maher Vision AI v3.0)
+   ========================================================================== */
+
+.contentPage {
+  padding-top: 30px;
+}
+
+.contentContainer {
+  max-width: 960px;
+}
+
+.contentBreadcrumbs {
+  margin-bottom: 24px;
+}
+
+.contentBreadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.contentBreadcrumbs a {
+  color: #176b9c;
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+
+.contentBreadcrumbs a:hover {
+  text-decoration: underline;
+  color: #0b2d4d;
+}
+
+.crumbSeparator {
+  opacity: 0.5;
+  margin: 0 4px;
+}
+
+.contentMetaBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 18px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.reviewerBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(14, 116, 144, 0.08);
+  border: 1px solid rgba(14, 116, 144, 0.15);
+  border-radius: 999px;
+  color: #0e7490;
+  font-weight: 600;
+}
+
+.contentBulletList {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.contentBulletList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.bulletIcon {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #0e7490;
+}
+
+.contentCallout {
+  margin: 24px 0;
+  padding: 18px 22px;
+  border-radius: 16px;
+  border-left: 4px solid #0e7490;
+}
+
+[dir="rtl"] .contentCallout {
+  border-left: none;
+  border-right: 4px solid #0e7490;
+}
+
+.callout-privacy {
+  background: rgba(16, 185, 129, 0.07);
+  border-color: #10b981;
+}
+
+.callout-privacy strong {
+  color: #065f46;
+}
+
+.callout-clinical {
+  background: rgba(14, 116, 144, 0.07);
+  border-color: #0e7490;
+}
+
+.callout-clinical strong {
+  color: #155e75;
+}
+
+.callout-info {
+  background: rgba(2, 132, 199, 0.07);
+  border-color: #0284c7;
+}
+
+.callout-info strong {
+  color: #0369a1;
+}
+
+.calloutHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.contentCallout p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #334155;
+}
+
+.faqGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.faqItem {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 18px;
+  transition: all 0.2s ease;
+}
+
+.faqItem[open] {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+}
+
+.faqQuestion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  color: #0f172a;
+  cursor: pointer;
+  user-select: none;
+}
+
+.faqIcon {
+  color: #0284c7;
+  flex-shrink: 0;
+}
+
+.faqAnswer {
+  margin: 12px 0 4px 28px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #475467;
+}
+
+[dir="rtl"] .faqAnswer {
+  margin: 12px 28px 4px 0;
+}
+
+.relatedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.relatedCard {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(11, 45, 77, 0.08);
+  box-shadow: 0 4px 16px rgba(11, 45, 77, 0.03);
+  text-decoration: none;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease;
+}
+
+.relatedCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(11, 45, 77, 0.08);
+  border-color: rgba(23, 107, 156, 0.25);
+}
+
+.relatedCard h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 750;
+  color: #0b2d4d;
+}
+
+.relatedCard p {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #64748b;
+  flex-grow: 1;
+}
+
+.relatedLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #176b9c;
+}
+
+.contentCtaBox {
+  margin-top: 48px;
+  padding: 36px 30px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #0b2d4d 0%, #17426b 100%);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(11, 45, 77, 0.2);
+}
+
+.contentCtaBox h3 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.contentCtaBox p {
+  margin: 0 auto;
+  max-width: 600px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.ctaButtons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.ctaBtn {
+  text-decoration: none;
+}
+

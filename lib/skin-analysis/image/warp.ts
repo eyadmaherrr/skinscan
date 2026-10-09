@@ -67,7 +67,13 @@ function samplesPerAxis(m: Affine): number {
  * and supersampling (anti-aliasing when shrinking). Returns 8-bit RGB plus a
  * mask of destination pixels that fall completely inside the source image.
  */
-export function warpRgb(src: RgbImage, dstW: number, dstH: number, m: Affine): { rgb: Uint8Array; valid: Uint8Array } {
+export function warpRgb(
+  src: RgbImage,
+  dstW: number,
+  dstH: number,
+  m: Affine,
+  padZero = false,
+): { rgb: Uint8Array; valid: Uint8Array } {
   const out = new Uint8Array(dstW * dstH * 3);
   const valid = new Uint8Array(dstW * dstH);
   const n = samplesPerAxis(m);
@@ -85,7 +91,10 @@ export function warpRgb(src: RgbImage, dstW: number, dstH: number, m: Affine): {
           const xd = x + (i + 0.5) / n;
           const xs = m.a * xd + m.b * yd + m.tx - 0.5;
           const ys = m.c * xd + m.d * yd + m.ty - 0.5;
-          if (xs < -0.5 || ys < -0.5 || xs > sw - 0.5 || ys > sh - 0.5) inside = 0;
+          if (xs < -0.5 || ys < -0.5 || xs > sw - 0.5 || ys > sh - 0.5) {
+            inside = 0;
+            if (padZero) continue;
+          }
           const x0 = Math.max(0, Math.min(sw - 1, Math.floor(xs)));
           const y0 = Math.max(0, Math.min(sh - 1, Math.floor(ys)));
           const x1 = Math.min(sw - 1, x0 + 1);

@@ -116,6 +116,19 @@ export default function BrandHeader({ onHome, scanActive = true, hrefOverride }:
             <span>{t.nav.signIn}</span>
           </button>
         )}
+        {variant === 'desktop' ? (
+          <>
+            <a href={hrefOverride ?? href('/how-it-works')} className={itemClass}>
+              <span>{t.nav.howItWorks}</span>
+            </a>
+            <a href={hrefOverride ?? href('/features')} className={itemClass}>
+              <span>{t.nav.features}</span>
+            </a>
+            <a href={hrefOverride ?? href('/about')} className={itemClass}>
+              <span>{t.nav.about}</span>
+            </a>
+          </>
+        ) : null}
         <a
           href={scanHome}
           className={scanActive ? `${itemClass} active` : itemClass}

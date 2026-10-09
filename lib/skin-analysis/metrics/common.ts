@@ -35,6 +35,11 @@ export interface MetricMeasurement {
   insufficientReason?: string;
   /** Extra details used in explanations and evaluation (never returned by the API). */
   details: Record<string, number>;
+  /**
+   * Per-pixel value on the aligned crop, in the same unit as `raw` (0 outside
+   * the analysed skin), for the heatmap of where the characteristic was seen.
+   */
+  map?: Float32Array;
 }
 
 export function union(masks: Record<RegionKey, Uint8Array>, keys: readonly RegionKey[]): Uint8Array {

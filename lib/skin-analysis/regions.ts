@@ -112,8 +112,8 @@ export function buildRegions(lm: AlignedLandmarks): FaceRegions {
   ];
 
   // Nose: trapezoid along the nose midline, from below the eyes down to just above the tip.
-  const noseTopY = eyeY + px(0.18);
-  const noseBottomY = tip[1] - px(0.03);
+  const noseTopY = eyeY + px(0.14);
+  const noseBottomY = tip[1] - px(0.02);
   const nose: Point[] = [
     [midXAt(noseTopY) - px(0.09), noseTopY],
     [midXAt(noseTopY) + px(0.09), noseTopY],
@@ -134,33 +134,33 @@ export function buildRegions(lm: AlignedLandmarks): FaceRegions {
   const mouthR = point(lm, LM.mouthCornerImgRight);
   const sideL = point(lm, LM.faceSideImgLeft);
   const sideR = point(lm, LM.faceSideImgRight);
-  const cheekTopL = lidBottomL + px(0.3);
-  const cheekTopR = lidBottomR + px(0.3);
+  const cheekTopL = lidBottomL + px(0.08);
+  const cheekTopR = lidBottomR + px(0.08);
   const cheekBottomL = mouthL[1];
   const cheekBottomR = mouthR[1];
   const cheekL: Point[] = [
     [sideL[0] - px(0.1), cheekTopL],
-    [midXAt(cheekTopL) - px(0.3), cheekTopL],
-    [mouthL[0] - px(0.1), cheekBottomL],
+    [midXAt(cheekTopL) - px(0.18), cheekTopL],
+    [mouthL[0] - px(0.05), cheekBottomL],
     [sideL[0] - px(0.1), cheekBottomL],
   ];
   const cheekR: Point[] = [
-    [midXAt(cheekTopR) + px(0.3), cheekTopR],
+    [midXAt(cheekTopR) + px(0.18), cheekTopR],
     [sideR[0] + px(0.1), cheekTopR],
     [sideR[0] + px(0.1), cheekBottomR],
-    [mouthR[0] + px(0.1), cheekBottomR],
+    [mouthR[0] + px(0.05), cheekBottomR],
   ];
 
   // Chin: below the lower lip, between the mouth corners, above the jaw line.
   const lowerLip = point(lm, LM.lowerLipBottom);
   const chinPt = point(lm, LM.chin);
-  const chinTop = lowerLip[1] + px(0.1);
-  const chinBottom = chinPt[1] - px(0.08);
+  const chinTop = lowerLip[1] + px(0.06);
+  const chinBottom = chinPt[1] - px(0.04);
   const chin: Point[] = [
-    [mouthL[0] + px(0.04), chinTop],
-    [mouthR[0] - px(0.04), chinTop],
-    [mouthR[0] - px(0.08), chinBottom],
-    [mouthL[0] + px(0.08), chinBottom],
+    [mouthL[0] + px(0.02), chinTop],
+    [mouthR[0] - px(0.02), chinTop],
+    [mouthR[0] - px(0.05), chinBottom],
+    [mouthL[0] + px(0.05), chinBottom],
   ];
 
   // Jawline (auxiliary, acne summary only): below the mouth-corner line, outside the chin.

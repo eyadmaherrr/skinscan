@@ -139,8 +139,7 @@ confidence = reliability (metric-specific, e.g. shine ≤ 0.62, redness ≤ 0.92
 | pose | head yaw and pitch from the 3-D landmarks |
 | resolution | pixels per millimetre on the face |
 | noise | signal-to-noise ratio on the skin |
-| natural detail | evidence of smoothing filters or heavy sharpening |
-| expression | smile score from mouth width, opening and corner lift (smiling folds the cheeks) |
+| expression | coordinated smile score (FACS AU12: lateral mouth widening + corner elevation above the stomion contact line; smiling creases cheeks) |
 
 Weights wᵢ per metric are in `confidence.ts` (e.g. texture depends mostly on
 sharpness and resolution; under-eye mostly on lighting; pigmentation, texture
@@ -231,6 +230,53 @@ are not always acne.
 - **Confidence:** capped at 0.62 (never "high"); reduced by blur, noise and
   editing.
 - **Not measured:** pore size or diameter, sebum, hydration, barrier function.
+
+## Dr Maher Vision AI v3.0: Region-by-Region Anatomical Methodology
+
+In Dr Maher Vision AI v3.0, analysis shifts from coarse whole-face averages to 24 discrete, anatomically anchored facial regions. Every region is segmented, assessed for local quality, measured, and reported independently.
+
+### 24 Canonical Anatomical Regions
+
+The 24 canonical regions are mapped from 478 MediaPipe landmark anchors and strict geometric boundaries:
+1. **Forehead, Temples & Glabella (6):** `foreheadCenter`, `foreheadLeft`, `foreheadRight`, `templeLeft`, `templeRight`, `glabella`
+2. **Periocular (4):** `upperEyeLeft`, `upperEyeRight`, `underEyeLeft`, `underEyeRight`
+3. **Nose (6):** `noseBridge`, `noseTip`, `nasalSidewallLeft`, `nasalSidewallRight`, `alarSkinLeft`, `alarSkinRight`
+4. **Cheeks (2):** `cheekLeft`, `cheekRight`
+5. **Perioral (4):** `perioralUpper`, `perioralLower`, `perioralLeft`, `perioralRight`
+6. **Chin (3):** `chinCenter`, `chinLeft`, `chinRight`
+7. **Jawline (2):** `jawlineLeft`, `jawlineRight`
+
+### Strict Zero-Overlap Guarantee
+
+To prevent double-counting and boundary ambiguity, regions follow a strict priority-based mutual exclusivity precedence tree:
+- Focal structures (under-eyes, glabella, nose, perioral, chin) take precedence over general expanses (forehead, cheeks, jawline).
+- Rasterized masks undergo pairwise exclusion, guaranteeing mathematically that every face pixel belongs to at most one anatomical region.
+
+### Region-Specific Quality Assessment
+
+Each region is assessed for local imaging quality prior to measurement:
+- `sharpness`: Local gradient energy over non-clipped pixels
+- `clippedFraction`: Fraction of pixels blown out (RGB ≥ 250)
+- `crushedFraction`: Fraction of pixels in deep shadow (RGB ≤ 12)
+- `usableCoverage`: Valid skin pixels after DeepLabV3 segmentation veto (hair, beard, glasses, background)
+- `snr`: Local signal-to-noise ratio
+
+### Explicit Measurement States (Never Fabricated Zeros)
+
+Every regional feature evaluation produces an explicit status:
+- `measured`: Sufficient usable skin, acceptable resolution, and exposure; score calibrated 0–100.
+- `low_quality`: Region is visible but degraded by blur, noise, or low physical resolution (e.g. pores < 4.5 px/mm).
+- `unavailable`: Measurement withheld with an explicit reason code:
+  - `insufficient_skin`: < 60 skin pixels or < 25% usable skin coverage
+  - `low_resolution`: Inadequate pixel density for fine detail
+  - `blurry`: High local motion or focus blur
+  - `overexposed` / `underexposed`: Local clipping or shadow crushing
+  - `occluded_by_hair` / `occluded_by_glasses`: Hair fringe or eyewear blocking skin
+  - `not_visible`: Region not present or feature anatomically unsupported
+- `not_supported`: Feature not applicable to this region (e.g., under-eye darkness on forehead).
+- `processing_error`: Internal execution error.
+
+Missing or unreliable measurements are **never silently replaced with zero**. An unmeasured region displays its explicit reason code and retake guidance.
 
 ## Not measured
 

@@ -1,13 +1,14 @@
 import { extensionConfig } from '../../config';
 import type { RgbImage } from '../image/decode';
 import type { MetricContext } from '../metrics/common';
-import type { AcneReport, AcneSeverity, AnalysisQuality, DermFoundationReport, PoreReport } from '../types';
+import type { AcneReport, AcneSeverity, AnalysisQuality, DermFoundationReport, PoreReport, SkinAgeReport } from '../types';
 import { analysisText, type AnalysisText } from '../text';
 import { buildAcneReport } from './acne';
 import { classifyAcneSeverity, disabledSeverity } from './acne-severity';
 import { extractDermFoundation } from './derm-foundation';
 import { analyzePores } from './pores';
 import { renderHeatmap } from './projection';
+import { estimateSkinAge } from './skin-age';
 
 /**
  * Runs the extension components after the core metrics. Each component is
@@ -18,6 +19,7 @@ import { renderHeatmap } from './projection';
 export interface ExtensionResults {
   acne: AcneReport;
   pores: PoreReport;
+  skinAge: SkinAgeReport;
   dermFoundation: DermFoundationReport;
   analysisQuality: AnalysisQuality;
   /** Internal values for evaluation (never returned by the API). */
@@ -102,6 +104,21 @@ export async function runExtensions(ctx: MetricContext, image: RgbImage, notes: 
     }
   }
 
+  let skinAge: SkinAgeReport;
+  try {
+    skinAge = await estimateSkinAge(ctx.face, image, { enabled: cfg.skinAge, locale: ctx.locale });
+  } catch {
+    skinAge = {
+      status: 'failed',
+      minYears: null,
+      maxYears: null,
+      probability: null,
+      probabilities: null,
+      explanation: text.skinAge.failed,
+      limitations: [],
+    };
+  }
+
   const derm = await extractDermFoundation(ctx.face, {
     enabled: cfg.dermFoundationEnabled,
     url: cfg.dermFoundationUrl,
@@ -115,6 +132,7 @@ export async function runExtensions(ctx: MetricContext, image: RgbImage, notes: 
   return {
     acne,
     pores,
+    skinAge,
     dermFoundation: derm.report,
     analysisQuality: { imageQuality: 'acceptable', limitations: Array.from(new Set(limitations)) },
     internal: { poresRaw, severity },

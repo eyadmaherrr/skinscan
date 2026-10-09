@@ -24,7 +24,7 @@ export const serverConfig = {
   /** Images are downscaled so the longest side is at most this many pixels before analysis. */
   maxAnalysisSide: int('SKIN_SCAN_MAX_ANALYSIS_SIDE', 2560, 1024, 4096),
   /** Hard deadline for a single scan, in milliseconds. */
-  timeoutMs: int('SKIN_SCAN_TIMEOUT_MS', 25_000, 5_000, 120_000),
+  timeoutMs: int('SKIN_SCAN_TIMEOUT_MS', 35_000, 5_000, 120_000),
   /** Scans processed at the same time by one server instance; extra requests get a "busy" reply. */
   maxConcurrentScans: int('SKIN_SCAN_MAX_CONCURRENT', 2, 1, 16),
   /** Scans allowed per client IP per rolling window. */
@@ -53,6 +53,7 @@ export function extensionConfig() {
   return {
     acneLesions: flag('SKINSCAN_ACNE_LESIONS', true),
     pores: flag('SKINSCAN_PORES', true),
+    skinAge: flag('SKINSCAN_SKIN_AGE', true),
     /**
      * Optional acne-severity ONNX model (see
      * scripts/convert/convert_acne_classifier.py), given as a file name inside

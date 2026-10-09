@@ -2,6 +2,7 @@ import type { AlignedFace } from '../alignment';
 import type { RgbImage } from '../image/decode';
 import { gaussianBlur } from '../image/filters';
 import { detectSpots, type Spot } from '../metrics/blemishes';
+import { hessianRatio } from '../metrics/blobs';
 import { union, type MetricContext } from '../metrics/common';
 import { regionGroup } from '../explain';
 import { analysisText, type RegionGroup } from '../text';
@@ -49,20 +50,7 @@ export function blobness(face: AlignedFace, s: Spot): number {
   if (w < 5 || h < 5) return 0;
   const patch = new Float32Array(w * h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) patch[y * w + x] = sign * plane[(y0 + y) * face.width + x0 + x];
-  const g = gaussianBlur(patch, w, h, s.sigma);
-  const cx = Math.min(w - 2, Math.max(1, s.x - x0));
-  const cy = Math.min(h - 2, Math.max(1, s.y - y0));
-  const at = (x: number, y: number) => g[y * w + x];
-  const dxx = at(cx + 1, cy) - 2 * at(cx, cy) + at(cx - 1, cy);
-  const dyy = at(cx, cy + 1) - 2 * at(cx, cy) + at(cx, cy - 1);
-  const dxy = (at(cx + 1, cy + 1) - at(cx + 1, cy - 1) - at(cx - 1, cy + 1) + at(cx - 1, cy - 1)) / 4;
-  const tr = dxx + dyy;
-  const disc = Math.sqrt(((dxx - dyy) / 2) ** 2 + dxy * dxy);
-  const l1 = tr / 2 + disc;
-  const l2 = tr / 2 - disc;
-  // A local minimum has both eigenvalues positive.
-  if (l1 <= 0 || l2 <= 0) return Math.max(0, Math.min(l1, l2)) / Math.max(1e-9, Math.abs(Math.max(l1, l2)));
-  return l2 / l1;
+  return hessianRatio(gaussianBlur(patch, w, h, s.sigma), w, h, s.x - x0, s.y - y0);
 }
 
 export function buildAcneReport(ctx: MetricContext, image: RgbImage, classifier: AcneSeverity): AcneReport {

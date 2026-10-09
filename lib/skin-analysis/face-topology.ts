@@ -49,8 +49,20 @@ export const LM = {
   /** Iris centres (refined landmarks 468–477). */
   irisImgLeft: 468,
   irisImgRight: 473,
+  /** Anatomical v3 anchors */
+  glabella: 9,
+  subnasale: 2,
+  infratip: 4,
+  labiomentalCrease: 18,
+  leftAlarBase: 102,
+  rightAlarBase: 331,
+  leftBrowInner: 107,
+  rightBrowInner: 336,
+  leftBrowOuter: 70,
+  rightBrowOuter: 300,
 } as const;
 
 /** Iris ring points (4 per eye) around the centres above. */
 export const IRIS_RING_IMG_LEFT = [469, 470, 471, 472];
 export const IRIS_RING_IMG_RIGHT = [474, 475, 476, 477];
+

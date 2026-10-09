@@ -1,4 +1,5 @@
 import { bandContrast } from '../image/detail';
+import { maskedGaussianBlur } from '../image/filters';
 import { ramp } from '../image/stats';
 import type { RegionKey } from '../types';
 import { countPixels, perRegionMean, regionCoverage, union, type MetricContext, type MetricMeasurement } from './common';
@@ -37,6 +38,12 @@ export function measureTexture(ctx: MetricContext): MetricMeasurement {
   const amplitude = new Float32Array(band.length);
   for (let i = 0; i < band.length; i++) amplitude[i] = Math.abs(band[i]);
   const noiseShare = measured > 0 ? noise / measured : 1;
+  // Local amplitude (RMS over ≈1.5 mm) with the same noise correction, for the heatmap.
+  const squared = new Float32Array(band.length);
+  for (let i = 0; i < band.length; i++) squared[i] = band[i] * band[i];
+  const local = maskedGaussianBlur(squared, mask, w, h, 1.5 * p);
+  const map = new Float32Array(band.length);
+  for (let i = 0; i < map.length; i++) if (mask[i]) map[i] = 100 * Math.sqrt(Math.max(0, local[i] - noise * noise));
 
   const regionRaw = perRegionMean(amplitude, masks.regions, REGIONS);
   for (const k of Object.keys(regionRaw) as RegionKey[]) regionRaw[k] = (regionRaw[k] as number) * 100;
@@ -49,5 +56,6 @@ export function measureTexture(ctx: MetricContext): MetricMeasurement {
     // Mostly-noise signals and missing natural detail (filters, heavy compression) lower reliability.
     reliability: 0.88 * ramp(0.95, 0.5, noiseShare) * (0.5 + 0.5 * quality.factors.naturalDetail),
     details: { measured: measured * 100, noise: noise * 100, noiseShare },
+    map,
   };
 }

@@ -1,5 +1,5 @@
 import type { Locale } from './i18n';
-import type { ConfidenceLabel, MetricKey, RegionKey, ScoreBand } from './skin-analysis/types';
+import type { ConfidenceLabel, HeatmapKey, MetricKey, RegionKey, ScoreBand } from './skin-analysis/types';
 
 /**
  * Interface text in English and Arabic. Sentences produced by the analysis
@@ -20,6 +20,11 @@ const en = {
     account: 'Account',
     signIn: 'Sign In',
     language: 'Language selection',
+    howItWorks: 'How It Works',
+    features: 'Features',
+    topics: 'Skin Topics',
+    about: 'About',
+    contact: 'Contact',
   },
   landing: {
     titleA: 'Skin',
@@ -72,6 +77,13 @@ const en = {
     starting: 'Starting camera…',
     shutter: 'Take photo',
     switch: 'Switch camera',
+    flash: 'Flash',
+    flashOn: 'Turn flash on',
+    flashOff: 'Turn flash off',
+    flashIntensity: 'Flash intensity',
+    flashLow: 'Low',
+    flashMedium: 'Medium',
+    flashHigh: 'High',
   },
   preview: {
     step: 'Step 2 of 2',
@@ -194,6 +206,13 @@ const en = {
     legendRed: 'red-toned',
     legendDark: 'darker-toned spot candidates',
     legendPores: 'Brighter violet = more visible pores (appearance estimate).',
+    heat: { redness: 'Redness', pigmentation: 'Pigmentation', texture: 'Texture', shine: 'Shine' } satisfies Record<HeatmapKey, string>,
+    legendHeat: {
+      redness: 'Deeper red = more visible redness there, on the same 0–100 scale as the score.',
+      pigmentation: 'Deeper brown = darker patches stand out more there, on the same 0–100 scale as the score.',
+      texture: 'Deeper teal = more visible fine texture there, on the same 0–100 scale as the score.',
+      shine: 'Deeper yellow = more shine (light reflected by the skin surface) there, on the same 0–100 scale as the score.',
+    } satisfies Record<HeatmapKey, string>,
   },
   acne: {
     title: 'Spots & acne-like marks',
@@ -221,6 +240,16 @@ const en = {
     index: 'Appearance index',
     byRegion: 'Pore visibility by region',
     notice: 'An appearance estimate from this photo — not a measurement of pore size, oil production or skin health.',
+  },
+  skinAge: {
+    title: 'Skin age',
+    tag: 'AI estimate',
+    lead: 'How old your skin looks in this photo',
+    years: '{min}–{max} years',
+    yearsPlus: '{min}+ years',
+    probability: 'Model probability for this range: {pct}%',
+    ranges: 'Probability by age range',
+    notice: 'An AI estimate of how old the face looks in this photo — not your real age and not a medical measurement.',
   },
   auth: {
     title: 'Sign in to start your scan',
@@ -274,6 +303,7 @@ const en = {
     acne: 'Spots & acne-like marks (experimental)',
     severity: 'Acne severity estimate (experimental)',
     pores: 'Pore visibility (experimental)',
+    skinAge: 'Skin age (AI estimate)',
     disclaimer:
       'Informational only — not a medical diagnosis. These results describe what was visible in one photo and have not been clinically validated. Only a dermatologist can examine and diagnose skin conditions.',
     book: 'Book a consultation: {url}',
@@ -315,6 +345,11 @@ const ar: Messages = {
     account: 'حسابي',
     signIn: 'تسجيل الدخول',
     language: 'اختيار اللغة',
+    howItWorks: 'كيف يعمل',
+    features: 'المميزات',
+    topics: 'موضوعات البشرة',
+    about: 'عن العيادة',
+    contact: 'اتصل بنا',
   },
   landing: {
     titleA: 'فحص ',
@@ -364,6 +399,13 @@ const ar: Messages = {
     starting: 'جارٍ تشغيل الكاميرا…',
     shutter: 'التقاط الصورة',
     switch: 'تبديل الكاميرا',
+    flash: 'الفلاش',
+    flashOn: 'تشغيل الفلاش',
+    flashOff: 'إيقاف الفلاش',
+    flashIntensity: 'شدة الفلاش',
+    flashLow: 'منخفضة',
+    flashMedium: 'متوسطة',
+    flashHigh: 'عالية',
   },
   preview: {
     step: 'الخطوة 2 من 2',
@@ -486,6 +528,13 @@ const ar: Messages = {
     legendRed: 'مائلة إلى الاحمرار',
     legendDark: 'بقع مرشّحة أغمق لونًا',
     legendPores: 'البنفسجي الأفتح = مسام أوضح (تقدير للمظهر).',
+    heat: { redness: 'الاحمرار', pigmentation: 'التصبغ', texture: 'الملمس', shine: 'اللمعان' },
+    legendHeat: {
+      redness: 'الأحمر الأغمق = احمرار أوضح في هذا المكان، على مقياس 0–100 نفسه المستخدم في الدرجة.',
+      pigmentation: 'البني الأغمق = بقع أغمق أوضح في هذا المكان، على مقياس 0–100 نفسه المستخدم في الدرجة.',
+      texture: 'الأخضر المزرق الأغمق = ملمس دقيق أوضح في هذا المكان، على مقياس 0–100 نفسه المستخدم في الدرجة.',
+      shine: 'الأصفر الأغمق = لمعان أكثر (ضوء ينعكس عن سطح البشرة) في هذا المكان، على مقياس 0–100 نفسه المستخدم في الدرجة.',
+    },
   },
   acne: {
     title: 'البقع والعلامات الشبيهة بحب الشباب',
@@ -513,6 +562,16 @@ const ar: Messages = {
     index: 'مؤشر المظهر',
     byRegion: 'وضوح المسام حسب المنطقة',
     notice: 'تقدير للمظهر من هذه الصورة، وليس قياسًا لحجم المسام أو إفراز الدهون أو صحة البشرة.',
+  },
+  skinAge: {
+    title: 'عمر البشرة',
+    tag: 'تقدير بالذكاء الاصطناعي',
+    lead: 'العمر الذي تبدو عليه بشرتك في هذه الصورة',
+    years: '{min}–{max} سنة',
+    yearsPlus: '{min} سنة أو أكثر',
+    probability: 'احتمال النموذج لهذه الفئة: {pct}٪',
+    ranges: 'الاحتمال حسب الفئة العمرية',
+    notice: 'تقدير بالذكاء الاصطناعي للعمر الذي يبدو عليه الوجه في هذه الصورة — وليس عمرك الحقيقي ولا قياسًا طبيًا.',
   },
   auth: {
     title: 'سجّل الدخول لبدء الفحص',
@@ -565,6 +624,7 @@ const ar: Messages = {
     acne: 'البقع والعلامات الشبيهة بحب الشباب (تجريبي)',
     severity: 'تقدير شدة حب الشباب (تجريبي)',
     pores: 'وضوح المسام (تجريبي)',
+    skinAge: 'عمر البشرة (تقدير بالذكاء الاصطناعي)',
     disclaimer:
       'لأغراض المعلومات فقط — وليس تشخيصًا طبيًا. تصف هذه النتائج ما ظهر في صورة واحدة ولم يتم التحقق منها سريريًا. طبيب الجلدية وحده يمكنه فحص الحالات الجلدية وتشخيصها.',
     book: 'احجز استشارة: {url}',

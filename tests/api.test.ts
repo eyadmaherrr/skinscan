@@ -103,7 +103,12 @@ describe('POST /api/skin-scan', () => {
       assert.ok(m.confidence >= 0 && m.confidence <= 1);
       assert.ok(m.explanation.length > 10);
     }
-    const strip = (r: ScanSuccess) => ({ ...r, scanId: '', createdAt: '' });
+    const strip = (r: ScanSuccess) => ({
+      ...r,
+      scanId: '',
+      createdAt: '',
+      ...(r.v3 ? { v3: { ...r.v3, executionMs: 0 } } : {}),
+    });
     assert.deepEqual(strip(first), strip(second));
 
     // Backward compatibility: the original contract is intact.

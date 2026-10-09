@@ -1,7 +1,7 @@
 import { confidenceLabel, MIN_REPORTABLE } from '../confidence';
 import { dogNoiseGain, estimateNoiseSigma, gaussianBlur } from '../image/filters';
 import { ramp } from '../image/stats';
-import { detectBlobs } from '../metrics/blobs';
+import { detectBlobs, hessianRatio } from '../metrics/blobs';
 import { countPixels, mm2, union, type MetricContext } from '../metrics/common';
 import { analysisText, type AnalysisText } from '../text';
 import type { PoreReport, RegionKey } from '../types';
@@ -39,6 +39,16 @@ export const PORE_THRESHOLDS = {
   minSnr: 60,
   minNaturalDetail: 0.8,
   minCoverage: 0.4,
+} as const;
+export const PORE_DETECTION = {
+  /**
+   * Minimum Hessian eigenvalue ratio of a pore: pores are round openings,
+   * while the common look-alikes — fine wrinkles, furrows, hairs and stubble —
+   * are lines (see docs/SCORING.md).
+   */
+  minRoundness: 0.3,
+  /** A pore must exceed this many times the RMS of the bright (opposite-polarity) responses at its scale. */
+  brightSpreadFactor: 3.5,
 } as const;
 
 
@@ -147,16 +157,36 @@ export function analyzePores(ctx: MetricContext): PoreAnalysis {
     }
     return b;
   };
+  // Noise floor of each filter, measured on the photo itself: pores are dark
+  // points, while camera noise and compression produce bright and dark points
+  // alike, so the spread of the *bright* responses (negative values) bounds
+  // what noise alone can produce at that scale.
+  const brightSpread = new Map<number, number>();
   const responses = (s: number) => {
     const inner = blur(s);
     const outer = blur(s * 1.6);
     const r = new Float32Array(inner.length);
-    for (let i = 0; i < r.length; i++) r[i] = outer[i] - inner[i]; // > 0 where the centre is darker
+    let sum = 0;
+    let n = 0;
+    for (let i = 0; i < r.length; i++) {
+      r[i] = outer[i] - inner[i]; // > 0 where the centre is darker
+      if (mask[i] && r[i] < 0) {
+        sum += r[i] * r[i];
+        n++;
+      }
+    }
+    brightSpread.set(s, n ? Math.sqrt(sum / n) : 0);
     return r;
   };
-  // At least 4% darker than the surrounding skin and 5× the camera noise at that scale.
-  const threshold = (s: number) => Math.max(0.04, 5 * noise * Math.sqrt(dogNoiseGain(s, s * 1.6)));
-  const blobs = detectBlobs(responses, sigmas, threshold, mask, w, h, 0.9);
+  // At least 4% darker than the surrounding skin, 5× the estimated camera
+  // noise at that scale, and clearly beyond what bright points of the same
+  // size reach on this photo.
+  const threshold = (s: number) =>
+    Math.max(0.04, 5 * noise * Math.sqrt(dogNoiseGain(s, s * 1.6)), PORE_DETECTION.brightSpreadFactor * (brightSpread.get(s) ?? 0));
+  // Keep round points only: wrinkles, fine lines and hairs are elongated.
+  const blobs = detectBlobs(responses, sigmas, threshold, mask, w, h, 0.9).filter(
+    (b) => hessianRatio(blur(b.sigma), w, h, b.x, b.y) >= PORE_DETECTION.minRoundness,
+  );
 
   const points = new Float32Array(w * h);
   let weighted = 0;

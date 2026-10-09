@@ -5,9 +5,11 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type Pointe
 import { Search, Sparkles } from 'lucide-react';
 import { useI18n } from './LocaleProvider';
 import { format } from '@/lib/messages';
-import type { LesionCandidate, MetricKey, RegionKey, RegionOutline, ScanSuccess } from '@/lib/skin-analysis/types';
+import { HEATMAP_KEYS, type HeatmapKey, type LesionCandidate, type MetricKey, type RegionKey, type RegionOutline, type ScanSuccess } from '@/lib/skin-analysis/types';
 
-type Layer = 'areas' | 'spots' | 'pores' | 'none';
+type Layer = 'areas' | 'spots' | 'pores' | HeatmapKey | 'none';
+
+const isHeatmapLayer = (layer: Layer): layer is HeatmapKey => (HEATMAP_KEYS as readonly string[]).includes(layer);
 
 interface Props {
   result: ScanSuccess;
@@ -69,11 +71,14 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
   const H = W / photoAspect;
   const lesions = result.acne?.status === 'ok' ? result.acne.lesions : [];
   const heatmap = result.pores?.status === 'ok' ? result.pores.heatmap : null;
+  // Where each reported characteristic was seen (older results have none).
+  const metricHeatmap = isHeatmapLayer(layer) ? (result.heatmaps?.[layer] ?? null) : null;
 
   const options: { id: Layer; label: string; available: boolean }[] = [
     { id: 'areas', label: t.overlay.areas, available: true },
     { id: 'spots', label: t.overlay.spots, available: lesions.length > 0 },
     { id: 'pores', label: t.overlay.pores, available: !!heatmap },
+    ...HEATMAP_KEYS.map((k) => ({ id: k, label: t.overlay.heat[k], available: !!result.heatmaps?.[k] })),
     { id: 'none', label: t.overlay.none, available: true },
   ];
 
@@ -130,6 +135,7 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
         >
           <img src={photoUrl} alt={t.overlay.photoAlt} />
           {layer === 'pores' && heatmap ? <img className="heatmapLayer" src={heatmap} alt="" aria-hidden /> : null}
+          {metricHeatmap ? <img className="heatmapLayer" src={metricHeatmap} alt="" aria-hidden /> : null}
 
           {layer === 'areas' || layer === 'spots' ? (
             <svg className="regionOverlay" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden>
@@ -225,6 +231,7 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
         </p>
       ) : null}
       {layer === 'pores' ? <p className="legend">{t.overlay.legendPores}</p> : null}
+      {isHeatmapLayer(layer) ? <p className="legend">{t.overlay.legendHeat[layer]}</p> : null}
     </>
   );
 }

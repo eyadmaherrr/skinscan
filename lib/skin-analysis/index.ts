@@ -18,14 +18,19 @@ import { measureShine } from './metrics/shine';
 import { measureTexture } from './metrics/texture';
 import { measureUnderEye } from './metrics/under-eye';
 import { runExtensions, type ExtensionResults } from './extensions';
+import { PALETTES, renderHeatmap } from './extensions/projection';
 import { assessAlignedFace, checkDetections, checkLandmarks, type QualityAssessment } from './quality';
 import { buildRegions } from './regions';
+import { buildAnatomicalRegionsV3 } from './regions-v3';
+import { aggregateV3Analysis } from './aggregation-v3';
 import { band, calibrate, METHODOLOGY_VERSION } from './scoring';
 import { buildSkinMasks } from './skin-mask';
 import { analysisText } from './text';
 import {
   ALL_REGION_KEYS,
+  HEATMAP_KEYS,
   METRIC_KEYS,
+  type HeatmapKey,
   type MetricKey,
   type MetricResult,
   type QualityIssueCode,
@@ -111,6 +116,7 @@ function outlines(face: AlignedFace, image: RgbImage, regions: ReturnType<typeof
 }
 
 export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptions): Promise<DetailedAnalysis> {
+  const pipelineStart = Date.now();
   const image = await decodeImage(buffer, { maxInputPixels: options.maxInputPixels, maxSide: options.maxSide });
   checkDeadline(options.deadline);
 
@@ -141,6 +147,11 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   await yieldToEventLoop();
   checkDeadline(options.deadline);
 
+  // V3 Anatomical Facial Regions and independent regional measurements
+  const anatomicalV3 = buildAnatomicalRegionsV3(face.landmarks, face, image.width, image.height);
+  const locale = options.locale ?? 'en';
+  const v3Aggregate = aggregateV3Analysis(face, anatomicalV3, quality, locale);
+
   // Exposure normalisation: colour contrasts in CIELAB scale with exposure, so
   // the photo is brought to a reference exposure using the eye whites, whose
   // brightness does not depend on skin tone. Gating above used the raw values.
@@ -149,7 +160,6 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   if (gain !== 1) face.lab = rgbToLabImage(face.rgb, face.width * face.height, gain);
   quality.diagnostics.exposureGain = gain;
   const illumination = Number.isFinite(scleraY) && scleraY > 0 ? scleraY * gain : 0.6;
-  const locale = options.locale ?? 'en';
   const ctx: MetricContext = { face, masks, quality, cache: new Map(), locale };
   const steps: ((c: MetricContext) => MetricMeasurement)[] = [
     measurePigmentation,
@@ -197,6 +207,7 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   checkDeadline(options.deadline);
   const notes = quality.notes.map((code) => analysisText(locale).notes[code]);
   const ext = await runExtensions(ctx, image, notes);
+  const heatmaps = await metricHeatmaps(face, image, measurements, ordered);
 
   const result: ScanSuccess = {
     success: true,
@@ -210,8 +221,30 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
     methodologyVersion: METHODOLOGY_VERSION,
     acne: ext.acne,
     pores: ext.pores,
+    skinAge: ext.skinAge,
+    heatmaps,
     dermFoundation: ext.dermFoundation,
     analysisQuality: ext.analysisQuality,
+    regionsV3: v3Aggregate.regionsV3,
+    v3: {
+      engineVersion: '3.0.0',
+      methodologyVersion: '3.0.0',
+      imageQuality: {
+        acceptable: true,
+        issues: quality.issues,
+        notes,
+      },
+      faceGeometry: {
+        iodPx: Math.round(face.sourceIod * 10) / 10,
+        pxPerMm: Math.round(face.pxPerMm * 100) / 100,
+        yaw: Math.round(pose.yaw * 10) / 10,
+        pitch: Math.round(pose.pitch * 10) / 10,
+        roll: Math.round(pose.roll * 10) / 10,
+      },
+      regions: v3Aggregate.regionsV3,
+      featureSummaries: v3Aggregate.featureSummaries,
+      executionMs: Date.now() - pipelineStart,
+    },
   };
   return {
     result,
@@ -220,6 +253,33 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
     face: { width: face.width, height: face.height, pxPerMm: face.pxPerMm, sourceIod: face.sourceIod },
     extensions: ext.internal,
   };
+}
+
+/**
+ * Heatmaps of where each reported characteristic was seen: every pixel's
+ * value goes through the metric's own calibration, so colours mean the same
+ * as the score (a pixel at 50 looks like a score of 50 there). A failed
+ * heatmap is left out; it never affects the scores.
+ */
+async function metricHeatmaps(
+  face: AlignedFace,
+  image: RgbImage,
+  measurements: MetricMeasurement[],
+  analysis: Record<MetricKey, MetricResult>,
+): Promise<Partial<Record<HeatmapKey, string>>> {
+  const out: Partial<Record<HeatmapKey, string>> = {};
+  for (const key of HEATMAP_KEYS) {
+    const m = measurements.find((x) => x.key === key);
+    if (!m?.map || analysis[key].score === null) continue;
+    const values = new Float32Array(m.map.length);
+    for (let i = 0; i < values.length; i++) if (m.map[i] > 0) values[i] = calibrate(key, m.map[i]) / 100;
+    try {
+      out[key] = await renderHeatmap(face, image, values, PALETTES[key]);
+    } catch {
+      // Leave this heatmap out.
+    }
+  }
+  return out;
 }
 
 export async function analyzeImage(buffer: Buffer, options: AnalyzeOptions): Promise<ScanSuccess> {

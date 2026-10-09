@@ -298,6 +298,17 @@ export async function downloadReport(result: ScanSuccess, photo: PreparedImage, 
     pages.paragraph(t.pores.notice, { size: 17, color: MUTED });
   }
 
+  const age = result.skinAge;
+  if (age && age.status === 'ok' && age.minYears !== null) {
+    pages.heading(t.report.skinAge);
+    pages.paragraph(
+      age.maxYears === null ? format(t.skinAge.yearsPlus, { min: age.minYears }) : format(t.skinAge.years, { min: age.minYears, max: age.maxYears }),
+      { size: 22, weight: 700, color: NAVY },
+    );
+    pages.paragraph(age.explanation, { size: 18, color: '#475467' });
+    pages.paragraph(t.skinAge.notice, { size: 17, color: MUTED });
+  }
+
   // Disclaimer and booking.
   pages.heading(locale === 'ar' ? 'تنبيه' : 'Important');
   pages.paragraph(t.report.disclaimer, { size: 18, color: TEXT, gap: 6 });

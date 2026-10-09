@@ -15,55 +15,64 @@ Landing → tips + consent                   rate limit (per IP hash) → size/t
   ◀─────────────── results / retake advice  image bytes are discarded after the request
 ```
 
-## Pipeline (`lib/skin-analysis/`)
+## Pipeline: Dr Maher Vision AI v3.0 (`lib/skin-analysis/`)
 
 ```
-decode (image/decode.ts)          magic-byte check, sharp decode with pixel limit,
-                                  EXIF orientation, colour profile → sRGB, ≤ 2560 px
-   │
-face detection (face-detection)   MediaPipe BlazeFace, SSD anchors + weighted NMS
-   │   └─ gate: no face / several faces
-landmarks (landmarks.ts)          MediaPipe Face Mesh V2, 478 points, two passes
-   │   └─ gate: face too small, cut off, turned/tilted (pose from 3-D landmarks)
-alignment (alignment.ts)          rotate eyes level, scale to ≤ 420 px inter-ocular,
-   │                              physical scale px/mm from 63 mm mean IOD,
-   │                              CIELAB conversion, segmentation (segmentation.ts)
-regions (regions.ts)              forehead, nose, cheeks, chin, under-eyes from landmarks;
-   │                              eyes, brows, lips excluded
-skin masks (skin-mask.ts)         segmentation vetoes hair/accessories/background,
-   │                              deep shadows and clipped pixels removed, borders eroded
-quality (quality.ts)              exposure (clipping, eye whites, noise), lighting balance,
-   │   └─ gate: retake advice     sharpness, filters/heavy edits, colour, glasses,
-   │                              occlusion, visible-skin coverage
-exposure normalisation (index.ts) eye-white luminance → common reference exposure
-   │
-metrics (metrics/*.ts)            pigmentation · redness · texture · blemishes ·
-   │                              shine · under-eye  → raw values in physical units
-scoring (scoring.ts)              raw → 0–100 via documented calibration anchors
-confidence (confidence.ts)        metric reliability × image-quality factors × coverage
-explain (explain.ts)              plain-language, non-diagnostic sentences
+IMAGE INGESTION (image/decode.ts)
+   │  magic-byte sniff, sharp decode with pixel limit, EXIF orientation, sRGB, ≤ 2560 px
+IMAGE VALIDATION & GATING
+   │  detect empty, corrupt, extreme aspect-ratio, or unreadable images
+FACE DETECTION (face-detection.ts)
+   │  MediaPipe BlazeFace SSD + weighted NMS; reject no-face or multiple prominent faces
+LANDMARK DETECTION (landmarks.ts)
+   │  MediaPipe Face Mesh V2, 478 points in two passes; presence & bounds check
+FACE ALIGNMENT & GEOMETRY (alignment.ts, quality.ts)
+   │  re-orient eyes horizontal, scale to ≤ 420 px IOD, compute px/mm from 63 mm mean IOD,
+   │  estimate 3D head pose (yaw, pitch, roll); gate off-angle or blurry portraits
+FACIAL PARSING & SKIN SEGMENTATION (segmentation.ts, skin-mask.ts)
+   │  DeepLabV3 face parsing into faceSkin, hair, bodySkin, background, clothes, others
+ANATOMICAL REGION GENERATION (regions-v3.ts)
+   │  24 canonical anatomical regions mapped from 478 MediaPipe landmark anchors;
+   │  enforces strict zero-overlap pairwise disjointness precedence tree and affine mapping
+REGION-SPECIFIC QUALITY ASSESSMENT (quality-v3.ts)
+   │  independent local SNR, gradient sharpness, highlight blowout, shadow clipping,
+   │  hair occlusion, and accessory obstruction per individual region
+REGION-SPECIFIC FEATURE EXTRACTION (features-v3/engine.ts)
+   │  modular measurement of pigmentation, redness, texture, blemishes, shine,
+   │  under-eye, and pores directly inside each region mask;
+   │  explicit reason codes for low-quality or unavailable regions (never fabricated zeros)
+MEASUREMENT VALIDATION & CONFIDENCE (confidence.ts, scoring.ts)
+   │  region and feature confidence based on local image quality, coverage, and SNR
+RESULT AGGREGATION & ROLLUP (aggregation-v3.ts)
+   │  area-weighted feature summaries across regions + backward-compatible legacy structures
+HEATMAPS & EXPLAINABLE RESULTS (extensions/projection.ts, explain.ts)
+   │  calibrated regional heatmaps + bilingual (English & Arabic) plain-language explanations
+REPORT GENERATION (report.ts, route.ts)
+   │  signed ScanSuccess response with legacy scores + new v3 anatomical breakdown
 ```
 
-`index.ts` orchestrates the stages, yields to the event loop between them
+`index.ts` orchestrates the stages, yields to the event loop between heavy operations,
 and enforces the scan deadline.
 
 ### Module responsibilities
 
 | File | Responsibility |
 |---|---|
-| `types.ts` | Public API types (the response contract) |
-| `errors.ts` | `ScanError` codes and all user-facing messages |
-| `image/decode.ts` | Safe decoding and format sniffing |
-| `image/color.ts` | sRGB → linear → CIELAB, ITA (evaluation only) |
-| `image/filters.ts` | Gaussian/box blur, masked blur, morphology, noise estimate |
+| `types.ts`, `types-v3.ts` | Public API types (ScanSuccess, RegionReportV3, DetailedV3PipelineResult) |
+| `errors.ts` | `ScanError` codes, retake reasons, and bilingual advice |
+| `image/decode.ts` | Safe decoding, metadata stripping, and format sniffing |
+| `image/color.ts` | sRGB → linear → CIELAB, ITA (individual typology angle) |
+| `image/filters.ts` | Gaussian blur, cached blurs, morphology, noise estimation |
 | `image/detail.ts` | Noise-corrected band-pass contrast |
 | `image/warp.ts` | Affine resampling with anti-aliasing |
-| `models/runtime.ts` | ONNX Runtime sessions, checksum verification |
-| `face-detection.ts`, `landmarks.ts`, `segmentation.ts` | Model pre/post-processing |
-| `alignment.ts`, `regions.ts`, `skin-mask.ts` | Geometry and skin selection |
-| `quality.ts` | Quality gate and quality factors |
-| `metrics/*.ts` | One file per measurement |
-| `scoring.ts`, `confidence.ts`, `explain.ts`, `labels.ts` | Presentation of measurements |
+| `models/runtime.ts` | ONNX Runtime CPU sessions, SHA-256 manifest verification |
+| `face-detection.ts`, `landmarks.ts`, `segmentation.ts` | ONNX model pre/post-processing |
+| `alignment.ts`, `face-topology.ts` | 478-landmark indices, canonical anchors, face alignment crop |
+| `regions-v3.ts` | 24 canonical anatomical regions with zero-overlap precedence |
+| `quality-v3.ts` | Region-specific quality assessment and feature feasibility gating |
+| `features-v3/engine.ts` | Regional measurement engine for pigmentation, redness, texture, etc. |
+| `aggregation-v3.ts` | Rollup of regional scores into feature summaries & legacy results |
+| `scoring.ts`, `confidence.ts`, `explain.ts` | Documented calibration anchors, confidence weighting, explanations |
 
 ### Replacing or adding a model
 
@@ -132,15 +141,16 @@ Failure: `{ "success": false, "error": { "code", "message" },
 
 Model names and internal measurements are deliberately not part of the API.
 
-## Extension components (methodology 2.1)
+## Extension components (methodology 2.1 & 2.2)
 
 ```
-core pipeline (unchanged) ──▶ ctx (aligned face, masks, quality, spots)
+core pipeline ──────────────────▶ ctx (aligned face, masks, quality, spots)
         │
         ├─ extensions/acne.ts            spot candidates (+ jawline), Hessian fold filter, overlay data
         ├─ extensions/acne-severity.ts   optional ResNet-50 classifier (SKINSCAN_ACNE_SEVERITY_MODEL)
         ├─ extensions/pores.ts           task-specific gate, DoG pores, regional index, heat map
-        ├─ extensions/projection.ts      crop → photo coordinates, heat-map PNG rendering
+        ├─ extensions/skin-age.ts        FairFace ViT-B/16 int8 ONNX apparent age range estimation (v2.2)
+        ├─ extensions/projection.ts      crop → photo coordinates, calibrated 0-100 metric heatmaps (v2.2)
         └─ extensions/derm-foundation.ts optional HTTP client for services/derm-foundation
 ```
 
@@ -149,9 +159,8 @@ separately: a failure yields `status: "failed"` for that section only; the
 core analysis and other sections are returned unchanged. Spot detection is
 shared with the blemish metric (`ctx.spots`), so nothing is computed twice.
 
-Optional models load through `getOptionalSession()` (path + SHA-256 from the
-adjacent `.json`, cached per process). The Derm Foundation model runs in a
-separate self-hosted service because it is a ≈1.5 GB TensorFlow model.
+Models load through `getModelSession()` (cached per process) or `getOptionalSession()`.
+The Derm Foundation model runs in a separate self-hosted service because it is a ≈1.5 GB TensorFlow model.
 
 ### Response additions (all optional, additive)
 

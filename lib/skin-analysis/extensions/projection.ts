@@ -25,13 +25,31 @@ export function round4(v: number): number {
 
 const HEATMAP_MAX_WIDTH = 360;
 
+/** Heatmap colour ramp: RGB at value 0 and at value 1. */
+export type Palette = readonly [readonly [number, number, number], readonly [number, number, number]];
+
+export const PALETTES = {
+  /** Light blue → violet (pores). */
+  violet: [[70, 190, 235], [180, 40, 220]],
+  redness: [[255, 170, 170], [214, 32, 62]],
+  pigmentation: [[236, 196, 132], [128, 72, 28]],
+  texture: [[140, 226, 214], [0, 128, 128]],
+  shine: [[255, 248, 196], [255, 196, 0]],
+} as const satisfies Record<string, Palette>;
+
 /**
  * Render a 0–1 map defined on the crop into a transparent PNG covering the
- * whole photo (same aspect ratio), as a data URI. Colour runs from light
- * blue (low) to violet (high); alpha follows the value, so low values stay
+ * whole photo (same aspect ratio), as a data URI. Colour runs along the
+ * palette from low to high; alpha follows the value, so low values stay
  * nearly invisible and the photo remains readable underneath.
  */
-export async function renderHeatmap(face: AlignedFace, image: RgbImage, values: Float32Array): Promise<string> {
+export async function renderHeatmap(
+  face: AlignedFace,
+  image: RgbImage,
+  values: Float32Array,
+  palette: Palette = PALETTES.violet,
+): Promise<string> {
+  const [[r0, g0, b0], [r1, g1, b1]] = palette;
   const ow = Math.min(HEATMAP_MAX_WIDTH, image.width);
   const oh = Math.max(1, Math.round((image.height * ow) / image.width));
   const toCrop = invertAffine(face.cropToSource);
@@ -45,9 +63,9 @@ export async function renderHeatmap(face: AlignedFace, image: RgbImage, values: 
       const value = Math.max(0, Math.min(1, samplePlane(values, face.width, face.height, xc, yc)));
       if (value < 0.04) continue;
       const o = (v * ow + u) * 4;
-      rgba[o] = Math.round(70 + 110 * value);
-      rgba[o + 1] = Math.round(190 - 150 * value);
-      rgba[o + 2] = Math.round(235 - 15 * value);
+      rgba[o] = Math.round(r0 + (r1 - r0) * value);
+      rgba[o + 1] = Math.round(g0 + (g1 - g0) * value);
+      rgba[o + 2] = Math.round(b0 + (b1 - b0) * value);
       rgba[o + 3] = Math.round(40 + 160 * value);
     }
   }

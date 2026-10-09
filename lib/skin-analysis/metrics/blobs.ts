@@ -74,3 +74,26 @@ export function detectBlobs(
   }
   return kept;
 }
+
+/**
+ * Roundness of a local minimum at (x, y) of a smoothed plane `g` (w × h):
+ * the ratio of the smaller to the larger eigenvalue of its Hessian. A round
+ * dark spot gives a ratio near 1; a line (a fold, a wrinkle, a hair) gives
+ * one near-zero eigenvalue, so a ratio near 0; a point that is not a local
+ * minimum (a saddle, a ridge) gives 0. This is the edge-response test of
+ * Lowe (IJCV 2004) for difference-of-Gaussians detections.
+ */
+export function hessianRatio(g: Float32Array, w: number, h: number, x: number, y: number): number {
+  const cx = Math.min(w - 2, Math.max(1, Math.round(x)));
+  const cy = Math.min(h - 2, Math.max(1, Math.round(y)));
+  const at = (xx: number, yy: number) => g[yy * w + xx];
+  const dxx = at(cx + 1, cy) - 2 * at(cx, cy) + at(cx - 1, cy);
+  const dyy = at(cx, cy + 1) - 2 * at(cx, cy) + at(cx, cy - 1);
+  const dxy = (at(cx + 1, cy + 1) - at(cx + 1, cy - 1) - at(cx - 1, cy + 1) + at(cx - 1, cy - 1)) / 4;
+  const tr = dxx + dyy;
+  const disc = Math.sqrt(((dxx - dyy) / 2) ** 2 + dxy * dxy);
+  const larger = tr / 2 + disc;
+  const smaller = tr / 2 - disc;
+  // A local minimum has both eigenvalues positive.
+  return smaller > 0 ? smaller / larger : 0;
+}

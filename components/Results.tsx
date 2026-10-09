@@ -2,7 +2,7 @@
 
 import { CalendarCheck, ChevronDown, Download, Info, Loader2, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
-import { AcneSection, PoresSection } from './ExtensionSections';
+import { AcneSection, PoresSection, SkinAgeCard } from './ExtensionSections';
 import { useI18n } from './LocaleProvider';
 import PhotoOverlay from './PhotoOverlay';
 import { ENGINE_NAME } from '@/lib/brand';
@@ -105,6 +105,8 @@ export default function Results({ result, photo, onScanAgain }: Props) {
               <p className="muted small">{t.results.overallSub}</p>
             </div>
           </div>
+
+          {result.skinAge ? <SkinAgeCard skinAge={result.skinAge} /> : null}
 
           {result.imageQuality.notes.length ? (
             <ul className="qualityNotes">

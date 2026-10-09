@@ -76,6 +76,12 @@ export function measureShine(ctx: MetricContext, illumination: number): MetricMe
     const f = fraction([k]);
     if (!Number.isNaN(f)) regionRaw[k] = f;
   }
+  // Local share of highlights (%, over ≈2 mm), for the heatmap.
+  const highlightF = new Float32Array(highlight.length);
+  for (let i = 0; i < highlight.length; i++) highlightF[i] = highlight[i];
+  const local = maskedGaussianBlur(highlightF, all, w, h, 2 * p);
+  const map = new Float32Array(highlight.length);
+  for (let i = 0; i < map.length; i++) if (all[i]) map[i] = 100 * local[i];
   return {
     key: 'shine',
     raw,
@@ -83,5 +89,6 @@ export function measureShine(ctx: MetricContext, illumination: number): MetricMe
     coverage,
     reliability: 0.62,
     details: { tZone, cheeks, illumination },
+    map,
   };
 }

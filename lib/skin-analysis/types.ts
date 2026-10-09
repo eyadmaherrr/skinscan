@@ -106,8 +106,46 @@ export interface ScanSuccess {
    */
   acne?: AcneReport;
   pores?: PoreReport;
+  /** Skin age (apparent age) estimate (methodology 2.2). */
+  skinAge?: SkinAgeReport;
+  /**
+   * Where each reported core characteristic was most visible: PNG data URIs
+   * aligned to the full photo (same aspect ratio), on the same scale as the
+   * score (methodology 2.2). Only metrics with a reported score are included.
+   */
+  heatmaps?: Partial<Record<HeatmapKey, string>>;
   dermFoundation?: DermFoundationReport;
   analysisQuality?: AnalysisQuality;
+  /**
+   * Region-by-feature anatomical report (methodology 3.0).
+   * 24 independent anatomical regions analyzed individually.
+   */
+  regionsV3?: Record<import('./types-v3').RegionKeyV3, import('./types-v3').RegionReportV3>;
+  v3?: import('./types-v3').DetailedV3PipelineResult;
+}
+
+export * from './types-v3';
+
+/** Core metrics that have a heatmap. */
+export const HEATMAP_KEYS = ['redness', 'pigmentation', 'texture', 'shine'] as const;
+export type HeatmapKey = (typeof HEATMAP_KEYS)[number];
+
+/** The skin-age model's nine age ranges, in its output order. */
+export const AGE_RANGES = ['0-2', '3-9', '10-19', '20-29', '30-39', '40-49', '50-59', '60-69', '70+'] as const;
+export type AgeRange = (typeof AGE_RANGES)[number];
+
+export interface SkinAgeReport {
+  status: ComponentStatus;
+  /** Most likely apparent-age span in years (one or two adjacent ranges); null unless status is ok. */
+  minYears: number | null;
+  /** Upper end of the span; null for "70 and over" (or unless status is ok). */
+  maxYears: number | null;
+  /** The model's probability for that span (0–1). */
+  probability: number | null;
+  /** The model's probability for each age range. */
+  probabilities: Record<AgeRange, number> | null;
+  explanation: string;
+  limitations: string[];
 }
 
 /**

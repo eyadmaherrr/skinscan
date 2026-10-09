@@ -149,12 +149,21 @@ export function smileScore(face: AlignedFace): { smile: number; mouthWidth: numb
   const [rx, ry] = pt(LM.mouthCornerImgRight);
   const [, uy] = pt(LM.upperLipInner);
   const [, dy] = pt(LM.lowerLipInner);
-  const [, ty] = pt(LM.upperLipTop);
-  const [, by] = pt(LM.lowerLipBottom);
   const mouthWidth = Math.hypot(rx - lx, ry - ly) / iod;
   const opening = Math.max(0, dy - uy) / iod;
-  const cornerLift = ((ty + by) / 2 - (ly + ry) / 2) / iod;
-  const smile = Math.max(ramp(0.9, 1.1, mouthWidth), ramp(0.06, 0.16, opening), ramp(0.02, 0.1, cornerLift));
+  const stomionY = (uy + dy) / 2;
+  const cornersY = (ly + ry) / 2;
+  // In image coordinates, y increases downward.
+  // Corner elevation above the stomion contact line indicates positive upward pull (AU12).
+  const cornerLift = (stomionY - cornersY) / iod;
+
+  // Coordinated smile (FACS AU12): Zygomaticus major pulls lip corners laterally and superiorly.
+  // Natural resting mouth width or parted lips alone without corner elevation must not be flagged as a smile.
+  const widthScore = ramp(0.98, 1.22, mouthWidth);
+  const liftScore = ramp(0.01, 0.12, cornerLift);
+  const closedSmile = Math.min(widthScore, liftScore);
+  const openSmile = Math.min(ramp(0.06, 0.18, opening), ramp(0.01, 0.10, cornerLift));
+  const smile = Math.max(closedSmile, openSmile);
   return { smile, mouthWidth, opening, cornerLift };
 }
 
