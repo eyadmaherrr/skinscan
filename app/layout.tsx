@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import { CLINIC_NAME, SITE_NAME } from '@/lib/brand';
 import { publicConfig } from '@/lib/public-config';
 import { AuthProvider } from '@/lib/client/use-auth';
+import CookieBanner from '@/components/CookieBanner';
 import './globals.css';
 
 // Self-hosted at build time by next/font: no request to Google from the visitor's browser.
@@ -34,7 +35,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={inter.variable}>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <CookieBanner />
+        </AuthProvider>
       </body>
     </html>
   );

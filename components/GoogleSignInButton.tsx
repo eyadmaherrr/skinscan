@@ -56,3 +56,4 @@ export default function GoogleSignInButton({ next, label = 'Continue with Google
     </div>
   );
 }
+

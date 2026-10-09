@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import BrandHeader from '@/components/BrandHeader';
+import CookieSettingsButton from '@/components/CookieSettingsButton';
 import { CLINIC_NAME, ENGINE_NAME, SITE_NAME, SITE_SHORT_NAME } from '@/lib/brand';
 import { publicConfig } from '@/lib/public-config';
 
@@ -157,6 +158,8 @@ export default function PrivacyPage() {
                 store scanned images.
               </li>
             </ul>
+
+            <CookieSettingsButton />
           </section>
 
           {/* ==================================================

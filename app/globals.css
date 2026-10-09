@@ -2450,3 +2450,169 @@ h3 {
     width: 100%;
   }
 }
+
+/* ============================================================
+   COOKIE CONSENT BANNER (Matching Dr. Maher Clinics Main Site)
+   ============================================================ */
+
+.cookie-banner {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  width: min(92%, 760px);
+  animation: cookieSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cookie-content {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  box-shadow:
+    0 20px 60px rgba(11, 45, 77, 0.16),
+    0 4px 20px rgba(11, 45, 77, 0.06);
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  border: 1px solid rgba(11, 45, 77, 0.08);
+  transition: all 0.3s ease;
+}
+
+.cookie-content:hover {
+  box-shadow: 0 24px 70px rgba(11, 45, 77, 0.2);
+}
+
+.cookie-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.cookie-text h3 {
+  margin: 0 0 4px;
+  color: #0b2d4d;
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -0.3px;
+}
+
+.cookie-text p {
+  margin: 0;
+  color: #667085;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.cookie-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.cookie-link {
+  color: #176b9c;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13.5px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.cookie-link:hover {
+  color: #0b2d4d;
+  background: rgba(23, 107, 156, 0.06);
+  text-decoration: underline;
+}
+
+.cookie-button {
+  background: linear-gradient(135deg, #0b3558 0%, #0b2d4d 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13.5px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(11, 45, 77, 0.18);
+  white-space: nowrap;
+}
+
+.cookie-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(23, 107, 156, 0.28);
+}
+
+.cookie-button.cookie-button-secondary {
+  background: #ffffff;
+  color: #0b2d4d;
+  border: 1px solid rgba(11, 45, 77, 0.22);
+  box-shadow: none;
+}
+
+.cookie-button.cookie-button-secondary:hover {
+  background: #f6f9fb;
+  box-shadow: 0 4px 14px rgba(11, 45, 77, 0.08);
+}
+
+.privacy-cookie-settings {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 12px;
+  padding: 10px 18px;
+  border: 1px solid rgba(23, 107, 156, 0.35);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #176b9c;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.privacy-cookie-settings:hover {
+  background: rgba(23, 107, 156, 0.06);
+  border-color: #176b9c;
+  transform: translateY(-1px);
+}
+
+@keyframes cookieSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .cookie-banner {
+    bottom: 16px;
+    width: calc(100% - 24px);
+  }
+
+  .cookie-content {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 18px;
+    gap: 16px;
+  }
+
+  .cookie-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .cookie-button {
+    flex: 1;
+    text-align: center;
+  }
+}
