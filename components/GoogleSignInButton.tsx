@@ -15,9 +15,12 @@ type Props = {
  */
 export default function GoogleSignInButton({ next, label = 'Continue with Google' }: Props) {
   const clinicAuthUrl = publicConfig.clinicUrl.replace(/\/$/, '');
-  const href = next
-    ? `${clinicAuthUrl}/api/auth/google?next=${encodeURIComponent(next)}`
-    : `${clinicAuthUrl}/api/auth/google`;
+  const returnUrl =
+    next ||
+    (typeof window !== 'undefined'
+      ? window.location.origin
+      : publicConfig.appUrl || 'https://skinscan.drmahermahmoud.com');
+  const href = `${clinicAuthUrl}/api/auth/google?next=${encodeURIComponent(returnUrl)}`;
 
   return (
     <div className="google-signin">
