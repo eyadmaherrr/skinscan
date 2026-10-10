@@ -257,7 +257,7 @@ export const FEATURES_CONTENT: Record<Locale, EducationalPageData> = {
   en: {
     slug: '/features',
     badge: 'Anatomical Precision',
-    title: '24 Anatomical Regions & 7 Skin Characteristics',
+    title: '24 Anatomical Regions & 6 Skin Characteristics',
     subtitle: 'Every millimeter of facial skin has unique biological properties. Dr Maher Vision AI v3.5 analyzes each region independently.',
     lastUpdated: 'October 2026',
     reviewer: 'Dr. Maher Mahmoud, Consultant Dermatologist',
@@ -284,7 +284,7 @@ export const FEATURES_CONTENT: Record<Locale, EducationalPageData> = {
       {
         title: 'The 7 Analyzed Skin Characteristics',
         paragraphs: [
-          'Each region is evaluated across seven core visible dermatological dimensions:',
+          'Each region is evaluated across six core visible dermatological dimensions:',
         ],
         bulletPoints: [
           '1. Visual Spot Candidates & Blemishes: Multi-scale Hessian blob detection mapped to Hayashi severity bands.',
@@ -292,8 +292,7 @@ export const FEATURES_CONTENT: Record<Locale, EducationalPageData> = {
           '3. Pigmentation & Melanin Distribution: Localized L* contrast detecting solar lentigines and uneven tone.',
           '4. Skin Surface Texture: Microrelief gradient sharpness and stratum corneum roughness.',
           '5. Skin Shine & Sebum Reflection: Specular highlight clustering distinguishing healthy glow from excess sebum.',
-          '6. Visible Facial Pores: High-frequency ostia bandpass filtering with strict 4.5 px/mm optical resolution gating.',
-          '7. Under-Eye Darkness: Infraorbital L* differential measuring periorbital hyperpigmentation and vascular pooling.',
+          '6. Under-Eye Darkness: Infraorbital L* differential measuring periorbital hyperpigmentation and vascular pooling.',
         ],
         callout: {
           type: 'info',
@@ -316,7 +315,7 @@ export const FEATURES_CONTENT: Record<Locale, EducationalPageData> = {
   ar: {
     slug: '/features',
     badge: 'دقة تشريحية متقدمة',
-    title: '24 منطقة تشريحية و7 مقاييس لبشرة الوجه',
+    title: '24 منطقة تشريحية و6 مقاييس لبشرة الوجه',
     subtitle: 'كل مليمتر في بشرة الوجه يحمل خصائص حيوية فريدة. يحلل محرك Dr Maher Vision AI v3.5 كل منطقة باستقلالية كاملة.',
     lastUpdated: 'أكتوبر 2026',
     reviewer: 'د. ماهر محمود، استشاري الأمراض الجلدية',
@@ -341,7 +340,7 @@ export const FEATURES_CONTENT: Record<Locale, EducationalPageData> = {
         ],
       },
       {
-        title: 'خصائص البشرة السبع التي يتم تحليلها',
+        title: 'خصائص البشرة الست التي يتم تحليلها',
         paragraphs: [
           'يتم فحص كل منطقة تشريحية عبر 7 أبعاد مظهرية أساسية:',
         ],
@@ -351,8 +350,7 @@ export const FEATURES_CONTENT: Record<Locale, EducationalPageData> = {
           '3. التصبغات وتوزيع الميلانين: حساب تباين لون البشرة ورصد البقع الداكنة والتصبغات الشمسية.',
           '4. ملمس البشرة والخشونة: قياس تدرجات سطح الجلد وتجانس الطبقة القرنية الخارجية.',
           '5. لمعان البشرة وانعكاس الدهون: رصد الانعكاسات البصرية اللامعة والتفرقة بين النضارة والدهنية الزائدة.',
-          '6. مسام الوجه الظاهرة: فلترة النطاق الترددي العالي بحد دقة بصرية صارم (4.5 بكسل/ملم).',
-          '7. الهالات السوداء ومحيط العين: قياس فرق الإضاءة تحت العين ورصد التصبغ والظلال الوعائية.',
+          '6. الهالات السوداء ومحيط العين: قياس فرق الإضاءة تحت العين ورصد التصبغ والظلال الوعائية.',
         ],
         callout: {
           type: 'info',
@@ -498,11 +496,6 @@ export const TOPICS_INDEX: Record<Locale, EducationalPageData> = {
     ],
     relatedTopics: [
       {
-        title: 'Facial Pores & Optical Resolution',
-        path: '/skin-analysis/pores',
-        description: 'Why pore measurement requires 4.5 px/mm resolution and how Dr Maher Vision AI prevents synthetic pore hallucination.',
-      },
-      {
         title: 'Blemishes & Acne Marks',
         path: '/skin-analysis/acne',
         description: 'Multi-scale Hessian curvature blob detection mapped to Hayashi severity count bands.',
@@ -562,11 +555,6 @@ export const TOPICS_INDEX: Record<Locale, EducationalPageData> = {
     ],
     relatedTopics: [
       {
-        title: 'مسام الوجه والدقة البصرية',
-        path: '/skin-analysis/pores',
-        description: 'لماذا يتطلب قياس المسام دقة 4.5 بكسل/ملم وكيف نمنع اختلاق المسام الوهمية.',
-      },
-      {
         title: 'البقع وآثار حب الشباب',
         path: '/skin-analysis/acne',
         description: 'رصد البقع بمصفوفة هيسي وتصنيفها وفق مقاييس هاياشي المعتمدة سريريًا.',
@@ -601,100 +589,6 @@ export const TOPICS_INDEX: Record<Locale, EducationalPageData> = {
 };
 
 export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageData>> = {
-  pores: {
-    en: {
-      slug: '/skin-analysis/pores',
-      badge: 'Skin Topic Guide',
-      title: 'Facial Pores & Optical Resolution Guide',
-      subtitle: 'The biology of facial pores, sebaceous infundibula, and why Dr Maher Vision AI enforces a strict 4.5 px/mm Nyquist resolution gate.',
-      lastUpdated: 'October 2026',
-      reviewer: 'Dr. Maher Mahmoud, Consultant Dermatologist',
-      breadcrumbs: [
-        { name: 'Home', path: '/' },
-        { name: 'Skin Analysis', path: '/skin-analysis' },
-        { name: 'Pores', path: '/skin-analysis/pores' },
-      ],
-      sections: [
-        {
-          title: 'Anatomy of Facial Pores',
-          paragraphs: [
-            'In dermatology, what the public refers to as "pores" are the external apertures of pilosebaceous follicles (follicular ostia). These structures channel sebum produced by sebaceous glands to the epidermal surface, maintaining the skin’s lipid barrier.',
-            'A human facial pore typically measures between 0.10 mm and 0.40 mm in diameter. Pore visibility varies dramatically based on anatomical location, genetics, age, and sebaceous activity. The nose and medial cheeks feature the highest density of visible ostia.',
-          ],
-        },
-        {
-          title: 'The Optical Resolution Barrier: The 4.5 px/mm Rule',
-          paragraphs: [
-            'A central controversy in commercial AI skin analysis is pore hallucination. In standard smartphone selfies taken at arm’s length (40–60 cm), the interocular distance (IOD) is often around 150 pixels, yielding an optical resolution of ~2.4 px/mm.',
-            'By the Nyquist-Shannon sampling theorem, resolving a 0.2 mm pore requires at least 2 samples across its diameter, and in practice $\ge 4.5$ px/mm to distinguish pore contrast from Bayer demosaicing artifacts and image compression.',
-          ],
-          callout: {
-            type: 'clinical',
-            title: 'Dr Maher Vision AI v3.5 Policy',
-            text: 'If a photograph is taken below 4.5 px/mm, the engine refuses to fabricate a pore count. It returns status: "low_resolution", explaining that physical optics prevent reliable measurement.',
-          },
-        },
-        {
-          title: 'Clinical Recommendations',
-          paragraphs: [
-            'Pores cannot be physically "opened" or "closed" because they lack muscular sphincters. However, their visible appearance can be minimized through regular topical salicylic acid (BHA) exfoliation, retinoids to stimulate perifollicular collagen support, and non-comedogenic sunscreens.',
-          ],
-        },
-      ],
-      faqs: [
-        {
-          question: 'Can skincare products permanently eliminate pores?',
-          answer: 'No. Pores are essential anatomical structures for skin homeostasis. Medical dermatology aims to prevent follicular dilation and unclog keratin debris rather than eliminate them.',
-        },
-      ],
-    },
-    ar: {
-      slug: '/skin-analysis/pores',
-      badge: 'دليل موضوعات البشرة',
-      title: 'دليل مسام الوجه والدقة البصرية',
-      subtitle: 'بيولوجيا مسام الوجه، القنوات الدهنية، ولماذا يلتزم ذكاء د. ماهر الاصطناعي بحد نايكويست الصارم (4.5 بكسل/ملم).',
-      lastUpdated: 'أكتوبر 2026',
-      reviewer: 'د. ماهر محمود، استشاري الأمراض الجلدية',
-      breadcrumbs: [
-        { name: 'الرئيسية', path: '/' },
-        { name: 'تحليل البشرة', path: '/skin-analysis' },
-        { name: 'المسام', path: '/skin-analysis/pores' },
-      ],
-      sections: [
-        {
-          title: 'تشريح وبيولوجيا مسام الوجه',
-          paragraphs: [
-            'ما يُعرف شعبيًا بمسام الوجه هو الفوهات الخارجية للجريبات الشعرية الدهنية (Follicular Ostia). وظيفة هذه الفتحات إفراز الزهم والدهون الطبيعية التي تحمي الحاجز الواقي للجلد وتمنع الجفاف.',
-            'يتراوح قطر المسام الطبيعي في الوجه بين 0.10 ملم و0.40 ملم. وتختلف درجة وضوحها وفق العوامل الوراثية، العمر، ونشاط الغدد الدهنية، وتتركز بأعلى كثافة في الأنف وأعلى الخدين.',
-          ],
-        },
-        {
-          title: 'حاجز الدقة البصرية: قاعدة 4.5 بكسل/ملم',
-          paragraphs: [
-            'من أكبر المشاكل في تطبيقات الذكاء الاصطناعي التجارية اختلاق مسام وهمية من تشويش الكاميرا. في صور السيلفي العادية على بعد 50 سم، تكون الدقة البصرية للوجه حوالي 2.4 بكسل/ملم فقط.',
-            'وفق نظرية نايكويست لأخذ العينات، يتطلب رصد مسام بقطر 0.2 ملم دقة بصرية لا تقل عن 4.5 بكسل/ملم للتفرقة بين حواف المسام الحقيقية وتأثيرات ضغط JPEG وضوضاء المستشعر.',
-          ],
-          callout: {
-            type: 'clinical',
-            title: 'سياسة محرك Dr Maher Vision AI v3.5',
-            text: 'إذا التُقطت الصورة بدقة أقل من 4.5 بكسل/ملم، يرفض النظام اختلاق أي رقم. يُسجل أن نتيجة المسام: "low_resolution" بشفافية كاملة.',
-          },
-        },
-        {
-          title: 'نصائح طبية للتعامل مع المسام الواسعة',
-          paragraphs: [
-            'المسام لا تملك عضلات لتفتح أو تغلق كما يُشاع، لكن يمكن تقليل وضوحها بتنظيف الإفرازات عبر حمض الساليسيليك، واستخدام مشتقات فيتامين أ (الريتينويد) لتعزيز الكولاجين المحيط بها، والحماية اليومية من الشمس.',
-          ],
-        },
-      ],
-      faqs: [
-        {
-          question: 'هل يمكن إغلاق المسام نهائيًا بالمستحضرات؟',
-          answer: 'كلا. المسام قنوات حيوية لا يمكن إغلاقها أو إزالتها. العلاج الطبي يهدف إلى تنظيفها وتحسين مرونة الجلد المحيط بها لتبدو بمظهر أصغر.',
-        },
-      ],
-    },
-  },
   acne: {
     en: {
       slug: '/skin-analysis/acne',

@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from 'react';
-import { Search, Sparkles, Bug, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Search, Sparkles, Bug } from 'lucide-react';
 import { useI18n } from './LocaleProvider';
 import { format } from '@/lib/messages';
 import {
@@ -13,7 +13,6 @@ import {
   type RegionKey,
   type RegionOutline,
   type ScanSuccess,
-  type RegionKeyV3,
   type RegionReportV3,
 } from '@/lib/skin-analysis/types';
 
@@ -86,20 +85,15 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
   const { t, locale } = useI18n();
   const [layer, setLayer] = useState<Layer>('areas');
   const [lens, setLens] = useState<Lens | null>(null);
-  const [debugMode, setDebugMode] = useState<boolean>(false);
+  // Debug overlay, switched on with ?debug=1 (the results are only ever rendered in the browser).
+  const [debugMode, setDebugMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const debug = new URLSearchParams(window.location.search).get('debug');
+    return debug === '1' || debug === 'true';
+  });
   const [showLandmarkNumbers, setShowLandmarkNumbers] = useState<boolean>(false);
   const touch = useSyncExternalStore(subscribeHover, hoverNone, () => false);
   const frameRef = useRef<HTMLDivElement>(null);
-
-  // Initialize debugMode from URL parameter if present (?debug=1)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('debug') === '1' || urlParams.get('debug') === 'true') {
-        setDebugMode(true);
-      }
-    }
-  }, []);
 
   // A tap outside the photo closes the magnifier on touch screens.
   useEffect(() => {
@@ -114,13 +108,12 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
   const W = 1000;
   const H = W / photoAspect;
   const lesions = result.acne?.status === 'ok' ? result.acne.lesions : [];
-  const heatmap = result.pores?.status === 'ok' ? result.pores.heatmap : null;
   const metricHeatmap = isHeatmapLayer(layer) ? (result.heatmaps?.[layer] ?? null) : null;
   const hasV3Regions = Boolean(result.regionsV3 && Object.keys(result.regionsV3).length > 0);
 
   const options: { id: Layer; label: string; available: boolean }[] = [
     { id: 'areas', label: t.overlay.areas, available: true },
-    { id: 'anatomical', label: locale === 'ar' ? 'المناطق التشريحية (v3)' : 'Anatomical Zones (v3)', available: hasV3Regions },
+    { id: 'anatomical', label: locale === 'ar' ? 'المناطق التفصيلية' : 'Detailed zones', available: hasV3Regions },
     { id: 'spots', label: t.overlay.spots, available: lesions.length > 0 },
     ...HEATMAP_KEYS.map((k) => ({ id: k, label: t.overlay.heat[k], available: !!result.heatmaps?.[k] })),
     { id: 'none', label: t.overlay.none, available: true },

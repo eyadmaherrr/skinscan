@@ -237,7 +237,7 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
     engine: ENGINE_NAME,
     methodologyVersion: METHODOLOGY_VERSION,
     acne: ext.acne,
-    pores: ext.pores?.status === 'ok' ? ext.pores : undefined,
+    pores: undefined,
     skinAge: ext.skinAge,
     skinType: undefined,
     skinToneUniformity: ext.skinToneUniformity,

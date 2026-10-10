@@ -29,12 +29,15 @@ const REGIONS: RegionKey[] = ['nose', 'forehead', 'cheekL', 'cheekR'];
 /** Raw value (weighted visible pores per cm²) at scores 0/25/50/75/100. */
 export const PORE_ANCHORS: [number, number, number, number, number] = [0, 6, 18, 40, 75];
 /**
- * Task-specific gate. Evaluation on 5–5.5 px/mm portraits showed scores moving
- * by up to 15 points with mild camera noise, so pores are only estimated on
- * close (≥ 6 px/mm, i.e. a phone selfie at arm's length), sharp, low-noise photos.
+ * Task-specific gate. With the original detector, mild camera noise moved
+ * scores by up to 16 points at 5–6.5 px/mm, so the gate was 6 px/mm. The
+ * opposite-polarity noise floor and the roundness test (methodology 2.2)
+ * brought that to ≤ 5 points at 5 px/mm (scripts/evaluate-pores.ts,
+ * docs/TESTING.md), so pores are estimated from 5 px/mm (a close phone
+ * selfie with the face filling the guide oval) on sharp, low-noise photos.
  */
 export const PORE_THRESHOLDS = {
-  minPxPerMm: 6,
+  minPxPerMm: 5,
   maxBlurIndex: 0.45,
   minSnr: 60,
   minNaturalDetail: 0.8,

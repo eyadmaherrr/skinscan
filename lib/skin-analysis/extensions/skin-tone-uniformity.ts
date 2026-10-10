@@ -17,7 +17,8 @@ import type {
 /**
  * Skin-Tone & Uniformity Analysis Engine (Dr Maher Vision AI v3.5).
  *
- * Implements Sony Research's skin-tone extraction methodology (ITA / CIELAB / Monk Scale)
+ * Describes skin colour with ITA (Chardon 1991; categories of Del Bino et al.), hue angle
+ * (Thong, Joniak, Xiang — Sony AI, ICCV 2023) and the nearest Monk Skin Tone swatch,
  * combined with anatomical regional color consistency evaluation across canonical
  * facial zones: Forehead, Left Cheek, Right Cheek, Nose, and Chin.
  *
@@ -27,9 +28,10 @@ import type {
  *  2. Quality filtration: Excludes specular reflections / clipping (max RGB >= 248
  *     or L* >= 95) and deep occluding shadows (L* <= 12).
  *  3. CIELAB colorimetry: Standard CIELAB (D65) color space.
- *  4. Skin-Tone Extraction (Sony Research / Chardon 1991):
+ *  4. Skin-colour description (Chardon 1991 / Thong et al. 2023):
  *     - Individual Typology Angle: ITA = (180 / π) * arctan((L* - 50) / b*)
- *     - Fitzpatrick phototypes I through VI
+ *     - ITA colour category (the Fitzpatrick-style label is kept in the API for
+ *       compatibility but is not shown: phototype is a UV response, not a colour)
  *     - Monk Skin Tone (MST 1–10) scale nearest perceptual match
  *     - Skin undertone (cool / neutral / warm) from hue angle & chroma ratio
  *     - True sRGB color swatch from facial skin pixels
@@ -39,8 +41,8 @@ import type {
  *     relative to facial baseline color.
  *  7. Lighting asymmetry gating: Detects directional lighting differences
  *     between left and right cheeks to avoid penalizing asymmetric shadows.
- *  8. Normalized 0–100 score: Continuous, tone-fair mathematical formulation
- *     benchmarked across all Fitzpatrick phototypes (I through VI).
+ *  8. Normalized 0–100 score: exponential mapping of the regional colour
+ *     differences (not yet validated across skin tones).
  *  9. Spatial Delta E deviation heatmap across facial skin.
  */
 
@@ -53,7 +55,7 @@ export interface UniformityAnalysisOptions {
 
 /**
  * Monk Skin Tone (MST 1–10) calibrated standards in CIELAB (D65) and sRGB Hex.
- * Developed by Dr. Ellis Monk and evaluated in Sony Research skin-tone extraction.
+ * Developed by Dr. Ellis Monk (released by Google under CC BY 4.0).
  */
 export const MONK_SCALE_TONES = [
   { number: 1, name: 'Monk 01', hex: '#f6ede4', L: 94.3, a: 2.5, b: 5.5, labelEn: 'Very Light', labelAr: 'شديدة البياض' },
@@ -100,7 +102,7 @@ export function computeRobustQuantiles(values: number[]): {
 
 /**
  * Calculates the Individual Typology Angle (ITA) in degrees.
- * Formulated by Chardon et al. (1991) and utilized in Sony Research skin-tone extraction:
+ * Formulated by Chardon et al. (1991):
  * ITA = (180 / π) * arctan((L* - 50) / b*)
  */
 export function computeITA(L: number, b: number): number {
@@ -112,7 +114,8 @@ export function computeITA(L: number, b: number): number {
 }
 
 /**
- * Maps Individual Typology Angle (ITA) to standard Fitzpatrick Phototype (Types I–VI).
+ * Maps the Individual Typology Angle (ITA) to its colour category. The phototype
+ * label is an approximate correspondence only and is not shown to users.
  * Reference dermatological thresholds (Chardon 1991, Del Bino 2018, Kinyanjui et al. 2020):
  *   ITA > 55°       -> Type I (Very Light / Fair)
  *   41° < ITA <= 55° -> Type II (Light)

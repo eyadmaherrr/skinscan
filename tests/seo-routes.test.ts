@@ -26,7 +26,6 @@ describe('Multi-Page SEO Architecture & Metadata', () => {
     '/how-it-works',
     '/features',
     '/skin-analysis',
-    '/skin-analysis/pores',
     '/skin-analysis/acne',
     '/skin-analysis/pigmentation',
     '/skin-analysis/redness',
@@ -97,7 +96,7 @@ describe('Multi-Page SEO Architecture & Metadata', () => {
     const breadcrumbs = [
       { name: 'Home', path: '/' },
       { name: 'Skin Analysis', path: '/skin-analysis' },
-      { name: 'Pores', path: '/skin-analysis/pores' },
+      { name: 'Acne', path: '/skin-analysis/acne' },
     ];
     const schema = buildBreadcrumbSchema(breadcrumbs, 'en');
 
@@ -106,28 +105,28 @@ describe('Multi-Page SEO Architecture & Metadata', () => {
     assert.strictEqual(schema.itemListElement.length, 3);
     assert.strictEqual(schema.itemListElement[0].position, 1);
     assert.strictEqual(schema.itemListElement[0].name, 'Home');
-    assert.strictEqual(schema.itemListElement[2].name, 'Pores');
-    assert.ok(schema.itemListElement[2].item.includes('/skin-analysis/pores'));
+    assert.strictEqual(schema.itemListElement[2].name, 'Acne');
+    assert.ok(schema.itemListElement[2].item.includes('/skin-analysis/acne'));
   });
 
   it('generates valid Schema.org MedicalWebPage structured data', () => {
     const schema = buildMedicalWebPageSchema(
-      'Facial Pores & Resolution',
-      'Educational guide on facial pores',
-      '/skin-analysis/pores',
+      'Blemishes & Acne Marks',
+      'Educational guide on blemishes and acne marks',
+      '/skin-analysis/acne',
       'en',
     );
 
     assert.strictEqual(schema['@context'], 'https://schema.org');
     assert.strictEqual(schema['@type'], 'MedicalWebPage');
-    assert.strictEqual(schema.name, 'Facial Pores & Resolution');
+    assert.strictEqual(schema.name, 'Blemishes & Acne Marks');
     assert.strictEqual(schema.inLanguage, 'en');
-    assert.ok(schema.url.includes('/skin-analysis/pores'));
+    assert.ok(schema.url.includes('/skin-analysis/acne'));
   });
 
-  it('compiles a comprehensive sitemap with all 16 bilingual routes (32 entries)', () => {
+  it('compiles a comprehensive sitemap with all 15 bilingual routes (30 entries)', () => {
     const map = sitemap();
-    assert.ok(map.length >= 32);
+    assert.ok(map.length >= 30);
 
     for (const entry of map) {
       assert.ok(/^https?:\/\//.test(entry.url));
@@ -139,8 +138,8 @@ describe('Multi-Page SEO Architecture & Metadata', () => {
 
     const enUrls = map.filter((e) => !e.url.includes('/ar'));
     const arUrls = map.filter((e) => e.url.includes('/ar'));
-    assert.strictEqual(enUrls.length, 16);
-    assert.strictEqual(arUrls.length, 16);
+    assert.strictEqual(enUrls.length, 15);
+    assert.strictEqual(arUrls.length, 15);
   });
 
   it('enforces search engine robots policy with API disallowed', () => {
@@ -173,7 +172,6 @@ describe('Multi-Page SEO Architecture & Metadata', () => {
     checkContent(TOPICS_INDEX.en, TOPICS_INDEX.ar, '/skin-analysis');
 
     const topics = [
-      'pores',
       'acne',
       'pigmentation',
       'redness',

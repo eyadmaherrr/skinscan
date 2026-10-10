@@ -4344,3 +4344,835 @@ html[dir='rtl'] .flipRtl {
   }
 }
 
+/* ============================================================
+   RESULTS DASHBOARD
+   One page grid and one spacing scale (4 / 8 / 12 / 16 / 24 / 32 px).
+   Every card on the results page uses the shared .panel style.
+   ============================================================ */
+
+.results {
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s6: 24px;
+  --s8: 32px;
+  --panel-radius: 20px;
+  --panel-pad: 20px;
+  --panel-bg: rgba(255, 255, 255, 0.88);
+  --panel-border: 1px solid rgba(11, 45, 77, 0.09);
+  --panel-shadow: 0 1px 2px rgba(11, 45, 77, 0.04), 0 8px 24px rgba(11, 45, 77, 0.05);
+  gap: var(--s6);
+}
+
+/* Shared card style: subtle border, minimal shadow, no heavy blur. */
+.results .glass {
+  background: var(--panel-bg);
+  border: var(--panel-border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.results .panel {
+  min-width: 0;
+  padding: var(--panel-pad);
+}
+
+.resultsPanel {
+  display: grid;
+  gap: var(--s6);
+  min-width: 0;
+}
+
+/* ---------- Header ---------- */
+.resultsTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4) var(--s6);
+}
+
+.resultsBrand {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-width: 0;
+}
+
+.resultsBrandMark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--blue-bright), var(--navy));
+  color: #fff;
+}
+
+.resultsTop h2 {
+  color: var(--navy);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.resultsTop .muted {
+  margin: var(--s1) 0 0;
+}
+
+.resultsMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--s2);
+}
+
+.metaChip {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-width: 128px;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--radius-sm);
+  background: var(--panel-bg);
+  border: var(--panel-border);
+}
+
+.metaChip span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.metaChip b {
+  color: var(--navy);
+  font-size: 13.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- Tabs ---------- */
+.resultsTabs {
+  display: flex;
+  gap: var(--s1);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: none;
+}
+
+.resultsTabs button {
+  position: relative;
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 0;
+  border-radius: 12px 12px 0 0;
+  background: transparent;
+  color: var(--muted-strong);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.resultsTabs button:hover {
+  color: var(--navy);
+}
+
+.resultsTabs button:focus-visible {
+  outline: 3px solid rgba(45, 156, 219, 0.45);
+  outline-offset: -3px;
+}
+
+.resultsTabs button.active {
+  background: var(--panel-bg);
+  color: var(--navy);
+}
+
+.resultsTabs button.active::after {
+  content: '';
+  position: absolute;
+  inset-inline: var(--s3);
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--blue-bright);
+}
+
+/* ---------- Card headings (one size for every card) ---------- */
+.results .cardTitle,
+.results .extHead h3 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.3;
+  letter-spacing: -0.2px;
+}
+
+.results .cardTitle {
+  margin-bottom: var(--s4);
+}
+
+.results .extHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+  margin-bottom: var(--s4);
+}
+
+.titleWithInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+}
+
+.results .subTitle {
+  margin: 0 0 var(--s2);
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.results .tag {
+  min-height: 24px;
+  font-size: 12px;
+}
+
+/* ---------- Overview: photo / summary / key findings ---------- */
+.overviewGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s4);
+  align-items: start;
+}
+
+.results .panel.photoCard {
+  padding: var(--s3);
+}
+
+.photoCard .photoFrame {
+  border-radius: 14px;
+}
+
+.photoCard .resultPhoto img {
+  max-height: none;
+}
+
+.photoCard .zoomHint {
+  margin-top: var(--s2);
+  font-size: 12.5px;
+}
+
+.photoCard .layerSwitch {
+  gap: var(--s1);
+  margin-top: var(--s2);
+  padding: var(--s1);
+  border-radius: 12px;
+}
+
+.photoCard .layerSwitch button {
+  flex: 1 1 auto;
+  min-height: 34px;
+  padding: 0 var(--s3);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.photoCard .layerSwitch button:focus-visible {
+  outline: 3px solid rgba(45, 156, 219, 0.45);
+  outline-offset: 1px;
+}
+
+.photoCard .legend {
+  margin: var(--s2) var(--s1) 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.overallRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+}
+
+.summaryCard .ring {
+  width: 72px;
+  height: 72px;
+}
+
+.overallRow strong {
+  color: var(--navy);
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.overallRow .muted {
+  margin: var(--s1) 0 0;
+}
+
+.photoNote {
+  display: flex;
+  gap: var(--s2);
+  margin-top: var(--s4);
+  padding: var(--s3);
+  border-radius: 12px;
+  background: var(--blue-light);
+  color: var(--muted-strong);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.photoNote svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--blue);
+}
+
+.photoNote p {
+  margin: 0;
+}
+
+.photoNote ul {
+  margin: var(--s1) 0 0;
+  padding-inline-start: 18px;
+}
+
+/* Skin age sits inside the summary card, separated by a divider rather than a nested card. */
+.summaryCard .skinAge {
+  margin-top: var(--s4);
+  padding: var(--s4) 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+}
+
+.summaryCard .skinAge .extHead {
+  margin-bottom: var(--s2);
+}
+
+.summaryCard .skinAge .extHead h3 {
+  font-size: 15px;
+}
+
+.skinAgeValue {
+  margin: var(--s1) 0 2px;
+  font-size: 28px;
+}
+
+.findings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.findings li + li {
+  border-top: 1px solid var(--line);
+}
+
+.finding {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--s2) var(--s1);
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.finding:hover {
+  background: rgba(45, 156, 219, 0.06);
+}
+
+.finding:focus-visible {
+  outline: 3px solid rgba(45, 156, 219, 0.45);
+  outline-offset: 0;
+}
+
+.findingIcon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--blue-light);
+  color: var(--blue);
+}
+
+.findingName {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  min-height: 36px;
+  margin-top: var(--s2);
+  padding: 0 var(--s1);
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--blue);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.linkButton:hover {
+  color: var(--navy);
+}
+
+.linkButton:focus-visible {
+  outline: 3px solid rgba(45, 156, 219, 0.45);
+}
+
+/* ---------- Severity colours (always paired with a text label) ----------
+   minimal green / mild blue / moderate amber / pronounced red / not assessed grey */
+.bandChip,
+.measureCard {
+  --tone: #475467;
+  --tone-bg: #f2f4f7;
+}
+
+.tone-minimal {
+  --tone: #067647;
+  --tone-bg: #ecfdf3;
+}
+
+.tone-mild {
+  --tone: #175cd3;
+  --tone-bg: #eff8ff;
+}
+
+.tone-moderate {
+  --tone: #b54708;
+  --tone-bg: #fff4e5;
+}
+
+.tone-pronounced {
+  --tone: #b42318;
+  --tone-bg: #fef3f2;
+}
+
+.bandChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--tone-bg);
+  color: var(--tone);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ---------- Skin measurements grid ---------- */
+.sectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s1) var(--s6);
+  margin-bottom: var(--s4);
+}
+
+.sectionHead .cardTitle {
+  margin: 0;
+}
+
+.sectionHead .muted {
+  max-width: 60ch;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.measureGrid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s4);
+  margin: 0;
+  padding: 0;
+}
+
+.measureCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  width: 100%;
+  height: 100%;
+  padding: var(--s4);
+  border: 1px solid rgba(11, 45, 77, 0.1);
+  border-radius: 16px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+
+.measureCard:hover {
+  border-color: rgba(23, 107, 156, 0.35);
+  box-shadow: 0 8px 20px rgba(11, 45, 77, 0.08);
+}
+
+.measureCard:focus-visible {
+  outline: 3px solid rgba(45, 156, 219, 0.45);
+  outline-offset: 2px;
+}
+
+.measureHead {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 18px;
+  align-items: start;
+  gap: var(--s3);
+}
+
+.measureIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--tone-bg);
+  color: var(--tone);
+}
+
+/* Room for two lines, so scores line up across cards with short and long titles. */
+.measureTitle {
+  min-height: calc(2 * 1.3em);
+  color: var(--navy);
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.measureChevron {
+  margin-top: 2px;
+  color: #98a2b3;
+}
+
+.measureScore {
+  color: var(--navy);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.measureScore small {
+  margin-inline-start: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.measureScore.none {
+  color: #98a2b3;
+}
+
+.measureMeter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(11, 45, 77, 0.07);
+}
+
+.measureMeter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tone);
+}
+
+.measureBand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: auto;
+  color: var(--tone);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.measureBand .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ---------- Detailed panels (skin tone / spots) ---------- */
+.results .extGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s4);
+  align-items: start;
+}
+
+.results .extSection {
+  padding: var(--panel-pad);
+}
+
+.panelSections {
+  display: grid;
+  gap: var(--s4);
+}
+
+.results .extText {
+  max-width: 68ch;
+  margin: var(--s3) 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.results .extLead {
+  margin: 0;
+}
+
+.results .notice {
+  margin-top: var(--s4);
+  font-size: 13px;
+}
+
+.results .limitations {
+  margin-top: var(--s3);
+  font-size: 13px;
+}
+
+.results .limitations summary {
+  min-height: 32px;
+  line-height: 32px;
+}
+
+.results .regionChips {
+  margin-top: var(--s3);
+}
+
+.results .regionChips li {
+  font-size: 13px;
+}
+
+.results .severityBox {
+  margin-top: var(--s4);
+  padding: var(--s4);
+  border-radius: 14px;
+}
+
+.results .probBars li {
+  grid-template-columns: minmax(96px, 132px) minmax(0, 1fr) 40px;
+  font-size: 13px;
+}
+
+.results .skinToneProfileBox {
+  margin: 0;
+  padding: var(--s4);
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.results .skinToneBadges {
+  gap: var(--s1);
+}
+
+.results .toneBadge {
+  font-size: 12px;
+}
+
+.uniformityScoreBox .metricHead {
+  align-items: center;
+}
+
+.uniformityScoreBox .metricTags {
+  margin-top: var(--s3);
+}
+
+.results .regionalToneGrid {
+  list-style: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+}
+
+.results .regionalToneCard {
+  gap: var(--s1);
+  min-width: 0;
+  padding: 10px var(--s3);
+}
+
+.results .regionalToneHead .regionName {
+  font-size: 13px;
+}
+
+.results .regionalToneDetails {
+  flex-wrap: wrap;
+  gap: 2px var(--s2);
+  font-size: 12px;
+  color: var(--muted-strong);
+}
+
+.results .regionalToneDetails .regionIta {
+  font-variant-numeric: tabular-nums;
+}
+
+.results .lightingCompensatedNotice {
+  font-size: 13px;
+}
+
+.results .skinToneLabRow {
+  margin-top: var(--s2);
+  font-size: 13px;
+}
+
+.deviationMap {
+  margin: var(--s3) 0 0;
+}
+
+.deviationMap img {
+  display: block;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.deviationMap figcaption {
+  margin-top: var(--s2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.results .metricInsufficient h3 {
+  color: var(--muted);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .measureGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  /* Tablet: photo and summary side by side, key findings across the full width. */
+  .overviewGrid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .findingsCard {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .results .extGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .results {
+    --panel-pad: 16px;
+    gap: var(--s4);
+  }
+
+  .resultsPanel {
+    gap: var(--s4);
+  }
+
+  .overviewGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .resultsMetaRow {
+    width: 100%;
+  }
+
+  .metaChip {
+    flex: 1 1 140px;
+  }
+
+  .resultsMetaRow .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .measureGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Single column: the title no longer needs to line up with a neighbour. */
+  .measureTitle {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .results .regionalToneGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .measureCard,
+  .finding {
+    transition: none;
+  }
+}
+
+/* Info buttons keep their 22px look but get a 36px touch area. */
+.results .scoreInfoBtn {
+  position: relative;
+}
+
+.results .scoreInfoBtn::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+
+.results .scoreInfoBtn:focus-visible {
+  outline: 3px solid rgba(45, 156, 219, 0.45);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .results .scoreInfoBtn,
+  .results .scoreInfoBtn:hover,
+  .results .scoreInfoBtn:active {
+    transform: none;
+    transition: none;
+  }
+}

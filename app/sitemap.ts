@@ -15,7 +15,6 @@ const PAGES: readonly SitemapEntry[] = [
   { path: '/how-it-works', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/features', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/skin-analysis', changeFrequency: 'monthly', priority: 0.8 },
-  { path: '/skin-analysis/pores', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/skin-analysis/acne', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/skin-analysis/pigmentation', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/skin-analysis/redness', changeFrequency: 'monthly', priority: 0.7 },

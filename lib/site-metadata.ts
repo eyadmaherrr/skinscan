@@ -21,12 +21,12 @@ export const ROUTE_METADATA: Record<string, Record<Locale, PageMetaInfo>> = {
   '/': {
     en: {
       title: `${SITE_NAME} | AI Facial Skin Analysis by Dr Maher Mahmoud`,
-      description: 'Free, private AI-powered facial skin analysis from Dr. Maher Mahmoud Clinics. Evaluates 24 anatomical facial regions across 7 skin characteristics with instant local processing.',
+      description: 'Free, private AI-powered facial skin analysis from Dr. Maher Mahmoud Clinics. Evaluates 24 anatomical facial regions across 6 skin characteristics with instant local processing.',
       keywords: ['skin analysis', 'AI dermatology', 'facial scan', 'Dr Maher Mahmoud', 'skin care AI', 'facial regions'],
     },
     ar: {
       title: `SkinScan من د. ماهر | فحص وتحليل بشرة الوجه بالذكاء الاصطناعي`,
-      description: 'فحص فوري وخاص لبشرة الوجه بالذكاء الاصطناعي من عيادات د. ماهر محمود. يحلل 24 منطقة تشريحية في الوجه عبر 7 خصائص للبشرة مع معالجة محلية بالكامل.',
+      description: 'فحص فوري وخاص لبشرة الوجه بالذكاء الاصطناعي من عيادات د. ماهر محمود. يحلل 24 منطقة تشريحية في الوجه عبر 6 خصائص للبشرة مع معالجة محلية بالكامل.',
       keywords: ['تحليل البشرة', 'فحص الوجه بالذكاء الاصطناعي', 'عيادات دكتور ماهر محمود', 'العناية بالبشرة', 'جلدية وتجميل'],
     },
   },
@@ -68,14 +68,14 @@ export const ROUTE_METADATA: Record<string, Record<Locale, PageMetaInfo>> = {
   },
   '/features': {
     en: {
-      title: `Features: 24 Anatomical Regions & 7 Skin Metrics | ${SITE_NAME}`,
-      description: 'Detailed overview of the 24 canonical facial regions analyzed by Dr Maher Vision AI v3.5 and the 7 evaluated skin characteristics: spots, redness, texture, shine, pores, and dark circles.',
+      title: `Features: 24 Anatomical Regions & 6 Skin Metrics | ${SITE_NAME}`,
+      description: 'Detailed overview of the 24 canonical facial regions analyzed by Dr Maher Vision AI v3.5 and the 6 evaluated skin characteristics: spots, redness, pigmentation, texture, shine and dark circles.',
       keywords: ['facial skin regions', 'forehead skin', 'cheek analysis', 'periorbital darkness', 'facial sebum analysis'],
     },
     ar: {
-      title: `المميزات: 24 منطقة تشريحية و7 مقاييس للبشرة | ${SITE_NAME}`,
-      description: 'نظرة شاملة على الـ 24 منطقة تشريحية في الوجه التي يحللها محرك Dr Maher Vision AI v3.5 وخصائص البشرة السبع: البقع، الاحمرار، الملمس، اللمعان، المسام، والهالات.',
-      keywords: ['مناطق تشريح الوجه', 'تحليل بشرة الخد والجبهة', 'مقاييس البشرة السبع', 'مسام الوجه', 'هالات العينين'],
+      title: `المميزات: 24 منطقة تشريحية و6 مقاييس للبشرة | ${SITE_NAME}`,
+      description: 'نظرة شاملة على الـ 24 منطقة تشريحية في الوجه التي يحللها محرك Dr Maher Vision AI v3.5 وخصائص البشرة الست: البقع، الاحمرار، التصبغ، الملمس، اللمعان، والهالات.',
+      keywords: ['مناطق تشريح الوجه', 'تحليل بشرة الخد والجبهة', 'مقاييس البشرة الست', 'هالات العينين'],
     },
   },
   '/skin-analysis': {
@@ -88,18 +88,6 @@ export const ROUTE_METADATA: Record<string, Record<Locale, PageMetaInfo>> = {
       title: `دليل تحليل بشرة الوجه الفوتوغرافي | ${SITE_NAME}`,
       description: 'دليل شامل لتقييم بشرة الوجه بالصور الفوتوغرافية، متطلبات الإضاءة السريرية، حدود القياس الرقمي، ومبادئ الرؤية الحاسوبية غير التشخيصية.',
       keywords: ['دليل تحليل البشرة بالصور', 'تقييم فوتوغرافي للجلد', 'أنواع البشرة فيتزباتريك', 'تثقيف طب الجلد'],
-    },
-  },
-  '/skin-analysis/pores': {
-    en: {
-      title: `Facial Pores & Optical Resolution Guide | ${SITE_NAME}`,
-      description: 'Understanding facial pore visibility, sebaceous infundibula, resolution physics (Nyquist 4.5 px/mm gate), and how Dr Maher Vision AI avoids synthetic pore hallucination.',
-      keywords: ['facial pores analysis', 'enlarged pores', 'pore detection AI', 'sebaceous follicles', 'pore resolution physics'],
-    },
-    ar: {
-      title: `دليل مسام الوجه والدقة البصرية | ${SITE_NAME}`,
-      description: 'فهم وضوح مسام الوجه، القنوات الدهنية، فيزياء الدقة البصرية (حد نايكويست 4.5 بكسل/مم)، وكيف يتجنب ذكاء د. ماهر الاصطناعي اختلاق المسام الوهمية.',
-      keywords: ['مسام الوجه', 'المسام الواسعة', 'تحليل المسام بالذكاء الاصطناعي', 'القنوات الدهنية', 'فيزياء دقة التصوير'],
     },
   },
   '/skin-analysis/acne': {

@@ -269,7 +269,7 @@ const en: AnalysisText = {
             ? 'moderately uniform with natural subtle transitions between zones'
             : 'exhibiting localized tone variation across facial zones';
       if (tone) {
-        return `Detected skin tone: ${tone.toneLabel} (${tone.fitzpatrickLabel}, ${tone.monk.name}, ITA ${tone.ita}°) with a ${tone.undertone} undertone. Skin-tone uniformity scored ${score}/100 (${bandDesc}).`;
+        return `Detected skin tone: ${tone.toneLabel} (${tone.monk.name}, ITA ${tone.ita}°) with a ${tone.undertone} undertone. Skin-tone uniformity scored ${score}/100 (${bandDesc}).`;
       }
       return `Skin-tone uniformity scored ${score}/100 (${band === 'high' ? 'highly even' : band === 'moderate' ? 'moderately even' : 'localized variation'}).`;
     },
@@ -425,7 +425,7 @@ const ar: AnalysisText = {
     'أربعة مستويات حسب فئات العدّ في مقياس هاياشي: المستوى 0 لا يوجد أو بسيط جدًا (5 بقع أو أقل تبدو ملتهبة في نصف الوجه)، المستوى 1 خفيف (6–20)، المستوى 2 متوسط (21–50)، المستوى 3 شديد (أكثر من 50). تقدير تجريبي من الصورة، وليس تقييمًا طبيًا.',
   skinAge: {
     summary: (min, max, pct) =>
-      `في هذه الصورة، تبدو بشرتك ووجهك بعمر ${max === null ? `${min} سنة أو أكثر` : `${min}–${max} سنة`} تقريبًا (يعطي نموذج الذكاء الاصطناعي هذا التقدير احتمالًا بنسبة ${pct}٪).`,
+      `في هذه الصورة، تبدو بشرتك ووجهك بعمر ${max === null ? `${min} سنة أو أكثر` : `\u2066${min}–${max}\u2069 سنة`} تقريبًا (يعطي نموذج الذكاء الاصطناعي هذا التقدير احتمالًا بنسبة ${pct}٪).`,
     limitations: [
       'هذا هو العمر الذي يبدو عليه الوجه في هذه الصورة كما يقدّره نموذج ذكاء اصطناعي — وليس عمرك الحقيقي ولا قياسًا بيولوجيًا أو طبيًا.',
       'ينظر النموذج إلى الوجه كله، لذلك تؤثر أيضًا ملامح مثل شعر الوجه وخط الشعر والمكياج وتعبير الوجه، وكذلك الإضاءة والكاميرا.',
@@ -459,7 +459,7 @@ const ar: AnalysisText = {
             ? 'تجانس معتدل مع تباينات لونية طبيعية طفيفة بين الجبهة والوجنتين والذقن'
             : 'تفاوت موضعي ملحوظ في درجات اللون بين مناطق الوجه';
       if (tone) {
-        return `درجة البشرة المكتشفة: ${tone.toneLabel} (${tone.fitzpatrickLabel}، ${tone.monk.name}، زاوية ITA: ${tone.ita}°) بمسحة ${tone.undertoneLabel}. سجّل مؤشر التجانس ${score}/100 (${bandDesc}).`;
+        return `درجة البشرة المكتشفة: ${tone.toneLabel} (${tone.monk.name}، زاوية ITA: ${tone.ita}°) بمسحة ${tone.undertoneLabel}. سجّل مؤشر التجانس ${score}/100 (${bandDesc}).`;
       }
       return `سجّل مؤشر تجانس لون البشرة ${score}/100 (${band === 'high' ? 'تجانس ممتاز' : band === 'moderate' ? 'تجانس معتدل' : 'تباين موضعي ملحوظ'}).`;
     },

@@ -325,19 +325,19 @@ const EXPLANATIONS_EN: Record<ExplainingMetricKey, MetricExplanation> = {
   skinToneUniformity: {
     key: 'skinToneUniformity',
     title: 'Skin-Tone & Uniformity',
-    tag: 'CIELAB & Sony Research Method',
+    tag: 'CIELAB colour measurement',
     whatItMeasures:
-      'Extracts objective facial skin tone (Fitzpatrick phototype, Monk Skin Tone scale, and Individual Typology Angle ITA) and evaluates color harmony and consistency across key anatomical facial zones: Forehead, Left Cheek, Right Cheek, Nose, and Chin.',
+      'Describes the colour of your facial skin as measured in this photo (Individual Typology Angle category, nearest Monk Skin Tone swatch and hue) and how consistent that colour is across the forehead, cheeks, nose and chin.',
     howItIsCalculated:
-      'Implements the Sony Research skin-tone extraction methodology (Thong et al. ICCV 2023 / Chardon 1991). Converts segmented facial skin to standard CIELAB (D65) space, excluding clipped highlights (RGB ≥ 248) and deep shadows (L* ≤ 12). Computes the Individual Typology Angle (ITA = (180/π) × arctan((L* - 50)/b*)) to determine Fitzpatrick phototype (I–VI), maps to the nearest calibrated Monk Skin Tone (MST 1–10), and extracts undertones. Evaluates inter-region Delta E*ab color distances with directional lighting compensation (|ΔL*| > 14) into a normalized 0–100 score.',
+      'Facial skin is converted to the CIELAB (D65) colour space, leaving out clipped highlights (RGB ≥ 248) and deep shadows (L* ≤ 12). The Individual Typology Angle, ITA = (180/π) × arctan((L* − 50)/b*) (Chardon et al. 1991), is grouped into the colour categories of Del Bino et al. (very light to dark); hue angle is reported as a second dimension of skin colour, as proposed by Thong et al. (ICCV 2023). The nearest Monk Skin Tone swatch is found by colour distance. Colour differences between regions (ΔE*ab) are combined into a 0–100 uniformity score, with an allowance for side lighting (|ΔL*| > 14). Colour measured from a photo depends on the lighting and camera, so it is not a skin-type classification (such as a Fitzpatrick phototype, which describes how skin reacts to the sun).',
     calculationSteps: [
       'Extracts non-shadow, non-specular facial skin pixels across Forehead, Cheeks, Nose, and Chin.',
       'Computes facial median CIELAB (L*, a*, b*) colorimetry and representative sRGB hex swatch.',
-      'Calculates Individual Typology Angle (ITA) and classifies into Fitzpatrick phototypes I through VI.',
+      'Calculates the Individual Typology Angle (ITA) and its colour category (very light, light, intermediate, tan, brown, dark).',
       'Perceptually matches to the nearest Monk Skin Tone scale standard (Monk 01 through Monk 10).',
       'Determines skin undertone (Cool, Neutral, Warm) from CIELAB hue angle and chroma ratio.',
       'Measures regional Delta E*ab distances and compensates for directional side lighting.',
-      'Computes continuous tone-fair exponential uniformity rating (0–100).',
+      'Converts the regional colour differences into a 0–100 uniformity score.',
     ],
     scaleMeaning: {
       title: 'Uniformity Score (0–100)',
@@ -349,8 +349,8 @@ const EXPLANATIONS_EN: Record<ExplainingMetricKey, MetricExplanation> = {
     },
     technicalSpecs: {
       regions: 'Forehead, Left Cheek, Right Cheek, Nose, Chin',
-      algorithm: 'Sony Research ITA Method + CIELAB ΔE*ab Perceptual Distances + Monk Scale Mapping',
-      normalization: 'Continuous exponential tone-fair model benchmarked across Fitzpatrick I–VI',
+      algorithm: 'ITA (Chardon 1991) + hue angle (Thong et al. 2023) + CIELAB ΔE*ab distances + nearest Monk swatch',
+      normalization: 'Exponential mapping of the regional colour differences to 0–100 (not clinically validated)',
     },
     clinicalNote:
       'An objective image-based appearance estimate of skin tone and color consistency across facial regions. Not a medical diagnosis or measurement of pigmentation disorders.',
@@ -711,19 +711,19 @@ const EXPLANATIONS_AR: Record<ExplainingMetricKey, MetricExplanation> = {
   skinToneUniformity: {
     key: 'skinToneUniformity',
     title: 'درجة وتجانس لون البشرة',
-    tag: 'تحليل CIELAB ومنهجية أبحاث Sony',
+    tag: 'قياس اللون بنظام CIELAB',
     whatItMeasures:
-      'يستخلص درجة ولون بشرة الوجه بموضوعية (نمط فيتزباتريك I-VI، ومقياس مونك MST، وزاوية النمط الفردي ITA) ويقيس مدى التناغم اللوني واستقرار السطوع عبر المناطق التشريحية الرئيسية: الجبهة، والوجنة اليسرى، والوجنة اليمنى، والأنف، والذقن.',
+      'يصف لون بشرة وجهك كما قيس في هذه الصورة (فئة زاوية النمط الفردي ITA، وأقرب درجة في مقياس Monk، وزاوية التدرج اللوني) ومدى ثبات هذا اللون بين الجبهة والخدين والأنف والذقن.',
     howItIsCalculated:
-      'يطبق منهجية أبحاث Sony لاستخلاص درجات البشرة (Thong et al. ICCV 2023 / Chardon 1991). يحول بكسلات الجلد السليم إلى فضاء الألوان CIELAB (D65) مع استبعاد اللمعان المشبع (RGB ≥ 248) والظلال العميقة (L* ≤ 12). يحسب زاوية النمط الفردي (ITA = (180/π) × arctan((L* - 50)/b*)) لتحديد نمط فيتزباتريك (I إلى VI)، ويطابق أقرب درجة قياسية في مقياس مونك (MST 1–10)، ويحدد المسحة التحتية. كما يقيس الفروق اللونية الإدراكية Delta E*ab مع تعويض الإضاءة الجانبية (|ΔL*| > 14) لتوليد درجة تجانس موحدة من 0 إلى 100.',
+      'تُحوَّل بشرة الوجه إلى فضاء الألوان CIELAB (D65) مع استبعاد اللمعان المشبع (RGB ≥ 248) والظلال العميقة (L* ≤ 12). تُحسب زاوية النمط الفردي ITA = (180/π) × arctan((L* − 50)/b*) (Chardon وزملاؤه 1991) وتُصنَّف ضمن فئات Del Bino وزملائه اللونية (فاتحة جدًا إلى داكنة)، وتُعرض زاوية التدرج اللوني كبُعد ثانٍ للون البشرة كما اقترح Thong وزملاؤه (ICCV 2023). وتُحدَّد أقرب درجة في مقياس Monk بحسب المسافة اللونية. ثم تُجمع الفروق اللونية بين المناطق (ΔE*ab) في درجة تجانس من 0 إلى 100 مع مراعاة الإضاءة الجانبية (|ΔL*| > 14). يتأثر اللون المقاس من الصورة بالإضاءة والكاميرا، لذلك فهو ليس تصنيفًا لنوع البشرة (مثل نمط فيتزباتريك الذي يصف استجابة البشرة للشمس).',
     calculationSteps: [
       'استخراج بكسلات الجلد غير المظللة وغير المشبعة عبر الجبهة والوجنتين والأنف والذقن.',
       'حساب وسيط قيم CIELAB (L*, a*, b*) وعينة اللون التمثيلية بصيغة sRGB hex.',
-      'حساب زاوية النمط الفردي (ITA) وتصنيف نمط فيتزباتريك للبشرة (الأنماط I إلى VI).',
+      'حساب زاوية النمط الفردي (ITA) وفئتها اللونية (فاتحة جدًا، فاتحة، متوسطة، حنطية، سمراء، داكنة).',
       'المطابقة الإدراكية مع أقرب درجة من مقياس مونك العالمي لدرجات البشرة (Monk 01 إلى Monk 10).',
       'تحديد المسحة التحتية للبشرة (باردة، محايدة، دافئة) من زاوية التدرج اللوني ونسبة التشبع.',
       'قياس المسافات اللونية الإدراكية بين المناطق مع تعويض أثر الإضاءة الجانبية الموجهة.',
-      'توليد درجة تجانس أسية عادلة ومحايدة عرقياً على مقياس من 0 إلى 100.',
+      'تحويل الفروق اللونية بين المناطق إلى درجة تجانس من 0 إلى 100.',
     ],
     scaleMeaning: {
       title: 'مقياس التجانس (0–100)',
@@ -735,8 +735,8 @@ const EXPLANATIONS_AR: Record<ExplainingMetricKey, MetricExplanation> = {
     },
     technicalSpecs: {
       regions: 'الجبهة، الوجنة اليسرى، الوجنة اليمنى، الأنف، الذقن',
-      algorithm: 'منهجية أبحاث Sony وزاوية ITA + مقياس مونك MST + مسافات CIELAB ΔE*ab',
-      normalization: 'نموذج أسي عادل عرقياً ومُعاير عبر كافة أنماط فيتزباتريك I إلى VI',
+      algorithm: 'زاوية ITA (Chardon 1991) + زاوية التدرج اللوني (Thong 2023) + مسافات CIELAB ΔE*ab + أقرب درجة Monk',
+      normalization: 'تحويل أسي للفروق اللونية بين المناطق إلى 0–100 (غير مُتحقق منه سريريًا)',
     },
     clinicalNote:
       'تقييم بصري موضوعي لمظهر ولون البشرة واتساق التصبغ في الصورة. ليس تشخيصاً طبياً لاضطرابات التصبغ، أو الكلف، أو البهاق.',

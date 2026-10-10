@@ -303,7 +303,7 @@ export async function downloadReport(result: ScanSuccess, photo: PreparedImage, 
       if (uniformity.skinTone) {
         const tone = uniformity.skinTone;
         pages.paragraph(
-          `${t.skinToneUniformity.toneLabel}: ${tone.toneLabel} (${tone.fitzpatrickLabel} · ${tone.monk.name}) · ITA ${tone.ita}° · ${tone.undertoneLabel}`,
+          `${t.skinToneUniformity.toneLabel}: ${tone.toneLabel} (${tone.monk.name}) · ITA ${tone.ita}° · ${tone.undertoneLabel}`,
           { size: 21, weight: 700, color: NAVY },
         );
       }
