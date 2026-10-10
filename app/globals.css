@@ -2366,6 +2366,194 @@ h3 {
   line-height: 1.55;
 }
 
+/* ---------- Skin-Tone & Uniformity (Sony Research Method) ---------- */
+.skinToneProfileBox {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 16px rgba(11, 45, 77, 0.04);
+}
+
+.skinToneHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.skinToneSwatch {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.skinToneSwatch .monkBadge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+.skinToneMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.skinToneName {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--navy);
+  letter-spacing: -0.2px;
+}
+
+.skinToneBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.toneBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+
+.toneBadge.primary {
+  background: rgba(45, 156, 219, 0.12);
+  color: var(--blue);
+}
+
+.toneBadge.secondary {
+  background: rgba(11, 45, 77, 0.07);
+  color: var(--navy);
+}
+
+.toneBadge.subtle {
+  background: rgba(100, 116, 139, 0.1);
+  color: #475569;
+}
+
+.toneBadge.ita {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.skinToneLabRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(11, 45, 77, 0.06);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.skinToneLabRow .labItem b {
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.skinToneLabRow .hexCode {
+  margin-inline-start: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--navy);
+}
+
+.regionalComparisonBox {
+  margin-top: 16px;
+}
+
+.regionalToneGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.regionalToneCard {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.regionalToneHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toneSwatchMini {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.regionalToneHead .regionName {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.regionalToneDetails {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.regionalToneDetails .regionStatus {
+  font-weight: 600;
+  color: var(--blue);
+}
+
+.lightingCompensatedNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.lightingCompensatedNotice svg {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 960px) {
   .extGrid {
     grid-template-columns: 1fr;

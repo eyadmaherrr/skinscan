@@ -2,7 +2,7 @@
 
 import { CalendarCheck, ChevronDown, Download, Info, Loader2, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
-import { AcneSection, PoresSection, SkinAgeCard, SkinToneUniformitySection, SkinTypeSection } from './ExtensionSections';
+import { AcneSection, SkinAgeCard, SkinToneUniformitySection } from './ExtensionSections';
 import { useI18n } from './LocaleProvider';
 import MetricInfoModal, { ScoreInfoButton } from './MetricInfoModal';
 import type { ExplainingMetricKey } from '@/lib/metric-explanations';
@@ -152,18 +152,51 @@ export default function Results({ result, photo, onScanAgain }: Props) {
             {METRIC_KEYS.map((k) => (
               <MetricRow key={k} k={k} result={result} onOpenInfo={handleOpenInfo} />
             ))}
+            {result.skinToneUniformity && result.skinToneUniformity.status === 'ok' && result.skinToneUniformity.uniformityScore !== null ? (
+              <li className="metric">
+                <div className="metricHead">
+                  <h3>{t.skinToneUniformity.title}</h3>
+                  <div className="scoreWithInfo">
+                    <span className="metricScore">
+                      {result.skinToneUniformity.uniformityScore}
+                      <small>/100</small>
+                    </span>
+                    <ScoreInfoButton
+                      onClick={() =>
+                        handleOpenInfo(
+                          'skinToneUniformity',
+                          result.skinToneUniformity?.uniformityScore,
+                          result.skinToneUniformity?.band ? t.skinToneUniformity[result.skinToneUniformity.band] : null,
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="meter" aria-hidden>
+                  <span style={{ width: `${Math.max(2, result.skinToneUniformity.uniformityScore)}%` }} />
+                </div>
+                <div className="metricTags">
+                  {result.skinToneUniformity.band ? (
+                    <span className="tag band-moderate">{t.skinToneUniformity[result.skinToneUniformity.band]}</span>
+                  ) : null}
+                  <span className="tag conf-high">
+                    <span className="dot" aria-hidden />
+                    {t.confidence.high}
+                  </span>
+                </div>
+                <p>{result.skinToneUniformity.explanation}</p>
+              </li>
+            ) : null}
           </ul>
         </div>
       </div>
 
-      {result.acne || result.pores || result.skinType || result.skinToneUniformity ? (
+      {result.skinToneUniformity || result.acne ? (
         <div className="extGrid">
-          {result.acne ? <AcneSection acne={result.acne} onOpenInfo={handleOpenInfo} /> : null}
-          {result.pores ? <PoresSection pores={result.pores} onOpenInfo={handleOpenInfo} /> : null}
-          {result.skinType ? <SkinTypeSection skinType={result.skinType} onOpenInfo={handleOpenInfo} /> : null}
           {result.skinToneUniformity ? (
             <SkinToneUniformitySection uniformity={result.skinToneUniformity} onOpenInfo={handleOpenInfo} />
           ) : null}
+          {result.acne ? <AcneSection acne={result.acne} onOpenInfo={handleOpenInfo} /> : null}
         </div>
       ) : null}
 

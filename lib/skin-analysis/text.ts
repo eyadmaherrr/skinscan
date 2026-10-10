@@ -75,7 +75,11 @@ export interface AnalysisText {
     limitations: string[];
   };
   skinToneUniformity: {
-    summary(score: number | null, band: 'high' | 'moderate' | 'variable' | null): string;
+    summary(
+      score: number | null,
+      band: 'high' | 'moderate' | 'variable' | null,
+      tone?: import('./types').DetectedSkinTone | null,
+    ): string;
     insufficientQuality: string;
     failed: string;
     disabled: string;
@@ -254,10 +258,21 @@ const en: AnalysisText = {
     ],
   },
   skinToneUniformity: {
-    summary: (score, band) =>
-      score !== null
-        ? `Skin-tone uniformity scored ${score}/100 (${band === 'high' ? 'highly even' : band === 'moderate' ? 'moderately even' : 'localized variation'}).`
-        : 'Skin-tone uniformity could not be reliably compared across facial zones in this photo.',
+    summary: (score, band, tone) => {
+      if (score === null) {
+        return 'Skin-tone uniformity could not be reliably compared across facial zones in this photo.';
+      }
+      const bandDesc =
+        band === 'high'
+          ? 'highly uniform and balanced across facial zones'
+          : band === 'moderate'
+            ? 'moderately uniform with natural subtle transitions between zones'
+            : 'exhibiting localized tone variation across facial zones';
+      if (tone) {
+        return `Detected skin tone: ${tone.toneLabel} (${tone.fitzpatrickLabel}, ${tone.monk.name}, ITA ${tone.ita}°) with a ${tone.undertone} undertone. Skin-tone uniformity scored ${score}/100 (${bandDesc}).`;
+      }
+      return `Skin-tone uniformity scored ${score}/100 (${band === 'high' ? 'highly even' : band === 'moderate' ? 'moderately even' : 'localized variation'}).`;
+    },
     insufficientQuality: 'Uneven side-lighting, harsh shadows, or highlight clipping prevented an accurate regional color comparison.',
     failed: 'Skin-tone uniformity analysis could not be computed.',
     disabled: 'Skin-tone uniformity analysis is switched off.',
@@ -433,10 +448,21 @@ const ar: AnalysisText = {
     ],
   },
   skinToneUniformity: {
-    summary: (score, band) =>
-      score !== null
-        ? `سجّل مؤشر تجانس لون البشرة ${score}/100 (${band === 'high' ? 'تجانس ممتاز' : band === 'moderate' ? 'تجانس معتدل' : 'تباين موضعي ملحوظ'}).`
-        : 'تعذّرت المقارنة الدقيقة لتجانس لون البشرة عبر مناطق الوجه في هذه الصورة.',
+    summary: (score, band, tone) => {
+      if (score === null) {
+        return 'تعذّرت المقارنة الدقيقة لتجانس لون البشرة عبر مناطق الوجه في هذه الصورة.';
+      }
+      const bandDesc =
+        band === 'high'
+          ? 'بشرة موحدة ومتجانسة بدرجة عالية عبر مختلف مناطق الوجه'
+          : band === 'moderate'
+            ? 'تجانس معتدل مع تباينات لونية طبيعية طفيفة بين الجبهة والوجنتين والذقن'
+            : 'تفاوت موضعي ملحوظ في درجات اللون بين مناطق الوجه';
+      if (tone) {
+        return `درجة البشرة المكتشفة: ${tone.toneLabel} (${tone.fitzpatrickLabel}، ${tone.monk.name}، زاوية ITA: ${tone.ita}°) بمسحة ${tone.undertoneLabel}. سجّل مؤشر التجانس ${score}/100 (${bandDesc}).`;
+      }
+      return `سجّل مؤشر تجانس لون البشرة ${score}/100 (${band === 'high' ? 'تجانس ممتاز' : band === 'moderate' ? 'تجانس معتدل' : 'تباين موضعي ملحوظ'}).`;
+    },
     insufficientQuality: 'حالت الإضاءة الجانبية غير المتساوية أو الظلال الشديدة دون إجراء مقارنة لونية دقيقة وموثوقة.',
     failed: 'تعذّر احتساب تجانس لون البشرة.',
     disabled: 'تحليل تجانس لون البشرة متوقف.',

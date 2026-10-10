@@ -136,24 +136,27 @@ export const ANATOMICAL_CONTOURS_V3: Record<string, readonly number[]> = {
   jawlineRight: CONTOUR_JAWLINE_RIGHT,
 } as const;
 
-/** Canonical contours for the 9 primary legacy regions */
+/** Canonical contours for the 7 primary facial regions */
 export const LEGACY_PRIMARY_CONTOURS: Record<string, readonly number[]> = {
   forehead: [
     54, 103, 67, 109, 10, 338, 297, 332, 284,
     300, 293, 334, 296, 336,
-    337, 9, 108,
+    9,
     107, 66, 105, 63, 70,
   ],
   underEyeL: CONTOUR_UNDER_EYE_LEFT,
   underEyeR: CONTOUR_UNDER_EYE_RIGHT,
   nose: [
-    168, 193, 245, 122, 196, 198, 131, 115, 102, 48, 64, 98, 97, 2,
-    326, 327, 294, 278, 331, 358, 429, 420, 363, 465, 417,
+    168, 193, 245, 122, 196, 3, 51, 115, 102, 48, 64, 98, 97, 2,
+    326, 327, 294, 278, 331, 360, 420, 456, 399, 412, 465, 417,
   ],
   cheekL: CONTOUR_CHEEK_LEFT,
   cheekR: CONTOUR_CHEEK_RIGHT,
-  chin: CONTOUR_CHIN_CENTER,
+  chin: [
+    201, 18, 421, 428, 396, 377, 152, 148, 171, 208,
+  ],
   jawL: CONTOUR_JAWLINE_LEFT,
   jawR: CONTOUR_JAWLINE_RIGHT,
 } as const;
+
 

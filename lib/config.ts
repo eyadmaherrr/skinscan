@@ -52,7 +52,7 @@ export function extensionConfig() {
   const acneModel = process.env.SKINSCAN_ACNE_SEVERITY_MODEL?.trim() || '';
   return {
     acneLesions: flag('SKINSCAN_ACNE_LESIONS', true),
-    pores: flag('SKINSCAN_PORES', true),
+    pores: flag('SKINSCAN_PORES', false),
     skinAge: flag('SKINSCAN_SKIN_AGE', true),
     /**
      * Optional acne-severity ONNX model (see
@@ -61,8 +61,8 @@ export function extensionConfig() {
      * file written next to it.
      */
     acneSeverityModel: acneModel ? path.join(process.cwd(), 'models', 'optional', path.basename(acneModel)) : '',
-    /** Optional Glamour AI ViT skin-type ONNX model (models/optional/glamour_skin_type.onnx). */
-    skinType: flag('SKINSCAN_SKIN_TYPE', true),
+    /** Optional Glamour AI ViT skin-type ONNX model (disabled). */
+    skinType: flag('SKINSCAN_SKIN_TYPE', false),
     skinTypeModel: (() => {
       const model = process.env.SKINSCAN_SKIN_TYPE_MODEL?.trim();
       return model ? path.join(process.cwd(), 'models', 'optional', path.basename(model)) : '';

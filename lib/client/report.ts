@@ -285,19 +285,6 @@ export async function downloadReport(result: ScanSuccess, photo: PreparedImage, 
     }
   }
 
-  const pores = result.pores;
-  if (pores) {
-    pages.heading(t.report.pores);
-    if (pores.status === 'ok' && pores.visibilityScore !== null) {
-      pages.paragraph(
-        `${t.pores.index}: ${pores.visibilityScore}/100${pores.confidenceLabel ? ` · ${t.confidence[pores.confidenceLabel]}` : ''}`,
-        { size: 20, weight: 700, color: NAVY },
-      );
-    }
-    pages.paragraph(pores.explanation, { size: 18, color: '#475467' });
-    pages.paragraph(t.pores.notice, { size: 17, color: MUTED });
-  }
-
   const age = result.skinAge;
   if (age && age.status === 'ok' && age.minYears !== null) {
     pages.heading(t.report.skinAge);
@@ -309,40 +296,22 @@ export async function downloadReport(result: ScanSuccess, photo: PreparedImage, 
     pages.paragraph(t.skinAge.notice, { size: 17, color: MUTED });
   }
 
-  const skinType = result.skinType;
-  if (skinType && skinType.status !== 'disabled') {
-    pages.heading(t.report.skinType);
-    if (skinType.status === 'ok' && skinType.predictedSkinType) {
-      const typeLabel = t.skinType[skinType.predictedSkinType] ?? skinType.predictedSkinType;
-      pages.paragraph(`${t.skinType.skinTypeLabel}: ${typeLabel}`, { size: 20, weight: 700, color: NAVY });
-    }
-    if (skinType.visibleShine.score !== null) {
-      pages.paragraph(
-        `${t.skinType.visibleShine}: ${skinType.visibleShine.score}/100${
-          skinType.visibleShine.tZoneScore !== null ? ` · ${t.skinType.tZone}: ${skinType.visibleShine.tZoneScore}/100` : ''
-        }`,
-        { size: 19, weight: 600, color: BLUE },
-      );
-    }
-    pages.paragraph(skinType.explanation, { size: 18, color: '#475467' });
-    pages.paragraph(t.skinType.notice, { size: 17, color: MUTED });
-  }
-
   const uniformity = result.skinToneUniformity;
   if (uniformity && uniformity.status !== 'disabled') {
-    pages.heading(t.report.skinToneUniformity);
+    pages.heading(t.skinToneUniformity.title);
     if (uniformity.status === 'ok' && uniformity.uniformityScore !== null) {
+      if (uniformity.skinTone) {
+        const tone = uniformity.skinTone;
+        pages.paragraph(
+          `${t.skinToneUniformity.toneLabel}: ${tone.toneLabel} (${tone.fitzpatrickLabel} · ${tone.monk.name}) · ITA ${tone.ita}° · ${tone.undertoneLabel}`,
+          { size: 21, weight: 700, color: NAVY },
+        );
+      }
       const bandLabel = uniformity.band ? t.skinToneUniformity[uniformity.band] : '';
       pages.paragraph(
         `${t.skinToneUniformity.scoreLabel}: ${uniformity.uniformityScore}/100${bandLabel ? ` · ${bandLabel}` : ''}`,
-        { size: 20, weight: 700, color: NAVY },
+        { size: 20, weight: 600, color: BLUE },
       );
-      if (uniformity.colorDifferences.leftRightDeltaE !== null) {
-        pages.paragraph(
-          `${t.skinToneUniformity.leftRightSymmetry}: ΔE ${uniformity.colorDifferences.leftRightDeltaE} · ${t.skinToneUniformity.meanDeltaE}: ΔE ${uniformity.colorDifferences.meanInterRegionDeltaE ?? '-'}`,
-          { size: 18, color: BLUE },
-        );
-      }
     }
     pages.paragraph(uniformity.explanation, { size: 18, color: '#475467' });
     pages.paragraph(t.skinToneUniformity.notice, { size: 17, color: MUTED });

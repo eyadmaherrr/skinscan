@@ -3,8 +3,13 @@ import { describe, it } from 'node:test';
 import type { AlignedFace } from '../lib/skin-analysis/alignment';
 import {
   analyzeSkinToneUniformity,
+  computeITA,
   computeRobustQuantiles,
   deltaE76,
+  determineFitzpatrick,
+  determineUndertone,
+  matchMonkScale,
+  MONK_SCALE_TONES,
   UNIFORMITY_METHODOLOGY_VERSION,
 } from '../lib/skin-analysis/extensions/skin-tone-uniformity';
 import type { MetricContext } from '../lib/skin-analysis/metrics/common';
@@ -286,7 +291,74 @@ describe('Skin-Tone Uniformity Analysis Engine', () => {
 
       assert.equal(report.status, 'disabled');
       assert.equal(report.uniformityScore, null);
+      assert.equal(report.skinTone, null);
+    });
+  });
+
+  describe('Sony Research Skin-Tone Extraction', () => {
+    it('computes correct Individual Typology Angle (ITA) and maps to Fitzpatrick phototypes', () => {
+      // Type I: Very Light (ITA > 55°) -> L*=78, b*=14 -> ITA ~ 63.4°
+      const itaI = computeITA(78, 14);
+      assert.ok(itaI > 55, `Expected ITA > 55, got ${itaI}`);
+      assert.equal(determineFitzpatrick(itaI).type, 'I');
+
+      // Type III: Intermediate (28° < ITA <= 41°) -> L*=65, b*=18 -> ITA ~ 39.8°
+      const itaIII = computeITA(65, 18);
+      assert.ok(itaIII > 28 && itaIII <= 41, `Expected 28 < ITA <= 41, got ${itaIII}`);
+      assert.equal(determineFitzpatrick(itaIII).type, 'III');
+
+      // Type IV: Tan / Olive (10° < ITA <= 28°) -> L*=58, b*=22 -> ITA ~ 20.0°
+      const itaIV = computeITA(58, 22);
+      assert.ok(itaIV > 10 && itaIV <= 28, `Expected 10 < ITA <= 28, got ${itaIV}`);
+      assert.equal(determineFitzpatrick(itaIV).type, 'IV');
+
+      // Type VI: Dark (ITA <= -30°) -> L*=30, b*=12 -> ITA ~ -59.0°
+      const itaVI = computeITA(30, 12);
+      assert.ok(itaVI <= -30, `Expected ITA <= -30, got ${itaVI}`);
+      assert.equal(determineFitzpatrick(itaVI).type, 'VI');
+    });
+
+    it('matches nearest Monk Skin Tone (MST 1–10) scale accurately', () => {
+      // Nearest to Monk 05 (L=77.3, a=6.5, b=22.8)
+      const monkMatch = matchMonkScale(76, 7, 23);
+      assert.equal(monkMatch.number, 5);
+      assert.equal(monkMatch.name, 'Monk 05');
+      assert.equal(monkMatch.hex, '#d7bd96');
+      assert.ok(monkMatch.deltaE < 3.0);
+    });
+
+    it('determines skin undertones (cool, neutral, warm) from hue angle', () => {
+      // Cool: low b/a ratio, pinkish/rosy (a=16, b=12) -> hueAngle ~ 36.9°
+      assert.equal(determineUndertone(16, 12).undertone, 'cool');
+
+      // Neutral: balanced (a=14, b=20) -> hueAngle ~ 55°
+      assert.equal(determineUndertone(14, 20).undertone, 'neutral');
+
+      // Warm: golden/yellowish (a=10, b=24) -> hueAngle ~ 67.4°
+      assert.equal(determineUndertone(10, 24).undertone, 'warm');
+    });
+
+    it('extracts complete skinTone profile and regional tone metrics in analysis report', async () => {
+      // Create Type III face (L=65, a=14, b=18)
+      const { ctx, image } = makeMockFaceAndContext({ baselineL: 65, baselineA: 14, baselineB: 18 });
+      const report = await analyzeSkinToneUniformity(ctx, image, { enabled: true });
+
+      assert.equal(report.status, 'ok');
+      assert.ok(report.skinTone !== null && report.skinTone !== undefined);
+      assert.equal(report.skinTone.fitzpatrick, 'III');
+      assert.ok(report.skinTone.ita > 28 && report.skinTone.ita <= 41);
+      assert.ok(report.skinTone.hexColor.startsWith('#'));
+      assert.ok(report.skinTone.monk.number >= 1 && report.skinTone.monk.number <= 10);
+      assert.ok(report.skinTone.undertone);
+
+      // Verify regional metrics include regional ITA and swatches
+      assert.ok(report.regionalMetrics.forehead);
+      assert.ok(report.regionalMetrics.forehead.ita !== undefined);
+      assert.ok(report.regionalMetrics.forehead.hexColor?.startsWith('#'));
+      assert.ok(report.regionalMetrics.forehead.statusLabel);
+      assert.ok(report.regionalMetrics.cheekLeft?.hexColor?.startsWith('#'));
     });
   });
 });
+
 

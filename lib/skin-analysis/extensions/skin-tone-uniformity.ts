@@ -5,35 +5,43 @@ import type { MetricContext } from '../metrics/common';
 import { PALETTES, renderHeatmap } from './projection';
 import { analysisText } from '../text';
 import type {
+  DetectedSkinTone,
+  FitzpatrickType,
+  MonkToneMatch,
   RegionalLabMetrics,
   RegionKey,
   SkinToneUniformityReport,
+  SkinUndertone,
 } from '../types';
 
 /**
- * Skin-Tone Uniformity Analysis Engine (Dr Maher Vision AI v3.5).
+ * Skin-Tone & Uniformity Analysis Engine (Dr Maher Vision AI v3.5).
  *
- * Evaluates visible color and lightness consistency across canonical facial
- * anatomical zones: Forehead, Left Cheek, Right Cheek, Nose, and Chin.
+ * Implements Sony Research's skin-tone extraction methodology (ITA / CIELAB / Monk Scale)
+ * combined with anatomical regional color consistency evaluation across canonical
+ * facial zones: Forehead, Left Cheek, Right Cheek, Nose, and Chin.
  *
  * Methodology:
  *  1. Non-skin veto: Reuses anatomical masks, strictly excluding eyes,
  *     eyebrows, lips, nostrils, hair, clothing, and background.
- *  2. Quality filtration: Excludes specular reflections / clipping (max RGB >= 245
+ *  2. Quality filtration: Excludes specular reflections / clipping (max RGB >= 248
  *     or L* >= 95) and deep occluding shadows (L* <= 12).
- *  3. CIELAB colorimetry: Converts all valid pixels to standard CIELAB (D65).
- *  4. Robust regional statistics: Computes median L*, a*, b*, interquartile
- *     lightness variation (IQR), and chroma spread.
- *  5. Inter-region perceptual color distance: Evaluates pairwise Delta E*ab
+ *  3. CIELAB colorimetry: Standard CIELAB (D65) color space.
+ *  4. Skin-Tone Extraction (Sony Research / Chardon 1991):
+ *     - Individual Typology Angle: ITA = (180 / π) * arctan((L* - 50) / b*)
+ *     - Fitzpatrick phototypes I through VI
+ *     - Monk Skin Tone (MST 1–10) scale nearest perceptual match
+ *     - Skin undertone (cool / neutral / warm) from hue angle & chroma ratio
+ *     - True sRGB color swatch from facial skin pixels
+ *  5. Robust regional statistics: Computes median L*, a*, b*, interquartile
+ *     lightness variation (IQR), and chroma spread per anatomical zone.
+ *  6. Inter-region perceptual color distance: Evaluates pairwise Delta E*ab
  *     relative to facial baseline color.
- *  6. Lighting asymmetry gating: Detects directional lighting differences
+ *  7. Lighting asymmetry gating: Detects directional lighting differences
  *     between left and right cheeks to avoid penalizing asymmetric shadows.
- *  7. Normalized 0–100 score: Continuous, tone-fair mathematical formulation
+ *  8. Normalized 0–100 score: Continuous, tone-fair mathematical formulation
  *     benchmarked across all Fitzpatrick phototypes (I through VI).
- *  8. Heatmap: Generates a spatial Delta E deviation map across facial skin.
- *
- * Informational / non-diagnostic: describes visible photographic skin color
- * distribution, not melanin concentrations or medical pigmentary disorders.
+ *  9. Spatial Delta E deviation heatmap across facial skin.
  */
 
 export const UNIFORMITY_METHODOLOGY_VERSION = '3.5.0';
@@ -42,6 +50,23 @@ export interface UniformityAnalysisOptions {
   enabled: boolean;
   locale?: 'en' | 'ar';
 }
+
+/**
+ * Monk Skin Tone (MST 1–10) calibrated standards in CIELAB (D65) and sRGB Hex.
+ * Developed by Dr. Ellis Monk and evaluated in Sony Research skin-tone extraction.
+ */
+export const MONK_SCALE_TONES = [
+  { number: 1, name: 'Monk 01', hex: '#f6ede4', L: 94.3, a: 2.5, b: 5.5, labelEn: 'Very Light', labelAr: 'شديدة البياض' },
+  { number: 2, name: 'Monk 02', hex: '#f3e7db', L: 92.1, a: 3.1, b: 7.6, labelEn: 'Fair', labelAr: 'فاتحة جداً' },
+  { number: 3, name: 'Monk 03', hex: '#f7ead0', L: 92.9, a: 1.4, b: 14.1, labelEn: 'Light', labelAr: 'فاتحة' },
+  { number: 4, name: 'Monk 04', hex: '#eadaba', L: 87.8, a: 2.8, b: 17.5, labelEn: 'Medium Light', labelAr: 'حنطية فاتحة' },
+  { number: 5, name: 'Monk 05', hex: '#d7bd96', L: 77.3, a: 6.5, b: 22.8, labelEn: 'Medium / Olive', labelAr: 'قمحية / متوسطة' },
+  { number: 6, name: 'Monk 06', hex: '#a07e56', L: 55.4, a: 10.4, b: 26.3, labelEn: 'Tan / Amber', labelAr: 'حنطية داكنة / برونزية' },
+  { number: 7, name: 'Monk 07', hex: '#825c43', L: 42.6, a: 13.5, b: 21.0, labelEn: 'Warm Brown', labelAr: 'سمراء دافئة' },
+  { number: 8, name: 'Monk 08', hex: '#604134', L: 31.4, a: 12.3, b: 14.2, labelEn: 'Deep Brown', labelAr: 'سمراء داكنة' },
+  { number: 9, name: 'Monk 09', hex: '#3a312a', L: 22.4, a: 4.8, b: 6.2, labelEn: 'Dark', labelAr: 'داكنة' },
+  { number: 10, name: 'Monk 10', hex: '#292420', L: 16.2, a: 3.0, b: 4.0, labelEn: 'Very Dark', labelAr: 'شديدة السمرة' },
+] as const;
 
 /** Standard Delta E (CIE 1976 Euclidean distance in CIELAB space). */
 export function deltaE76(
@@ -71,6 +96,182 @@ export function computeRobustQuantiles(values: number[]): {
   const q75 = sorted[Math.floor(n * 0.75)];
   const iqr = Math.max(0, q75 - q25);
   return { median: Math.round(q50 * 100) / 100, iqr: Math.round(iqr * 100) / 100 };
+}
+
+/**
+ * Calculates the Individual Typology Angle (ITA) in degrees.
+ * Formulated by Chardon et al. (1991) and utilized in Sony Research skin-tone extraction:
+ * ITA = (180 / π) * arctan((L* - 50) / b*)
+ */
+export function computeITA(L: number, b: number): number {
+  if (Math.abs(b) < 1e-4) {
+    return L >= 50 ? 90 : -90;
+  }
+  const rad = Math.atan((L - 50) / b);
+  return Math.round(((rad * 180) / Math.PI) * 10) / 10;
+}
+
+/**
+ * Maps Individual Typology Angle (ITA) to standard Fitzpatrick Phototype (Types I–VI).
+ * Reference dermatological thresholds (Chardon 1991, Del Bino 2018, Kinyanjui et al. 2020):
+ *   ITA > 55°       -> Type I (Very Light / Fair)
+ *   41° < ITA <= 55° -> Type II (Light)
+ *   28° < ITA <= 41° -> Type III (Intermediate / Medium)
+ *   10° < ITA <= 28° -> Type IV (Tan / Olive)
+ *  -30° < ITA <= 10° -> Type V (Brown / Deep)
+ *   ITA <= -30°      -> Type VI (Dark / Deeply Pigmented)
+ */
+export function determineFitzpatrick(
+  ita: number,
+  locale: 'en' | 'ar' = 'en',
+): {
+  type: FitzpatrickType;
+  fitzpatrickLabel: string;
+  toneLabel: string;
+} {
+  const isAr = locale === 'ar';
+  if (ita > 55) {
+    return {
+      type: 'I',
+      fitzpatrickLabel: isAr ? 'النمط الأول (Type I)' : 'Fitzpatrick Type I',
+      toneLabel: isAr ? 'شديدة البياض / فاتحة جداً' : 'Very Light / Fair',
+    };
+  }
+  if (ita > 41) {
+    return {
+      type: 'II',
+      fitzpatrickLabel: isAr ? 'النمط الثاني (Type II)' : 'Fitzpatrick Type II',
+      toneLabel: isAr ? 'فاتحة' : 'Light',
+    };
+  }
+  if (ita > 28) {
+    return {
+      type: 'III',
+      fitzpatrickLabel: isAr ? 'النمط الثالث (Type III)' : 'Fitzpatrick Type III',
+      toneLabel: isAr ? 'متوسطة / قمحية' : 'Intermediate / Medium',
+    };
+  }
+  if (ita > 10) {
+    return {
+      type: 'IV',
+      fitzpatrickLabel: isAr ? 'النمط الرابع (Type IV)' : 'Fitzpatrick Type IV',
+      toneLabel: isAr ? 'حنطية / زيتونية' : 'Tan / Olive',
+    };
+  }
+  if (ita > -30) {
+    return {
+      type: 'V',
+      fitzpatrickLabel: isAr ? 'النمط الخامس (Type V)' : 'Fitzpatrick Type V',
+      toneLabel: isAr ? 'سمراء / داكنة' : 'Brown / Deep',
+    };
+  }
+  return {
+    type: 'VI',
+    fitzpatrickLabel: isAr ? 'النمط السادس (Type VI)' : 'Fitzpatrick Type VI',
+    toneLabel: isAr ? 'شديدة السمرة' : 'Dark / Deeply Pigmented',
+  };
+}
+
+/** Finds the nearest Monk Skin Tone (MST 1–10) match via minimal Delta E 1976. */
+export function matchMonkScale(
+  L: number,
+  a: number,
+  b: number,
+  locale: 'en' | 'ar' = 'en',
+): MonkToneMatch {
+  let best: (typeof MONK_SCALE_TONES)[number] = MONK_SCALE_TONES[0];
+  let minDiff = Number.POSITIVE_INFINITY;
+  for (const tone of MONK_SCALE_TONES) {
+    const dE = deltaE76(L, a, b, tone.L, tone.a, tone.b);
+    if (dE < minDiff) {
+      minDiff = dE;
+      best = tone;
+    }
+  }
+  return {
+    number: best.number,
+    name: best.name,
+    hex: best.hex,
+    deltaE: Math.round(minDiff * 100) / 100,
+    label: locale === 'ar' ? best.labelAr : best.labelEn,
+  };
+}
+
+/** Evaluates skin undertone from CIELAB hue angle and chroma ratio. */
+export function determineUndertone(
+  a: number,
+  b: number,
+  locale: 'en' | 'ar' = 'en',
+): {
+  undertone: SkinUndertone;
+  undertoneLabel: string;
+  hueAngle: number;
+} {
+  const rad = Math.atan2(b, a);
+  const deg = (rad * 180) / Math.PI;
+  const hueAngle = Math.round(((deg >= 0 ? deg : deg + 360) % 360) * 10) / 10;
+  const isAr = locale === 'ar';
+
+  const ratio = a > 0 ? b / a : 1.5;
+  if (hueAngle < 54 || ratio < 1.25) {
+    return {
+      undertone: 'cool',
+      undertoneLabel: isAr ? 'باردة (مائلة للوردي)' : 'Cool (Rosy / Pinkish)',
+      hueAngle,
+    };
+  }
+  if (hueAngle > 65 || ratio > 1.85) {
+    return {
+      undertone: 'warm',
+      undertoneLabel: isAr ? 'دافئة (مائلة للذهبي / الخوخي)' : 'Warm (Golden / Peachy)',
+      hueAngle,
+    };
+  }
+  return {
+    undertone: 'neutral',
+    undertoneLabel: isAr ? 'محايدة (متوازنة)' : 'Neutral (Balanced)',
+    hueAngle,
+  };
+}
+
+/** Formats byte numbers to hex string #rrggbb. */
+export function rgbToHex(r: number, g: number, b: number): string {
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  return `#${clamp(r)}${clamp(g)}${clamp(b)}`;
+}
+
+/** Converts CIELAB (D65) values to standard sRGB tuple. */
+export function labToRgb(L: number, a: number, b: number): [number, number, number] {
+  const fy = (L + 16) / 116;
+  const fx = a / 500 + fy;
+  const fz = fy - b / 200;
+
+  const delta = 6 / 29;
+  const xn = 0.95047;
+  const yn = 1.0;
+  const zn = 1.08883;
+
+  const x = fx > delta ? fx * fx * fx : (fx - 16 / 116) * 3 * delta * delta;
+  const y = fy > delta ? fy * fy * fy : (fy - 16 / 116) * 3 * delta * delta;
+  const z = fz > delta ? fz * fz * fz : (fz - 16 / 116) * 3 * delta * delta;
+
+  const X = x * xn;
+  const Y = y * yn;
+  const Z = z * zn;
+
+  // sRGB linear matrix
+  const rl = 3.2406 * X - 1.5372 * Y - 0.4986 * Z;
+  const gl = -0.9689 * X + 1.8758 * Y + 0.0415 * Z;
+  const bl = 0.0557 * X - 0.204 * Y + 1.057 * Z;
+
+  // Gamma companding
+  const gamma = (v: number) => (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(Math.max(0, v), 1 / 2.4) - 0.055);
+
+  return [
+    Math.max(0, Math.min(255, Math.round(gamma(rl) * 255))),
+    Math.max(0, Math.min(255, Math.round(gamma(gl) * 255))),
+    Math.max(0, Math.min(255, Math.round(gamma(bl) * 255))),
+  ];
 }
 
 /** Extract valid, non-clipped skin pixel indices for a given region mask. */
@@ -120,6 +321,7 @@ export async function analyzeSkinToneUniformity(
       status: 'disabled',
       experimental: true,
       methodologyVersion: UNIFORMITY_METHODOLOGY_VERSION,
+      skinTone: null,
       uniformityScore: null,
       band: null,
       regionalMetrics: {},
@@ -200,6 +402,7 @@ export async function analyzeSkinToneUniformity(
       status: 'insufficient_quality',
       experimental: true,
       methodologyVersion: UNIFORMITY_METHODOLOGY_VERSION,
+      skinTone: null,
       uniformityScore: null,
       band: null,
       regionalMetrics,
@@ -294,7 +497,87 @@ export async function analyzeSkinToneUniformity(
   const band: 'high' | 'moderate' | 'variable' =
     uniformityScore >= 70 ? 'high' : uniformityScore >= 45 ? 'moderate' : 'variable';
 
-  // 5. Generate spatial Delta E deviation heatmap across valid skin
+  // 5. Enhance regional metrics with regional ITA, hex swatch, delta E, and clinical status
+  for (const [key, metric] of Object.entries(regionalMetrics)) {
+    if (!metric) continue;
+    const indices = regionPixelLists[key] ?? [];
+    metric.ita = computeITA(metric.medianL, metric.medianB);
+
+    if (face.rgb && indices.length > 0) {
+      const rVals = indices.map((i) => face.rgb[i * 3]);
+      const gVals = indices.map((i) => face.rgb[i * 3 + 1]);
+      const bVals = indices.map((i) => face.rgb[i * 3 + 2]);
+      metric.hexColor = rgbToHex(
+        computeRobustQuantiles(rVals).median,
+        computeRobustQuantiles(gVals).median,
+        computeRobustQuantiles(bVals).median,
+      );
+    } else {
+      const [r, g, b] = labToRgb(metric.medianL, metric.medianA, metric.medianB);
+      metric.hexColor = rgbToHex(r, g, b);
+    }
+
+    const dEFromBase = Math.round(deltaE76(metric.medianL, metric.medianA, metric.medianB, baseL, baseA, baseB) * 100) / 100;
+    metric.deltaEFromBaseline = dEFromBase;
+
+    const isAr = ctx.locale === 'ar';
+    if (dEFromBase <= 2.0) {
+      metric.statusLabel = isAr ? 'متجانس مع الدرجة الأساسية' : 'Even with Baseline';
+    } else if (metric.medianL < baseL - 2.5) {
+      metric.statusLabel = isAr ? 'أغمق قليلًا' : 'Slightly Darker';
+    } else if (metric.medianA > baseA + 2.5) {
+      metric.statusLabel = isAr ? 'مائل للاحمرار' : 'Slightly Flushed';
+    } else if (metric.medianL > baseL + 2.5) {
+      metric.statusLabel = isAr ? 'أفتح قليلًا' : 'Slightly Lighter';
+    } else {
+      metric.statusLabel = isAr ? 'متناسق' : 'Balanced';
+    }
+  }
+
+  // 6. Sony Research Skin-Tone Extraction (Overall Facial Profile)
+  const allValidIndices: number[] = [];
+  for (const indices of Object.values(regionPixelLists)) {
+    allValidIndices.push(...indices);
+  }
+
+  let overallHex: string;
+  if (face.rgb && allValidIndices.length > 0) {
+    const rVals = allValidIndices.map((i) => face.rgb[i * 3]);
+    const gVals = allValidIndices.map((i) => face.rgb[i * 3 + 1]);
+    const bVals = allValidIndices.map((i) => face.rgb[i * 3 + 2]);
+    overallHex = rgbToHex(
+      computeRobustQuantiles(rVals).median,
+      computeRobustQuantiles(gVals).median,
+      computeRobustQuantiles(bVals).median,
+    );
+  } else {
+    const [r, g, b] = labToRgb(baseL, baseA, baseB);
+    overallHex = rgbToHex(r, g, b);
+  }
+
+  const overallIta = computeITA(baseL, baseB);
+  const fitz = determineFitzpatrick(overallIta, ctx.locale);
+  const monk = matchMonkScale(baseL, baseA, baseB, ctx.locale);
+  const under = determineUndertone(baseA, baseB, ctx.locale);
+
+  const skinTone: DetectedSkinTone = {
+    ita: overallIta,
+    fitzpatrick: fitz.type,
+    fitzpatrickLabel: fitz.fitzpatrickLabel,
+    toneLabel: fitz.toneLabel,
+    monk,
+    undertone: under.undertone,
+    undertoneLabel: under.undertoneLabel,
+    hexColor: overallHex,
+    lab: {
+      L: Math.round(baseL * 10) / 10,
+      a: Math.round(baseA * 10) / 10,
+      b: Math.round(baseB * 10) / 10,
+    },
+    hueAngle: under.hueAngle,
+  };
+
+  // 7. Generate spatial Delta E deviation heatmap across valid skin
   const heatValues = new Float32Array(w * h);
   for (const indices of Object.values(regionPixelLists)) {
     for (const i of indices) {
@@ -315,6 +598,7 @@ export async function analyzeSkinToneUniformity(
     status: 'ok',
     experimental: true,
     methodologyVersion: UNIFORMITY_METHODOLOGY_VERSION,
+    skinTone,
     uniformityScore,
     band,
     regionalMetrics,
@@ -330,7 +614,7 @@ export async function analyzeSkinToneUniformity(
     },
     heatmap: heatmapUri,
     warnings,
-    explanation: text.skinToneUniformity.summary(uniformityScore, band),
+    explanation: text.skinToneUniformity.summary(uniformityScore, band, skinTone),
     limitations: text.skinToneUniformity.limitations,
   };
 }

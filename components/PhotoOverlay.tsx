@@ -17,7 +17,7 @@ import {
   type RegionReportV3,
 } from '@/lib/skin-analysis/types';
 
-type Layer = 'areas' | 'anatomical' | 'spots' | 'pores' | HeatmapKey | 'none';
+type Layer = 'areas' | 'anatomical' | 'spots' | HeatmapKey | 'none';
 
 const isHeatmapLayer = (layer: Layer): layer is HeatmapKey => (HEATMAP_KEYS as readonly string[]).includes(layer);
 
@@ -122,7 +122,6 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
     { id: 'areas', label: t.overlay.areas, available: true },
     { id: 'anatomical', label: locale === 'ar' ? 'المناطق التشريحية (v3)' : 'Anatomical Zones (v3)', available: hasV3Regions },
     { id: 'spots', label: t.overlay.spots, available: lesions.length > 0 },
-    { id: 'pores', label: t.overlay.pores, available: !!heatmap },
     ...HEATMAP_KEYS.map((k) => ({ id: k, label: t.overlay.heat[k], available: !!result.heatmaps?.[k] })),
     { id: 'none', label: t.overlay.none, available: true },
   ];
@@ -202,7 +201,6 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
           }}
         >
           <img src={photoUrl} alt={t.overlay.photoAlt} />
-          {layer === 'pores' && heatmap ? <img className="heatmapLayer" src={heatmap} alt="" aria-hidden /> : null}
           {metricHeatmap ? <img className="heatmapLayer" src={metricHeatmap} alt="" aria-hidden /> : null}
 
           {/* Primary Regions, V3 Anatomical Regions, or Acne Spots Overlay */}
@@ -393,19 +391,19 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
           ))}
       </div>
 
-      {/* Debug & Diagnostic Mode Toolbar */}
-      <div className="debugToolbar">
-        <button
-          type="button"
-          className={debugMode ? 'active' : undefined}
-          onClick={() => setDebugMode(!debugMode)}
-          title="Toggle computer vision diagnostic overlay"
-        >
-          <Bug size={12} style={{ display: 'inline', marginInlineEnd: 4 }} />
-          {debugMode ? 'Diagnostics: ON' : 'Diagnostics: OFF'}
-        </button>
+      {/* Debug & Diagnostic Mode Toolbar (only in ?debug=1 mode) */}
+      {debugMode && (
+        <div className="debugToolbar">
+          <button
+            type="button"
+            className={debugMode ? 'active' : undefined}
+            onClick={() => setDebugMode(!debugMode)}
+            title="Toggle computer vision diagnostic overlay"
+          >
+            <Bug size={12} style={{ display: 'inline', marginInlineEnd: 4 }} />
+            Diagnostics: ON
+          </button>
 
-        {debugMode && (
           <button
             type="button"
             className={showLandmarkNumbers ? 'active' : undefined}
@@ -413,21 +411,20 @@ export default function PhotoOverlay({ result, photoUrl, photoAspect }: Props) {
           >
             {showLandmarkNumbers ? 'Hide Point IDs' : 'Show Point IDs'}
           </button>
-        )}
 
-        {debugMode && geom && (
-          <span className="debugBadge">
-            IOD: {geom.iodPx}px · {geom.pxPerMm}px/mm · Pose: Y{geom.yaw}° P{geom.pitch}° R{geom.roll}°
-          </span>
-        )}
-      </div>
+          {geom && (
+            <span className="debugBadge">
+              IOD: {geom.iodPx}px · {geom.pxPerMm}px/mm · Pose: Y{geom.yaw}° P{geom.pitch}° R{geom.roll}°
+            </span>
+          )}
+        </div>
+      )}
 
       {layer === 'spots' ? (
         <p className="legend">
           <span className="legendDot red" /> {t.overlay.legendRed} <span className="legendDot dark" /> {t.overlay.legendDark}
         </p>
       ) : null}
-      {layer === 'pores' ? <p className="legend">{t.overlay.legendPores}</p> : null}
       {isHeatmapLayer(layer) ? <p className="legend">{t.overlay.legendHeat[layer]}</p> : null}
     </>
   );

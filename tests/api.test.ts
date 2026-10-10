@@ -122,9 +122,14 @@ describe('POST /api/skin-scan', () => {
       assert.ok(l.x >= 0 && l.x <= 1 && l.y >= 0 && l.y <= 1 && l.r > 0 && l.r < 0.2);
       assert.ok(l.tone === 'red' || l.tone === 'dark');
     }
-    assert.ok(first.pores && statuses.includes(first.pores.status));
-    if (first.pores?.status !== 'ok') assert.equal(first.pores?.visibilityScore, null);
-    assert.ok(first.pores?.heatmap === null || first.pores?.heatmap?.startsWith('data:image/png;base64,'));
+    assert.equal(first.pores, undefined);
+    assert.equal(first.skinType, undefined);
+    assert.ok(first.skinToneUniformity && statuses.includes(first.skinToneUniformity.status));
+    if (first.skinToneUniformity?.status === 'ok') {
+      assert.ok(first.skinToneUniformity.skinTone);
+      assert.ok(first.skinToneUniformity.skinTone.ita !== undefined);
+      assert.ok(first.skinToneUniformity.skinTone.hexColor.startsWith('#'));
+    }
     assert.equal(first.dermFoundation?.featureExtractionStatus, 'not_run');
     assert.equal(first.acne?.severity.components?.imageClassifier.status, process.env.SKINSCAN_ACNE_SEVERITY_MODEL ? 'ok' : 'disabled');
 
@@ -145,7 +150,8 @@ describe('POST /api/skin-scan', () => {
     assert.equal(ar.acne?.lesionCandidateCount, first.acne?.lesionCandidateCount);
     assert.equal(ar.acne?.severity.label, first.acne?.severity.label);
     assert.match(ar.acne?.explanation ?? '', ARABIC);
-    assert.match(ar.pores?.explanation ?? '', ARABIC);
+    assert.equal(ar.skinType, undefined);
+    if (ar.skinToneUniformity) assert.match(ar.skinToneUniformity.explanation, ARABIC);
     for (const note of ar.imageQuality.notes) assert.match(note, ARABIC);
   });
 });

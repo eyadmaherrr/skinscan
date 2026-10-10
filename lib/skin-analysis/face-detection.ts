@@ -113,7 +113,7 @@ export async function detectFaces(image: RgbImage): Promise<FaceDetection[]> {
   const padY = (side - image.height) / 2;
   // dst (0..128) -> src pixels, letterboxed and centred.
   const m: Affine = { a: scale, b: 0, c: 0, d: scale, tx: -padX, ty: -padY };
-  const { rgb } = warpRgb(image, INPUT, INPUT, m, true);
+  const { rgb } = warpRgb(image, INPUT, INPUT, m);
   const outputs = await runModel('faceDetector', rgbToTensor(rgb, -1, 1), [1, INPUT, INPUT, 3]);
 
   const tensors = Object.values(outputs);
@@ -148,28 +148,15 @@ export async function detectFaces(image: RgbImage): Promise<FaceDetection[]> {
   return weightedNms(candidates)
     .map((d) => {
       const kp: [number, number][] = [];
-      for (let k = 0; k < 6; k++) {
-        const kx = Math.max(0, Math.min(image.width, toSrcX(d.keypoints[k * 2])));
-        const ky = Math.max(0, Math.min(image.height, toSrcY(d.keypoints[k * 2 + 1])));
-        kp.push([kx, ky]);
-      }
-      const rawX = toSrcX(d.xmin);
-      const rawY = toSrcY(d.ymin);
-      const rawW = (d.xmax - d.xmin) * INPUT * scale;
-      const rawH = (d.ymax - d.ymin) * INPUT * scale;
-      const x0 = Math.max(0, Math.min(image.width - 1, rawX));
-      const y0 = Math.max(0, Math.min(image.height - 1, rawY));
-      const x1 = Math.max(x0 + 1, Math.min(image.width, rawX + rawW));
-      const y1 = Math.max(y0 + 1, Math.min(image.height, rawY + rawH));
+      for (let k = 0; k < 6; k++) kp.push([toSrcX(d.keypoints[k * 2]), toSrcY(d.keypoints[k * 2 + 1])]);
       return {
-        x: x0,
-        y: y0,
-        width: x1 - x0,
-        height: y1 - y0,
-        score: Math.max(0, Math.min(1, d.score)),
+        x: toSrcX(d.xmin),
+        y: toSrcY(d.ymin),
+        width: (d.xmax - d.xmin) * INPUT * scale,
+        height: (d.ymax - d.ymin) * INPUT * scale,
+        score: d.score,
         keypoints: kp,
       };
     })
-    .filter((d) => d.width >= 10 && d.height >= 10)
     .sort((a, b) => b.width * b.height - a.width * a.height);
 }

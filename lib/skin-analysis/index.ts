@@ -28,6 +28,7 @@ import { buildSkinMasks } from './skin-mask';
 import { analysisText } from './text';
 import {
   ALL_REGION_KEYS,
+  REGION_KEYS,
   HEATMAP_KEYS,
   METRIC_KEYS,
   type HeatmapKey,
@@ -103,7 +104,7 @@ function checkDeadline(deadline: number): void {
 const yieldToEventLoop = () => new Promise<void>((resolve) => setImmediate(resolve));
 
 function outlines(face: AlignedFace, image: RgbImage, regions: ReturnType<typeof buildRegions>): RegionOutline[] {
-  return ALL_REGION_KEYS.map((region) => ({
+  return REGION_KEYS.map((region) => ({
     region,
     points: regions.outlines[region].map(([x, y]) => {
       const [xs, ys] = applyAffine(face.cropToSource, x, y);
@@ -236,9 +237,9 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
     engine: ENGINE_NAME,
     methodologyVersion: METHODOLOGY_VERSION,
     acne: ext.acne,
-    pores: ext.pores,
+    pores: ext.pores?.status === 'ok' ? ext.pores : undefined,
     skinAge: ext.skinAge,
-    skinType: ext.skinType,
+    skinType: undefined,
     skinToneUniformity: ext.skinToneUniformity,
     heatmaps,
     dermFoundation: ext.dermFoundation,

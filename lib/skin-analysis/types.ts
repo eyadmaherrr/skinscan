@@ -306,6 +306,43 @@ export interface SkinTypeReport {
   limitations: string[];
 }
 
+export type FitzpatrickType = 'I' | 'II' | 'III' | 'IV' | 'V' | 'VI';
+export type SkinUndertone = 'cool' | 'neutral' | 'warm';
+
+export interface MonkToneMatch {
+  number: number;
+  name: string;
+  hex: string;
+  deltaE: number;
+  label: string;
+}
+
+export interface DetectedSkinTone {
+  /** Individual Typology Angle in degrees (ITA) via Sony Research / Chardon formulation */
+  ita: number;
+  /** Fitzpatrick phototype category (I through VI) */
+  fitzpatrick: FitzpatrickType;
+  /** Fitzpatrick classification label (e.g., 'Type III') */
+  fitzpatrickLabel: string;
+  /** Dermatological tone category (e.g. 'Intermediate / Medium') */
+  toneLabel: string;
+  /** Nearest Monk Skin Tone (MST 1–10) match */
+  monk: MonkToneMatch;
+  /** Undertone classification based on CIELAB hue angle and chroma ratio */
+  undertone: SkinUndertone;
+  undertoneLabel: string;
+  /** Representative facial skin color as hex string (#rrggbb) */
+  hexColor: string;
+  /** Facial median CIELAB colorimetry */
+  lab: {
+    L: number;
+    a: number;
+    b: number;
+  };
+  /** Tone hue angle in degrees (0..360) */
+  hueAngle: number;
+}
+
 export interface RegionalLabMetrics {
   medianL: number;
   medianA: number;
@@ -313,12 +350,18 @@ export interface RegionalLabMetrics {
   lightnessSpreadIQR: number;
   chromaSpreadIQR: number;
   pixelCount: number;
+  ita?: number;
+  hexColor?: string;
+  deltaEFromBaseline?: number;
+  statusLabel?: string;
 }
 
 export interface SkinToneUniformityReport {
   status: ComponentStatus;
   experimental: true;
   methodologyVersion: string;
+  /** Extracted facial skin tone profile (Fitzpatrick I–VI, Monk 1–10, ITA, undertone, hex swatch) */
+  skinTone?: DetectedSkinTone | null;
   /** Normalized 0–100 score (higher = more uniform visible skin tone). Null if insufficient quality or failed. */
   uniformityScore: number | null;
   /** Interpretation band */
@@ -349,3 +392,4 @@ export interface SkinToneUniformityReport {
   explanation: string;
   limitations: string[];
 }
+

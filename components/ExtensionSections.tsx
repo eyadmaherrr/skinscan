@@ -1,6 +1,6 @@
 'use client';
 
-import { Droplets, FlaskConical, Info, Palette, Sparkles } from 'lucide-react';
+import { FlaskConical, Info, Palette, Sparkles } from 'lucide-react';
 import { fill, useI18n } from './LocaleProvider';
 import { ScoreInfoButton } from './MetricInfoModal';
 import type { ExplainingMetricKey } from '@/lib/metric-explanations';
@@ -12,7 +12,6 @@ import type {
   RegionKey,
   SkinAgeReport,
   SkinToneUniformityReport,
-  SkinTypeReport,
 } from '@/lib/skin-analysis/types';
 
 function Limitations({ items }: { items: string[] }) {
@@ -272,123 +271,6 @@ export function SkinAgeCard({
   );
 }
 
-export function SkinTypeSection({
-  skinType,
-  onOpenInfo,
-}: {
-  skinType: SkinTypeReport;
-  onOpenInfo?: (key: ExplainingMetricKey, score?: number | null, band?: string | null) => void;
-}) {
-  const { t } = useI18n();
-  if (skinType.status === 'disabled') return null;
-
-  const ok = skinType.status === 'ok';
-  const shine = skinType.visibleShine;
-  const regions = shine.regionalBreakdown
-    ? (Object.entries(shine.regionalBreakdown) as ['forehead' | 'nose' | 'cheekLeft' | 'cheekRight', number][])
-    : [];
-
-  return (
-    <section className="glass extSection" aria-labelledby="skintype-title">
-      <div className="extHead">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <h3 id="skintype-title">{t.skinType.title}</h3>
-          {onOpenInfo ? <ScoreInfoButton onClick={() => onOpenInfo('skinType')} /> : null}
-        </div>
-        <span className="tag experimental">
-          <Droplets size={13} aria-hidden /> {t.skinType.tag}
-        </span>
-      </div>
-
-      {ok && skinType.predictedSkinType ? (
-        <>
-          <div className="severityLead">
-            <span className="muted small">{t.skinType.skinTypeLabel}:</span>
-            <b>{t.skinType[skinType.predictedSkinType] ?? skinType.predictedSkinType}</b>
-          </div>
-          {skinType.probabilities ? (
-            <div className="probBox" style={{ marginTop: '10px' }}>
-              <span className="muted small">{t.skinType.probabilities}</span>
-              <ul className="probBars">
-                {(['dry', 'normal', 'oily'] as const).map((label) => {
-                  const p = skinType.probabilities?.[label] ?? 0;
-                  return (
-                    <li key={label}>
-                      <span>{t.skinType[label]}</span>
-                      <span className="meter" aria-hidden>
-                        <span style={{ width: `${Math.max(1, p * 100)}%` }} />
-                      </span>
-                      <span className="pct">{Math.round(p * 100)}%</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ) : null}
-        </>
-      ) : skinType.status === 'not_configured' ? (
-        <p className="extText small muted">{t.skinType.notConfigured}</p>
-      ) : (
-        <p className="extText muted">{skinType.explanation}</p>
-      )}
-
-      {shine.score !== null ? (
-        <div className="severityBox">
-          <div className="metricHead">
-            <span className="muted small">{t.skinType.visibleShine}</span>
-            <div className="scoreWithInfo">
-              <span className="metricScore">
-                {shine.score}
-                <small>/100</small>
-              </span>
-              {onOpenInfo ? <ScoreInfoButton onClick={() => onOpenInfo('shine', shine.score)} /> : null}
-            </div>
-          </div>
-          <div className="meter" aria-hidden>
-            <span style={{ width: `${Math.max(2, shine.score)}%` }} />
-          </div>
-          <ul className="regionChips" style={{ marginTop: '12px' }}>
-            {shine.tZoneScore !== null ? (
-              <li>
-                {t.skinType.tZone}: <b>{shine.tZoneScore}/100</b>
-              </li>
-            ) : null}
-            {shine.cheeksScore !== null ? (
-              <li>
-                {t.skinType.cheeks}: <b>{shine.cheeksScore}/100</b>
-              </li>
-            ) : null}
-          </ul>
-          {regions.length ? (
-            <ul className="regionChips" aria-label={t.skinType.regionalBreakdown}>
-              {regions.map(([k, v]) => {
-                const label =
-                  k === 'cheekLeft'
-                    ? t.skinType.leftCheek
-                    : k === 'cheekRight'
-                      ? t.skinType.rightCheek
-                      : t.skinType[k] ?? k;
-                return (
-                  <li key={k}>
-                    {label}: <b>{v}/100</b>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
-        </div>
-      ) : null}
-
-      <p className="extText" style={{ marginTop: '12px' }}>{skinType.explanation}</p>
-
-      <p className="notice">
-        <Info size={14} aria-hidden /> {t.skinType.notice}
-      </p>
-      <Limitations items={skinType.limitations} />
-    </section>
-  );
-}
-
 export function SkinToneUniformitySection({
   uniformity,
   onOpenInfo,
@@ -396,14 +278,27 @@ export function SkinToneUniformitySection({
   uniformity: SkinToneUniformityReport;
   onOpenInfo?: (key: ExplainingMetricKey, score?: number | null, band?: string | null) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   if (uniformity.status === 'disabled') return null;
 
   const ok = uniformity.status === 'ok' && uniformity.uniformityScore !== null;
+  const tone = uniformity.skinTone;
   const diffs = uniformity.colorDifferences;
+  const regions = uniformity.regionalMetrics;
+
+  const regionOrder: Array<{
+    key: 'forehead' | 'cheekLeft' | 'cheekRight' | 'nose' | 'chin';
+    label: string;
+  }> = [
+    { key: 'forehead', label: t.regions.forehead },
+    { key: 'cheekLeft', label: t.regions.cheekL },
+    { key: 'cheekRight', label: t.regions.cheekR },
+    { key: 'nose', label: t.regions.nose },
+    { key: 'chin', label: t.regions.chin },
+  ];
 
   return (
-    <section className="glass extSection" aria-labelledby="uniformity-title">
+    <section className="glass extSection skinToneUniformityCard" aria-labelledby="uniformity-title">
       <div className="extHead">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <h3 id="uniformity-title">{t.skinToneUniformity.title}</h3>
@@ -426,60 +321,130 @@ export function SkinToneUniformitySection({
 
       {ok ? (
         <>
-          <div className="metricHead">
-            <span className="muted small">{t.skinToneUniformity.scoreLabel}</span>
-            <div className="scoreWithInfo">
-              <span className="metricScore">
-                {uniformity.uniformityScore}
-                <small>/100</small>
-              </span>
-              {onOpenInfo ? (
-                <ScoreInfoButton
-                  onClick={() =>
-                    onOpenInfo(
-                      'skinToneUniformity',
-                      uniformity.uniformityScore,
-                      uniformity.band ? t.skinToneUniformity[uniformity.band] : null,
-                    )
-                  }
-                />
-              ) : null}
-            </div>
-          </div>
-          <div className="meter" aria-hidden>
-            <span style={{ width: `${Math.max(2, uniformity.uniformityScore as number)}%` }} />
-          </div>
-          {uniformity.band ? (
-            <div className="metricTags" style={{ marginTop: '8px' }}>
-              <span className="tag">
-                <span className="dot" aria-hidden />
-                {t.skinToneUniformity[uniformity.band] ?? uniformity.band}
-              </span>
+          {/* 1. Prominent Detected Skin Tone Profile Card */}
+          {tone ? (
+            <div className="skinToneProfileBox">
+              <div className="skinToneHeader">
+                <div
+                  className="skinToneSwatch"
+                  style={{ backgroundColor: tone.hexColor }}
+                  title={`${tone.toneLabel} (${tone.hexColor})`}
+                  aria-label={`Skin tone swatch ${tone.hexColor}`}
+                >
+                  <span
+                    className="monkBadge"
+                    style={{ backgroundColor: tone.monk.hex }}
+                    title={`Monk match: ${tone.monk.name} (${tone.monk.hex})`}
+                  />
+                </div>
+                <div className="skinToneMeta">
+                  <span className="muted small">{t.skinToneUniformity.toneLabel}</span>
+                  <h4 className="skinToneName">{tone.toneLabel}</h4>
+                  <div className="skinToneBadges">
+                    <span className="toneBadge primary">{tone.fitzpatrickLabel}</span>
+                    <span className="toneBadge secondary">{tone.monk.name}</span>
+                    <span className="toneBadge subtle">{tone.undertoneLabel}</span>
+                    <span className="toneBadge ita">ITA {tone.ita}°</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="skinToneLabRow">
+                <span className="labItem"><b>L*</b> {tone.lab.L}</span>
+                <span className="labItem"><b>a*</b> {tone.lab.a}</span>
+                <span className="labItem"><b>b*</b> {tone.lab.b}</span>
+                <span className="labItem hexCode">{tone.hexColor.toUpperCase()}</span>
+              </div>
             </div>
           ) : null}
 
-          <ul className="regionChips" style={{ marginTop: '14px' }}>
-            {diffs.leftRightDeltaE !== null ? (
-              <li>
-                {t.skinToneUniformity.leftRightSymmetry}: <b>ΔE {diffs.leftRightDeltaE}</b>
-              </li>
+          {/* 2. Uniformity Rating Score & Meter */}
+          <div className="uniformityScoreBox" style={{ marginTop: '16px' }}>
+            <div className="metricHead">
+              <span className="muted small">{t.skinToneUniformity.scoreLabel}</span>
+              <div className="scoreWithInfo">
+                <span className="metricScore">
+                  {uniformity.uniformityScore}
+                  <small>/100</small>
+                </span>
+                {onOpenInfo ? (
+                  <ScoreInfoButton
+                    onClick={() =>
+                      onOpenInfo(
+                        'skinToneUniformity',
+                        uniformity.uniformityScore,
+                        uniformity.band ? t.skinToneUniformity[uniformity.band] : null,
+                      )
+                    }
+                  />
+                ) : null}
+              </div>
+            </div>
+            <div className="meter" aria-hidden>
+              <span style={{ width: `${Math.max(2, uniformity.uniformityScore as number)}%` }} />
+            </div>
+            {uniformity.band ? (
+              <div className="metricTags" style={{ marginTop: '8px' }}>
+                <span className={`tag band-${uniformity.band}`}>
+                  <span className="dot" aria-hidden />
+                  {t.skinToneUniformity[uniformity.band] ?? uniformity.band}
+                </span>
+                <span className="tag conf-high">
+                  <span className="dot" aria-hidden />
+                  {t.confidence.high}
+                </span>
+              </div>
             ) : null}
-            {diffs.meanInterRegionDeltaE !== null ? (
-              <li>
-                {t.skinToneUniformity.meanDeltaE}: <b>ΔE {diffs.meanInterRegionDeltaE}</b>
-              </li>
-            ) : null}
-            {diffs.lightingAsymmetry !== null ? (
-              <li>
-                {t.skinToneUniformity.lightingAsymmetry}: <b>ΔL* {diffs.lightingAsymmetry}</b>
-              </li>
-            ) : null}
-          </ul>
+            <p className="extText" style={{ marginTop: '10px' }}>
+              {uniformity.band === 'high'
+                ? t.skinToneUniformity.explanationHigh
+                : uniformity.band === 'moderate'
+                  ? t.skinToneUniformity.explanationModerate
+                  : t.skinToneUniformity.explanationVariable}
+            </p>
+          </div>
 
+          {/* 3. Facial Zones Comparison Grid */}
+          <div className="regionalComparisonBox" style={{ marginTop: '16px' }}>
+            <span className="muted small" style={{ display: 'block', marginBottom: '8px' }}>
+              {t.skinToneUniformity.regionalBreakdown}
+            </span>
+            <div className="regionalToneGrid">
+              {regionOrder.map(({ key, label }) => {
+                const metric = regions[key];
+                if (!metric) return null;
+                return (
+                  <div key={key} className="regionalToneCard">
+                    <div className="regionalToneHead">
+                      <div
+                        className="toneSwatchMini"
+                        style={{ backgroundColor: metric.hexColor ?? '#d7bd96' }}
+                      />
+                      <span className="regionName">{label}</span>
+                    </div>
+                    <div className="regionalToneDetails">
+                      {metric.ita !== undefined ? <span className="regionIta">ITA {metric.ita}°</span> : null}
+                      {metric.statusLabel ? <span className="regionStatus">{metric.statusLabel}</span> : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 4. Directional Lighting Asymmetry Notice */}
+          {diffs.lightingAsymmetry !== null && diffs.lightingAsymmetry > 14 ? (
+            <div className="lightingCompensatedNotice" style={{ marginTop: '14px' }}>
+              <Info size={14} aria-hidden />
+              <span>{t.skinToneUniformity.lightingCompensated}</span>
+            </div>
+          ) : null}
+
+          {/* 5. Spatial Delta E Heatmap */}
           {uniformity.heatmap ? (
             <div style={{ marginTop: '14px' }}>
               <details className="limitations">
-                <summary>Delta E Spatial Map</summary>
+                <summary>{locale === 'ar' ? 'خريطة التباين اللوني المكانية (ΔE)' : 'Spatial Color Deviation Map (ΔE)'}</summary>
                 <div style={{ marginTop: '8px', textAlign: 'center' }}>
                   <img
                     src={uniformity.heatmap}
@@ -494,18 +459,16 @@ export function SkinToneUniformitySection({
           {uniformity.warnings.length ? (
             <ul className="reasonList" style={{ marginTop: '10px' }}>
               {uniformity.warnings.map((w) => (
-                <li key={w}>{w}</li>
+                <li key={w}>{w === 'directional_lighting_detected' ? t.skinToneUniformity.lightingWarning : w}</li>
               ))}
             </ul>
           ) : null}
-
-          <p className="extText" style={{ marginTop: '10px' }}>{uniformity.explanation}</p>
         </>
       ) : (
         <p className="extText muted">{uniformity.explanation}</p>
       )}
 
-      <p className="notice">
+      <p className="notice" style={{ marginTop: '16px' }}>
         <Info size={14} aria-hidden /> {t.skinToneUniformity.notice}
       </p>
       <Limitations items={uniformity.limitations} />
