@@ -2234,8 +2234,9 @@ h3 {
 }
 
 .tag.experimental {
-  background: #f4f3ff;
-  color: #5925dc;
+  background: var(--blue-light);
+  color: var(--blue);
+  border: 1px solid rgba(45, 156, 219, 0.22);
 }
 
 .extLead {
