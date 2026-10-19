@@ -29,7 +29,7 @@ const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif';
 
 export default function ScanApp() {
   const { t, locale } = useI18n();
-  const { authenticated, required, loading, openSignIn, whenReady } = useAuth();
+  const { authenticated, required, loading, openSignIn, whenReady, onResume } = useAuth();
   const [step, setStep] = useState<Step>({ name: 'landing' });
   const uploadRef = useRef<HTMLInputElement>(null);
   const deviceCameraRef = useRef<HTMLInputElement>(null);
@@ -93,6 +93,9 @@ export default function ScanApp() {
       }),
     [whenReady, goToPhotoStep, openSignIn],
   );
+
+  // Signed in through the pop-up window after pressing Start: go on to the photo.
+  useEffect(() => onResume(goToPhotoStep), [onResume, goToPhotoStep]);
 
   const handleFile = useCallback(
     async (file: Blob | undefined | null) => {

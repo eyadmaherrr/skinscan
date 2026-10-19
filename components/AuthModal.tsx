@@ -1,42 +1,21 @@
 'use client';
 
-import { Mail, ShieldCheck, X } from 'lucide-react';
+import { Loader2, LogIn, UserPlus, X } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import { fill, useI18n } from './LocaleProvider';
-import { signInLinks, useAuth } from '@/lib/client/use-auth';
-
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-      <path
-        fill="#EA4335"
-        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-      />
-      <path
-        fill="#4285F4"
-        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-      />
-      <path
-        fill="#34A853"
-        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-      />
-    </svg>
-  );
-}
+import { useAuth } from '@/lib/client/use-auth';
 
 /**
- * Sign-in dialog. Both options open the clinic website, which signs the
- * patient in and sends them back to this page; SkinScan never handles a
- * password.
+ * Sign-in dialog, the Dr. Maher network sign-in: one account for
+ * drmahermahmoud.com, BossMen Clinics and SkinScan. "Sign in" opens the
+ * clinic website in a pop-up window (the whole page on phones), which signs
+ * the patient in and comes back; SkinScan never handles a password.
  */
 export default function AuthModal() {
   const { t, locale, href } = useI18n();
-  const { prompt, closeSignIn, unavailable } = useAuth();
+  const { prompt, closeSignIn, signIn, waiting, unavailable } = useAuth();
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -46,75 +25,82 @@ export default function AuthModal() {
       if (e.key === 'Escape') closeSignIn();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    document.documentElement.classList.add('modal-open');
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.documentElement.classList.remove('modal-open');
+    };
   }, [prompt.open, closeSignIn]);
 
   if (!prompt.open) return null;
-  const links = signInLinks(locale, prompt.resumeScan);
 
   return (
-    <div className="authModalBackdrop" onClick={closeSignIn} role="presentation">
+    <div className="modal-backdrop" onClick={closeSignIn} role="presentation">
       <div
-        className="authModalCard glass"
+        className="modal signin-modal glass"
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <button ref={closeRef} type="button" className="authModalClose" onClick={closeSignIn} aria-label={t.auth.close}>
-          <X size={20} aria-hidden />
+        <button ref={closeRef} type="button" className="icon-btn modal-close" onClick={closeSignIn} aria-label={t.auth.close}>
+          <X size={18} aria-hidden />
         </button>
 
-        <div className="authModalHeader">
-          <div className="authModalIcon">
-            <ShieldCheck size={28} aria-hidden />
-          </div>
-          <span className="eyebrow">{t.clinicName}</span>
-          <h2 id="auth-modal-title">{t.auth.title}</h2>
-          <p className="muted">{t.auth.message}</p>
-        </div>
+        <span className="signin-logo" aria-hidden>
+          <Image src="/brand/logo.webp" alt="" width={112} height={112} />
+        </span>
+
+        <span className="eyebrow">{t.auth.eyebrow}</span>
+        <h2 id="auth-modal-title">{t.auth.title}</h2>
+        <p className="signin-lede">{t.auth.message}</p>
+
+        <p className="signin-network">
+          <span>{t.auth.network}</span>
+          <b>drmahermahmoud.com</b>
+          <b>BossMen Clinics</b>
+          <b>SkinScan</b>
+        </p>
 
         {unavailable ? (
-          <p className="inlineError" role="alert">
+          <p className="signin-error" role="alert">
             {t.auth.unavailable}
           </p>
         ) : null}
 
-        <div className="authModalForm">
-          <a href={links.google} className="google-signin-button">
-            <GoogleIcon />
-            <span>{t.auth.google}</span>
-          </a>
-          <div className="google-signin-divider" aria-hidden="true">
-            <span>{t.auth.or}</span>
+        {waiting ? (
+          <div className="signin-wait" role="status">
+            <Loader2 className="spin" size={18} aria-hidden />
+            <span>{t.auth.waiting}</span>
+            <button type="button" className="link-btn" onClick={() => signIn('login', locale)}>
+              {t.auth.reopen}
+            </button>
           </div>
-          <a href={links.email} className="btn primary authSubmitBtn">
-            <Mail size={18} aria-hidden /> {t.auth.email}
-          </a>
-        </div>
+        ) : (
+          <div className="signin-actions">
+            <button type="button" className="btn btn-primary btn-block" onClick={() => signIn('login', locale)}>
+              <LogIn size={17} className="flip-rtl" aria-hidden /> {t.auth.signIn}
+            </button>
+            <button type="button" className="btn btn-ghost btn-block" onClick={() => signIn('register', locale)}>
+              <UserPlus size={17} aria-hidden /> {t.auth.create}
+            </button>
+          </div>
+        )}
 
-        <div className="authModalFooter">
-          <p className="registerPrompt">
-            {t.auth.noAccount}{' '}
-            <a href={links.register} className="registerLink">
-              {t.auth.create}
-            </a>
-          </p>
-          <p className="authLegal">
-            {fill(t.auth.legal, {
-              terms: (
-                <Link href={href('/terms')} target="_blank" className="legalLink">
-                  {t.legal.terms}
-                </Link>
-              ),
-              privacy: (
-                <Link href={href('/privacy')} target="_blank" className="legalLink">
-                  {t.legal.privacy}
-                </Link>
-              ),
-            })}
-          </p>
-        </div>
+        <p className="signin-foot">
+          {fill(t.auth.legal, {
+            terms: (
+              <Link href={href('/terms')} target="_blank" className="link-btn">
+                {t.legal.terms}
+              </Link>
+            ),
+            privacy: (
+              <Link href={href('/privacy')} target="_blank" className="link-btn">
+                {t.legal.privacy}
+              </Link>
+            ),
+          })}
+        </p>
       </div>
     </div>
   );
