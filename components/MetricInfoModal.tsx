@@ -69,7 +69,7 @@ export default function MetricInfoModal({
   const isAr = locale === 'ar';
 
   return (
-    <div className="authModalBackdrop" onClick={onClose} role="presentation">
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
         className="metricInfoCard glass"
         role="dialog"
@@ -80,7 +80,7 @@ export default function MetricInfoModal({
         <button
           ref={closeRef}
           type="button"
-          className="authModalClose"
+          className="icon-btn modal-close"
           onClick={onClose}
           aria-label={isAr ? 'إغلاق' : 'Close'}
         >
@@ -113,7 +113,7 @@ export default function MetricInfoModal({
         {/* Section 1: What it measures */}
         <div className="metricInfoSection" style={{ borderTop: 'none', paddingTop: 0, marginTop: '14px' }}>
           <h4>
-            <Info size={16} aria-hidden="true" style={{ color: 'var(--blue)' }} />
+            <Info size={16} aria-hidden="true" style={{ color: 'var(--accent)' }} />
             {isAr ? 'ماذا يقيس هذا المؤشر؟' : 'What does this score measure?'}
           </h4>
           <p className="extText" style={{ marginTop: '4px' }}>
@@ -124,7 +124,7 @@ export default function MetricInfoModal({
         {/* Section 2: How it is calculated */}
         <div className="metricInfoSection">
           <h4>
-            <Sliders size={16} aria-hidden="true" style={{ color: 'var(--blue)' }} />
+            <Sliders size={16} aria-hidden="true" style={{ color: 'var(--accent)' }} />
             {isAr ? 'طريقة الحساب والخوارزميات' : 'How is it calculated?'}
           </h4>
           <p className="extText" style={{ marginTop: '4px' }}>
@@ -140,7 +140,7 @@ export default function MetricInfoModal({
         {/* Section 3: Score Scale */}
         <div className="metricInfoSection">
           <h4>
-            <CheckCircle2 size={16} aria-hidden="true" style={{ color: 'var(--blue)' }} />
+            <CheckCircle2 size={16} aria-hidden="true" style={{ color: 'var(--accent)' }} />
             {info.scaleMeaning.title}
           </h4>
           <p className="extText small muted" style={{ margin: '4px 0 8px' }}>
@@ -199,7 +199,7 @@ export default function MetricInfoModal({
         </div>
 
         <div className="metricModalFooter">
-          <button type="button" className="btn btn-secondary" onClick={onClose} style={{ minWidth: '110px' }}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onClose} style={{ minWidth: '110px' }}>
             {isAr ? 'إغلاق' : 'Got it'}
           </button>
         </div>

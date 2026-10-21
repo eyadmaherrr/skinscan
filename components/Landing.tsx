@@ -17,7 +17,7 @@ export default function Landing({ onStart, signInNeeded }: { onStart: () => void
         </h1>
         <p className="lead">{t.landing.lead}</p>
         <div className="actions">
-          <button type="button" className="btn primary lg" onClick={onStart}>
+          <button type="button" className="btn btn-primary" onClick={onStart}>
             {t.landing.start} <ArrowRight className="flipRtl" size={18} aria-hidden />
           </button>
         </div>

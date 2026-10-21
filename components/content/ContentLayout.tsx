@@ -175,12 +175,12 @@ export default function ContentLayout({ locale, data, children }: ContentLayoutP
               </p>
             </div>
             <div className="ctaButtons">
-              <a href={localePath('/scan', locale)} className="btn primary lg ctaBtn">
+              <a href={localePath('/scan', locale)} className="btn btn-primary ctaBtn">
                 {startScanLabel} <ArrowRight className="flipRtl" size={18} aria-hidden />
               </a>
               <a
                 href={bookingLink(locale)}
-                className="btn secondary lg ctaBtn"
+                className="btn btn-ghost ctaBtn"
                 target="_blank"
                 rel="noopener noreferrer"
               >

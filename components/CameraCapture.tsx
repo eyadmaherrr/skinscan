@@ -251,13 +251,13 @@ export default function CameraCapture({ onCapture, onCancel, onUseDeviceCamera, 
             <AlertCircle size={36} aria-hidden />
             <p>{error}</p>
             <div className="actions center">
-              <button type="button" className="btn primary" onClick={() => setAttempt((n) => n + 1)}>
+              <button type="button" className="btn btn-primary" onClick={() => setAttempt((n) => n + 1)}>
                 <RotateCcw size={18} aria-hidden /> {t.retry}
               </button>
-              <button type="button" className="btn secondary" onClick={onUseDeviceCamera}>
+              <button type="button" className="btn btn-ghost" onClick={onUseDeviceCamera}>
                 {t.deviceCamera}
               </button>
-              <button type="button" className="btn secondary" onClick={onUpload}>
+              <button type="button" className="btn btn-ghost" onClick={onUpload}>
                 <ImageUp size={18} aria-hidden /> {t.upload}
               </button>
             </div>

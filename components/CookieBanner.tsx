@@ -26,12 +26,12 @@ export default function CookieBanner() {
           <p>{t.cookies.text}</p>
         </div>
         <div className="cookie-actions">
-          <Link href={href('/privacy')} className="cookie-link">
+          <Link href={href('/privacy')} className="link-btn">
             {t.legal.privacy}
           </Link>
           <button
             type="button"
-            className="cookie-button"
+            className="btn btn-primary btn-sm"
             onClick={() => {
               markCookieNoticeSeen();
               setShow(false);

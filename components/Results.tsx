@@ -254,7 +254,7 @@ export default function Results({ result, photo, onScanAgain }: Props) {
             </span>
             <b dir="ltr">#{result.scanId.slice(0, 8).toUpperCase()}</b>
           </div>
-          <button type="button" className="btn secondary" onClick={download} disabled={report === 'busy'}>
+          <button type="button" className="btn btn-ghost" onClick={download} disabled={report === 'busy'}>
             {report === 'busy' ? <Loader2 className="spin" size={17} aria-hidden /> : <Download size={17} aria-hidden />}
             {report === 'busy' ? t.results.preparing : t.results.download}
           </button>
@@ -425,10 +425,10 @@ export default function Results({ result, photo, onScanAgain }: Props) {
       <p className="engineNote">{format(t.results.engine, { engine: ENGINE_NAME })}</p>
 
       <div className="actions center resultsActions">
-        <a className="btn primary lg" href={bookingLink(locale)} target="_blank" rel="noopener noreferrer">
+        <a className="btn btn-primary" href={bookingLink(locale)} target="_blank" rel="noopener noreferrer">
           <CalendarCheck size={18} aria-hidden /> {t.results.book}
         </a>
-        <button type="button" className="btn secondary lg" onClick={onScanAgain}>
+        <button type="button" className="btn btn-ghost" onClick={onScanAgain}>
           <RotateCcw size={17} aria-hidden /> {t.results.again}
         </button>
       </div>

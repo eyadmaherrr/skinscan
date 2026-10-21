@@ -33,10 +33,10 @@ export default function RetakeNotice({ failure, onRetake, onUpload }: Props) {
         <p className="muted small">{t.retake.why}</p>
       ) : null}
       <div className="actions center">
-        <button type="button" className="btn primary" onClick={onRetake}>
+        <button type="button" className="btn btn-primary" onClick={onRetake}>
           <Camera size={18} aria-hidden /> {t.retake.retake}
         </button>
-        <button type="button" className="btn secondary" onClick={onUpload}>
+        <button type="button" className="btn btn-ghost" onClick={onUpload}>
           <ImageUp size={18} aria-hidden /> {t.retake.upload}
         </button>
       </div>

@@ -62,10 +62,10 @@ export default function PhotoStep({ onTakePhoto, onUpload, error }: Props) {
       ) : null}
 
       <div className="actions">
-        <button type="button" className="btn primary" onClick={onTakePhoto} disabled={!agreed}>
+        <button type="button" className="btn btn-primary" onClick={onTakePhoto} disabled={!agreed}>
           <Camera size={18} aria-hidden /> {t.photo.take}
         </button>
-        <button type="button" className="btn secondary" onClick={onUpload} disabled={!agreed}>
+        <button type="button" className="btn btn-ghost" onClick={onUpload} disabled={!agreed}>
           <ImageUp size={18} aria-hidden /> {t.photo.upload}
         </button>
       </div>

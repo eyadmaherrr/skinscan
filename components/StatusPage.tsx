@@ -34,17 +34,17 @@ export default function StatusPage({ kind }: { kind: 'notFound' | 'unavailable' 
           <div className="statusActions">
             {kind === 'notFound' ? (
               <>
-                <a className="btn primary" href={href('/')}>
+                <a className="btn btn-primary" href={href('/')}>
                   <Home size={18} aria-hidden /> {t.status.notFound.home}
                 </a>
-                <a className="btn secondary" href={bookingLink(locale)} target="_blank" rel="noopener noreferrer">
+                <a className="btn btn-ghost" href={bookingLink(locale)} target="_blank" rel="noopener noreferrer">
                   <CalendarDays size={18} aria-hidden /> {t.status.notFound.book}
                 </a>
               </>
             ) : (
               // Heads home: if maintenance is over the visitor gets SkinScan,
               // otherwise the proxy sends them straight back here.
-              <a className="btn primary" href={href('/')}>
+              <a className="btn btn-primary" href={href('/')}>
                 <RefreshCw size={18} aria-hidden /> {t.status.unavailable.retry}
               </a>
             )}

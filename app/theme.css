@@ -1,74 +1,16 @@
 /* ============================================================
    SKINSCAN — DR. MAHER MAHMOUD THEME
-   The design of the new drmahermahmoud.com (itself the bossmenclinics.com
-   system in Dr. Maher's blue): frosted white cards with a hairline border
-   and inner highlight, pill labels, 14px controls, a floating top bar,
-   a bottom dock on phones and Montserrat headings.
+   The shared components of the Dr. Maher design system ("Obsidian &
+   Blue", the new drmahermahmoud.com): page texture, glass cards, eyebrow,
+   buttons, the floating top bar and phone dock, the footer and the
+   sign-in modal.
 
-   Loaded after globals.css (components/RootDocument.tsx). The tokens below
-   also re-point globals.css's own variables, so the scan steps, results
-   and content pages follow without being rewritten. Logical properties
-   throughout, so Arabic (RTL) mirrors correctly.
+   Loaded after globals.css (components/RootDocument.tsx), which holds the
+   tokens. Logical properties throughout, so Arabic (RTL) mirrors
+   correctly.
    ============================================================ */
 
-:root {
-  --bg: #f5f8fb;
-  --accent: #176b9c;
-  --accent-hi: #2d9cdb;
-  --accent-soft: rgba(23, 107, 156, 0.08);
-  --accent-line: rgba(23, 107, 156, 0.28);
-  --accent-glow: rgba(45, 156, 219, 0.22);
-  --body: #344054;
-  --line-2: rgba(11, 45, 77, 0.14);
-  --ok: #067647;
-
-  --glass: linear-gradient(160deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.86));
-  --glass-solid: rgba(255, 255, 255, 0.97);
-  --glass-edge: rgba(11, 45, 77, 0.08);
-  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --depth: 0 12px 30px -18px rgba(11, 45, 77, 0.2), 0 1px 3px rgba(11, 45, 77, 0.05);
-
-  --r-sm: 14px;
-  --r: 24px;
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --nav-h: 72px;
-
-  --font-ui: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-display: var(--font-montserrat), var(--font-ui);
-
-  /* globals.css's own names, re-pointed */
-  --navy: #0b2d4d;
-  --blue: var(--accent);
-  --blue-bright: var(--accent-hi);
-  --text: #0b2d4d;
-  --muted: #667085;
-  --muted-strong: #475467;
-  --line: rgba(11, 45, 77, 0.08);
-  --radius: var(--r);
-  --radius-sm: var(--r-sm);
-  --glass-bg: var(--glass);
-  --glass-border: 1px solid var(--glass-edge);
-  --glass-blur: none;
-  --glass-shadow: var(--glass-hi), var(--depth);
-}
-
-html[dir='rtl'] {
-  --font-ui: var(--font-cairo), 'Segoe UI', Tahoma, sans-serif;
-  --font-display: var(--font-cairo), 'Segoe UI', Tahoma, sans-serif;
-}
-
 /* ---------- Page ---------- */
-html {
-  background: var(--bg);
-}
-
-body {
-  color: var(--text);
-  font-family: var(--font-ui);
-  background: none;
-  background-attachment: scroll;
-}
-
 /* The page glow on its own fixed layer (composited once, not repainted on scroll). */
 body::after {
   content: '';
@@ -102,7 +44,7 @@ body::before {
 
 ::selection {
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
 }
 
 :focus-visible {
@@ -110,17 +52,9 @@ body::before {
   outline-offset: 3px;
 }
 
-h1,
-h2,
-h3 {
-  font-family: var(--font-display);
-  letter-spacing: -0.03em;
-}
-
-html[dir='rtl'] h1,
-html[dir='rtl'] h2,
-html[dir='rtl'] h3 {
-  letter-spacing: 0;
+/* Headings and panes focused from code (after a step change) show no ring. */
+[tabindex='-1']:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .container {
@@ -130,6 +64,12 @@ html[dir='rtl'] h3 {
 
 .dim {
   color: var(--muted);
+}
+
+.fine {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.55;
 }
 
 .spin {
@@ -155,21 +95,25 @@ html.modal-open {
   background: var(--glass);
   border: 1px solid var(--glass-edge);
   box-shadow: var(--glass-hi), var(--depth);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
 /* ---------- Eyebrow pill ---------- */
 .eyebrow {
+  display: inline-flex;
+  align-items: center;
   gap: 10px;
+  width: fit-content;
   max-width: 100%;
   min-height: 32px;
+  margin-bottom: 16px;
   padding: 4px 16px;
+  border-radius: var(--radius-pill);
   background: var(--accent-soft);
   border: 1px solid var(--accent-line);
   color: var(--accent);
   font: 800 11px/1.35 var(--font-ui);
   letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 html[dir='rtl'] .eyebrow {
@@ -178,9 +122,9 @@ html[dir='rtl'] .eyebrow {
 }
 
 /* ============================================================
-   BUTTONS
-   .btn.primary / .btn-primary: solid blue. .btn.secondary / .btn-ghost:
-   white outline. Labels stay readable in every state.
+   BUTTONS (design system)
+   .btn + .btn-primary (one per view) | .btn-ghost | .btn-danger,
+   .btn-sm (42px), .btn-block; .link-btn and .icon-btn.
    ============================================================ */
 .btn {
   position: relative;
@@ -196,8 +140,10 @@ html[dir='rtl'] .eyebrow {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-decoration: none;
   white-space: nowrap;
-  transform: none;
+  cursor: pointer;
   transition:
     transform 0.18s var(--ease),
     box-shadow 0.18s var(--ease),
@@ -206,18 +152,12 @@ html[dir='rtl'] .eyebrow {
     color 0.18s ease;
 }
 
-.btn::before,
-.btn.primary::before {
-  content: none;
+.btn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
 }
 
-.btn.lg {
-  min-height: 56px;
-  padding: 0 30px;
-  font-size: 16px;
-}
-
-.btn.sm,
 .btn-sm {
   min-height: 42px;
   padding: 0 18px;
@@ -228,56 +168,57 @@ html[dir='rtl'] .eyebrow {
   width: 100%;
 }
 
-.btn.primary,
 .btn-primary {
   background: linear-gradient(135deg, var(--accent-hi), var(--accent));
-  color: #ffffff;
-  box-shadow:
-    0 6px 18px -8px rgba(23, 107, 156, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  color: var(--on-accent);
+  box-shadow: var(--shadow-primary);
 }
 
-.btn.primary:hover:not(:disabled),
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1f8acb, #0f5a86);
-  color: #ffffff;
+  background: linear-gradient(135deg, #1f8acb, var(--accent-deep));
+  color: var(--on-accent);
   transform: translateY(-2px);
-  box-shadow:
-    0 12px 26px -10px rgba(15, 90, 134, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-primary-hover);
 }
 
-.btn.primary:active:not(:disabled),
 .btn-primary:active:not(:disabled) {
-  background: linear-gradient(135deg, #17699a, #0b4a70);
+  background: linear-gradient(135deg, #17699a, var(--accent-press));
   transform: translateY(0);
   box-shadow: inset 0 2px 6px rgba(4, 18, 28, 0.28);
 }
 
-.btn.secondary,
 .btn-ghost {
-  border: 1.5px solid var(--line-2);
+  border-color: var(--line-2);
   background: #ffffff;
   color: var(--text);
-  box-shadow: 0 1px 2px rgba(11, 45, 77, 0.06);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  box-shadow: var(--shadow-ghost);
 }
 
-.btn.secondary:hover:not(:disabled),
 .btn-ghost:hover:not(:disabled) {
   border-color: var(--accent-line);
-  background: #eef6fb;
+  background: var(--hover-tint);
   color: var(--accent);
   transform: translateY(-2px);
   box-shadow: 0 10px 22px -12px rgba(11, 45, 77, 0.35);
 }
 
-.btn.secondary:active:not(:disabled),
 .btn-ghost:active:not(:disabled) {
-  background: #e1eff8;
+  background: var(--press-tint);
   transform: translateY(0);
   box-shadow: inset 0 2px 4px rgba(11, 45, 77, 0.12);
+}
+
+.btn-danger {
+  border-color: rgba(217, 45, 32, 0.32);
+  background: var(--danger-surface);
+  color: var(--danger-ink);
+}
+
+.btn-danger:hover:not(:disabled) {
+  border-color: rgba(217, 45, 32, 0.5);
+  background: #fee4e2;
+  color: #912018;
+  transform: translateY(-2px);
 }
 
 .btn:disabled {
@@ -309,17 +250,23 @@ html[dir='rtl'] .eyebrow {
   place-items: center;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line-2);
   background: rgba(11, 45, 77, 0.03);
   color: var(--text);
   cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .icon-btn:hover {
   border-color: var(--accent-line);
-  background: #eef6fb;
+  background: var(--hover-tint);
   color: var(--accent);
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -503,7 +450,7 @@ html[dir='rtl'] .nav-links a {
 .acct-trigger:hover,
 .nav-burger:hover {
   border-color: var(--accent-line);
-  background: #eef6fb;
+  background: var(--hover-tint);
   color: var(--accent);
 }
 
@@ -564,7 +511,7 @@ html[dir='rtl'] .nav-links a {
   height: 28px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--accent-hi), var(--accent));
-  color: #ffffff;
+  color: var(--on-accent);
   font-size: 13px;
   font-weight: 800;
 }
@@ -791,11 +738,12 @@ html[dir='rtl'] .dock button {
 /* ============================================================
    FOOTER (components/SiteFooter.tsx)
    ============================================================ */
+/* Brand, clinic line and social accounts on one side; the links wrap on the other. */
 .site-foot {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
-  gap: 24px 40px;
-  align-items: center;
+  grid-template-columns: minmax(260px, 1fr) minmax(0, 1.5fr);
+  gap: 28px 48px;
+  align-items: start;
   margin-top: 24px;
   padding-block: 40px 28px;
   border-top: 1px solid var(--line);
@@ -803,16 +751,18 @@ html[dir='rtl'] .dock button {
 
 .footer-main {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 24px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
   min-width: 0;
 }
 
 .footer-main p {
+  max-width: 340px;
   margin: 0;
   color: var(--muted);
   font-size: 14px;
+  line-height: 1.55;
 }
 
 .footer-brand {
@@ -864,7 +814,10 @@ html[dir='rtl'] .dock button {
 .footer-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 22px;
+  justify-content: flex-end;
+  align-content: flex-start;
+  gap: 10px 22px;
+  padding-top: 8px;
   color: var(--body);
   font-size: 14px;
   font-weight: 600;
@@ -1057,7 +1010,7 @@ html[dir='rtl'] .dock button {
   border-radius: 12px;
   background: rgba(217, 45, 32, 0.1);
   border: 1px solid rgba(217, 45, 32, 0.3);
-  color: #b42318;
+  color: var(--danger-ink);
   font-size: 13.5px;
 }
 
@@ -1216,12 +1169,3 @@ html[dir='rtl'] .dock button {
   }
 }
 
-/* ---------- Cookie notice: the accent button ---------- */
-.cookie-button:not(.cookie-button-secondary) {
-  background: linear-gradient(135deg, var(--accent-hi), var(--accent));
-  box-shadow: 0 6px 18px -8px rgba(23, 107, 156, 0.55);
-}
-
-.cookie-button:not(.cookie-button-secondary):hover {
-  background: linear-gradient(135deg, #1f8acb, #0f5a86);
-}

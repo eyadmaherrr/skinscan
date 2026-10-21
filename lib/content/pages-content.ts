@@ -607,7 +607,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
           title: 'Visual Detection of Facial Spots',
           paragraphs: [
             'Facial blemishes present distinct photometric signatures: localized circular depressions or elevations characterized by increased a* redness (erythema) or decreased L* luminance.',
-            'Dr Maher Vision AI v3.5 employs multi-scale Difference-of-Gaussians (DoG) filtering combined with Hessian matrix curvature checks. A valid spot candidate must exhibit balanced eigenvalues ($\lambda_1 / \lambda_2 \approx 1$), preventing linear wrinkles or shadow folds from being misclassified as blemishes.',
+            'Dr Maher Vision AI v3.5 employs multi-scale Difference-of-Gaussians (DoG) filtering combined with Hessian matrix curvature checks. A valid spot candidate must exhibit balanced eigenvalues (λ₁/λ₂ ≈ 1), preventing linear wrinkles or shadow folds from being misclassified as blemishes.',
           ],
         },
         {
@@ -692,7 +692,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
         {
           title: 'CIE L*a*b* Chrominance Separation',
           paragraphs: [
-            'Dr Maher Vision AI v3.5 analyzes skin color in the perceptually uniform CIE L*a*b* color space. The L* channel measures perceptual lightness, while a* and b* measure red-green and yellow-blue chroma. By evaluating local deviations ($\Delta L^*$) relative to the regional background baseline, the engine measures localized pigment deposits without distortion from ambient lighting.',
+            'Dr Maher Vision AI v3.5 analyzes skin color in the perceptually uniform CIE L*a*b* color space. The L* channel measures perceptual lightness, while a* and b* measure red-green and yellow-blue chroma. By evaluating local deviations (ΔL*) relative to the regional background baseline, the engine measures localized pigment deposits without distortion from ambient lighting.',
           ],
         },
       ],
@@ -971,7 +971,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
         {
           title: 'Digital Measurement Principles',
           paragraphs: [
-            'Dr Maher Vision AI v3.5 computes the infraorbital lightness differential ($\Delta L^*$) by comparing under-eye skin to adjacent malar cheek skin under calibrated lighting. Downward-angled lighting is flagged to prevent overhead room lights from casting false structural shadows.',
+            'Dr Maher Vision AI v3.5 computes the infraorbital lightness differential (ΔL*) by comparing under-eye skin to adjacent malar cheek skin under calibrated lighting. Downward-angled lighting is flagged to prevent overhead room lights from casting false structural shadows.',
           ],
         },
       ],
@@ -1005,7 +1005,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
         {
           title: 'مبادئ القياس الرقمي في النظام',
           paragraphs: [
-            'يقيس محرك Dr Maher Vision AI v3.5 فرق الإضاءة النسبي ($\Delta L^*$) بين جلد تحت العين وأعلى الخد المجاور مع التحقق من زاوية الإضاءة لمنع الظلال السقفية من تضخيم النتيجة.',
+            'يقيس محرك Dr Maher Vision AI v3.5 فرق الإضاءة النسبي (ΔL*) بين جلد تحت العين وأعلى الخد المجاور مع التحقق من زاوية الإضاءة لمنع الظلال السقفية من تضخيم النتيجة.',
           ],
         },
       ],

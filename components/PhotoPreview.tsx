@@ -21,10 +21,10 @@ export default function PhotoPreview({ url, onAnalyze, onRetake }: Props) {
         <img src={url} alt={t.preview.alt} />
       </div>
       <div className="actions">
-        <button type="button" className="btn primary" onClick={onAnalyze}>
+        <button type="button" className="btn btn-primary" onClick={onAnalyze}>
           <ScanFace size={18} aria-hidden /> {t.preview.analyze}
         </button>
-        <button type="button" className="btn secondary" onClick={onRetake}>
+        <button type="button" className="btn btn-ghost" onClick={onRetake}>
           <RefreshCw size={17} aria-hidden /> {t.preview.another}
         </button>
       </div>
