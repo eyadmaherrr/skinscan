@@ -31,6 +31,7 @@ in 4.0 and why: [docs/TESTING.md](docs/TESTING.md) §3.
 | [docs/AI_SOURCES.md](docs/AI_SOURCES.md) | Models, libraries, papers, licences, rejected alternatives |
 | [docs/PRIVACY.md](docs/PRIVACY.md) | What happens to a photo, logging, analytics rules |
 | [docs/TESTING.md](docs/TESTING.md) | Test strategy, evaluation results, skin-tone checks, limitations |
+| [docs/UX_RULES.md](docs/UX_RULES.md) | UX rules every screen and the results page must follow, and how to check them |
 
 ## Requirements
 

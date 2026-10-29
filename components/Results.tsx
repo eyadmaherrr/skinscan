@@ -17,6 +17,7 @@ import {
   Palette,
   RotateCcw,
   ScanFace,
+  ShieldAlert,
   Waves,
   type LucideIcon,
 } from 'lucide-react';
@@ -30,7 +31,14 @@ import { ENGINE_NAME } from '@/lib/brand';
 import type { PreparedImage } from '@/lib/client/prepare-image';
 import { bookingLink } from '@/lib/client/use-auth';
 import { format } from '@/lib/messages';
-import { METRIC_KEYS, type MetricKey, type ScanSuccess, type ScoreBand } from '@/lib/skin-analysis/types';
+import { METRIC_KEYS, type ConfidenceLabel, type MetricKey, type ScanSuccess, type ScoreBand } from '@/lib/skin-analysis/types';
+
+/**
+ * The results ("report") page. Layout and behaviour follow docs/UX_RULES.md
+ * (rules R1–R8): the results list comes first, each result appears once with
+ * its score, band and confidence in words, a withheld result says why, and
+ * booking a consultation is the one primary action.
+ */
 
 interface Props {
   result: ScanSuccess;
@@ -73,43 +81,19 @@ function ConfidenceRing({ value }: { value: number }) {
   );
 }
 
-/** One line of "Key findings": the characteristic and how visible it was; it jumps to its measurement card. */
-function Finding({ k, result }: { k: MetricKey; result: ScanSuccess }) {
-  const { t } = useI18n();
-  const m = result.analysis[k];
-  const Icon = METRIC_ICONS[k];
-  function jump() {
-    const card = document.getElementById(`measure-${k}`);
-    if (!card) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    card.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
-    card.focus({ preventScroll: true });
-  }
-  return (
-    <li>
-      <button type="button" className="finding" onClick={jump}>
-        <span className="findingIcon" aria-hidden>
-          <Icon size={18} />
-        </span>
-        <span className="findingName">{t.metrics[k]}</span>
-        {m.band ? (
-          <span className={`bandChip tone-${m.band}`}>{t.bands[m.band]}</span>
-        ) : (
-          <span className="bandChip tone-none">{t.results.notAssessed}</span>
-        )}
-      </button>
-    </li>
-  );
-}
-
-/** A measurement card in the "Skin measurements" grid. */
-function MeasureCard({
+/**
+ * One result (R2–R4): the score with its band and confidence in words, or —
+ * when it was withheld — the reason and what would help. Opens how it is measured.
+ */
+function ResultRow({
   id,
   icon: Icon,
   title,
   score,
   tone,
-  label,
+  bandLabel,
+  confidence,
+  note,
   onInfo,
 }: {
   id: string;
@@ -117,43 +101,58 @@ function MeasureCard({
   title: string;
   score: number | null;
   tone: ScoreBand | 'none';
-  label: string;
+  bandLabel: string;
+  confidence: ConfidenceLabel | null;
+  /** Why a withheld result could not be measured (shown only when `score` is null). */
+  note?: string;
   onInfo: () => void;
 }) {
   const { t } = useI18n();
+  const withheld = score === null;
+  const spoken = withheld
+    ? `${title}: ${bandLabel}. ${note ?? ''}`
+    : `${title}: ${score}/100, ${bandLabel}${confidence ? `, ${t.confidence[confidence]}` : ''}.`;
   return (
     <li>
       <button
         type="button"
         id={id}
-        className={`measureCard tone-${tone}`}
+        className={`resultRow tone-${tone}${withheld ? ' isWithheld' : ''}`}
         onClick={onInfo}
-        aria-label={`${title}: ${score === null ? label : `${score}/100, ${label}`}. ${format(t.results.openInfo, { name: title })}`}
+        aria-label={`${spoken} ${format(t.results.openInfo, { name: title })}`}
       >
-        <span className="measureHead">
-          <span className="measureIcon" aria-hidden>
-            <Icon size={20} />
-          </span>
-          <span className="measureTitle">{title}</span>
-          <ChevronRight className="measureChevron flipRtl" size={18} aria-hidden />
+        <span className="resultIcon" aria-hidden>
+          <Icon size={20} />
         </span>
-        {score === null ? (
-          <span className="measureScore none" aria-hidden>
-            —
+        <span className="resultMain" aria-hidden>
+          <span className="resultTop">
+            <span className="resultTitle">{title}</span>
+            {withheld ? (
+              <span className="resultScore none">—</span>
+            ) : (
+              <span className="resultScore">
+                {score}
+                <small>/100</small>
+              </span>
+            )}
           </span>
-        ) : (
-          <span className="measureScore" aria-hidden>
-            {score}
-            <small>/100</small>
+          {withheld ? null : (
+            <span className="resultMeter">
+              <span style={{ width: `${Math.max(2, score)}%` }} />
+            </span>
+          )}
+          <span className="resultMeta">
+            <span className={`bandChip tone-${tone}`}>{bandLabel}</span>
+            {!withheld && confidence ? (
+              <span className={`confText conf-${confidence}`}>
+                <span className="dot" />
+                {t.confidence[confidence]}
+              </span>
+            ) : null}
           </span>
-        )}
-        <span className="measureMeter" aria-hidden>
-          <span style={{ width: `${score === null ? 0 : Math.max(2, score)}%` }} />
+          {withheld && note ? <span className="resultNote">{note}</span> : null}
         </span>
-        <span className="measureBand" aria-hidden>
-          <span className="dot" />
-          {label}
-        </span>
+        <ChevronRight className="resultChevron flipRtl" size={18} aria-hidden />
       </button>
     </li>
   );
@@ -206,6 +205,7 @@ export default function Results({ result, photo, onScanAgain }: Props) {
   const dateLocale = locale === 'ar' ? 'ar-EG' : undefined;
   const uniformity = result.skinToneUniformity;
   const uniformityOk = uniformity?.status === 'ok' && uniformity.uniformityScore !== null;
+  const anyWithheld = METRIC_KEYS.some((k) => result.analysis[k].score === null);
 
   const openInfo: OpenInfo = (key, score, band) => setInfoModal({ key, score, band });
 
@@ -235,36 +235,27 @@ export default function Results({ result, photo, onScanAgain }: Props) {
           </span>
           <div>
             <h2 id="results-title">{t.results.title}</h2>
-            <p className="muted small">{t.results.byline}</p>
+            <p className="resultsMeta">
+              <span>
+                <CalendarDays size={14} aria-hidden />
+                <span className="srOnly">{t.results.date}: </span>
+                {date.toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })} ·{' '}
+                {date.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
+              </span>
+              <span>
+                <Hash size={14} aria-hidden />
+                <span className="srOnly">{t.results.reportId}: </span>
+                <bdi dir="ltr">{result.scanId.slice(0, 8).toUpperCase()}</bdi>
+              </span>
+            </p>
           </div>
         </div>
-        <div className="resultsMetaRow">
-          <div className="metaChip">
-            <span>
-              <CalendarDays size={13} aria-hidden /> {t.results.date}
-            </span>
-            <b>
-              {date.toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })} ·{' '}
-              {date.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
-            </b>
-          </div>
-          <div className="metaChip">
-            <span>
-              <Hash size={13} aria-hidden /> {t.results.reportId}
-            </span>
-            <b dir="ltr">#{result.scanId.slice(0, 8).toUpperCase()}</b>
-          </div>
-          <button type="button" className="btn btn-ghost" onClick={download} disabled={report === 'busy'}>
-            {report === 'busy' ? <Loader2 className="spin" size={17} aria-hidden /> : <Download size={17} aria-hidden />}
-            {report === 'busy' ? t.results.preparing : t.results.download}
-          </button>
-        </div>
-      </header>
-      {report === 'failed' ? (
-        <p className="inlineError center" role="alert">
-          {t.results.downloadFailed}
+        {/* R5: the reminder comes before any score. */}
+        <p className="resultsNotice">
+          <ShieldAlert size={16} aria-hidden />
+          {t.results.shortDisclaimer}
         </p>
-      ) : null}
+      </header>
 
       <div className="resultsTabs" role="tablist" aria-label={t.results.tabsAria}>
         {tabs.map((x) => (
@@ -293,6 +284,62 @@ export default function Results({ result, photo, onScanAgain }: Props) {
       {tab === 'overview' ? (
         <div id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" className="resultsPanel">
           <div className="overviewGrid">
+            {/* R1: the answer first (first on phones, the wide column on larger screens). */}
+            <section className="glass panel resultsCard" aria-labelledby="measurements-title">
+              <div className="sectionHead">
+                <h3 id="measurements-title" className="cardTitle">
+                  {t.results.measurements}
+                </h3>
+                <p className="muted small">{t.results.scaleNote}</p>
+              </div>
+              <ul className="resultList">
+                {METRIC_KEYS.map((k) => {
+                  const m = result.analysis[k];
+                  return (
+                    <ResultRow
+                      key={k}
+                      id={`measure-${k}`}
+                      icon={METRIC_ICONS[k]}
+                      title={t.metrics[k]}
+                      score={m.score}
+                      tone={m.band ?? 'none'}
+                      bandLabel={m.band ? t.bands[m.band] : t.results.notAssessed}
+                      confidence={m.score === null ? null : m.confidenceLabel}
+                      note={m.explanation}
+                      onInfo={() => openInfo(k, m.score, m.band ? t.bands[m.band] : null)}
+                    />
+                  );
+                })}
+                {uniformity && uniformityOk ? (
+                  <ResultRow
+                    id="measure-skinToneUniformity"
+                    icon={Contrast}
+                    title={t.skinToneUniformity.title}
+                    score={uniformity.uniformityScore}
+                    tone={uniformity.band ? UNIFORMITY_TONE[uniformity.band] : 'none'}
+                    bandLabel={uniformity.band ? t.skinToneUniformity[uniformity.band] : t.results.notAssessed}
+                    confidence={null}
+                    onInfo={() =>
+                      openInfo(
+                        'skinToneUniformity',
+                        uniformity.uniformityScore,
+                        uniformity.band ? t.skinToneUniformity[uniformity.band] : null,
+                      )
+                    }
+                  />
+                ) : null}
+              </ul>
+              {/* R4: a withheld result is a photo problem with a fix, not an error. */}
+              {anyWithheld ? (
+                <div className="withheldHint">
+                  <p>{t.results.withheldHint}</p>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={onScanAgain}>
+                    <RotateCcw size={16} aria-hidden /> {t.results.scanForMissing}
+                  </button>
+                </div>
+              ) : null}
+            </section>
+
             <div className="glass panel photoCard">
               <PhotoOverlay result={result} photoUrl={photo.url} photoAspect={photo.width / photo.height} />
             </div>
@@ -324,62 +371,7 @@ export default function Results({ result, photo, onScanAgain }: Props) {
               </div>
               {result.skinAge ? <SkinAgeCard skinAge={result.skinAge} onOpenInfo={openInfo} /> : null}
             </div>
-
-            <div className="glass panel findingsCard">
-              <h3 className="cardTitle">{t.results.keyFindings}</h3>
-              <ul className="findings">
-                {METRIC_KEYS.map((k) => (
-                  <Finding key={k} k={k} result={result} />
-                ))}
-              </ul>
-              <button type="button" className="linkButton" onClick={() => setTab('details')}>
-                {t.results.seeDetails} <ChevronRight className="flipRtl" size={15} aria-hidden />
-              </button>
-            </div>
           </div>
-
-          <section className="glass panel" aria-labelledby="measurements-title">
-            <div className="sectionHead">
-              <h3 id="measurements-title" className="cardTitle">
-                {t.results.measurements}
-              </h3>
-              <p className="muted small">{t.results.scaleNote}</p>
-            </div>
-            <ul className="measureGrid">
-              {METRIC_KEYS.map((k) => {
-                const m = result.analysis[k];
-                return (
-                  <MeasureCard
-                    key={k}
-                    id={`measure-${k}`}
-                    icon={METRIC_ICONS[k]}
-                    title={t.metrics[k]}
-                    score={m.score}
-                    tone={m.band ?? 'none'}
-                    label={m.band ? t.bands[m.band] : t.results.notAssessed}
-                    onInfo={() => openInfo(k, m.score, m.band ? t.bands[m.band] : null)}
-                  />
-                );
-              })}
-              {uniformity && uniformityOk ? (
-                <MeasureCard
-                  id="measure-skinToneUniformity"
-                  icon={Contrast}
-                  title={t.skinToneUniformity.title}
-                  score={uniformity.uniformityScore}
-                  tone={uniformity.band ? UNIFORMITY_TONE[uniformity.band] : 'none'}
-                  label={uniformity.band ? t.skinToneUniformity[uniformity.band] : t.results.notAssessed}
-                  onInfo={() =>
-                    openInfo(
-                      'skinToneUniformity',
-                      uniformity.uniformityScore,
-                      uniformity.band ? t.skinToneUniformity[uniformity.band] : null,
-                    )
-                  }
-                />
-              ) : null}
-            </ul>
-          </section>
 
           {uniformity || result.acne ? (
             <div className="extGrid">
@@ -424,14 +416,24 @@ export default function Results({ result, photo, onScanAgain }: Props) {
 
       <p className="engineNote">{format(t.results.engine, { engine: ENGINE_NAME })}</p>
 
+      {/* R6: one primary action; the others sit with it. G9: progress and failure next to the button. */}
       <div className="actions center resultsActions">
         <a className="btn btn-primary" href={bookingLink(locale)} target="_blank" rel="noopener noreferrer">
           <CalendarCheck size={18} aria-hidden /> {t.results.book}
         </a>
+        <button type="button" className="btn btn-ghost" onClick={download} disabled={report === 'busy'}>
+          {report === 'busy' ? <Loader2 className="spin" size={17} aria-hidden /> : <Download size={17} aria-hidden />}
+          {report === 'busy' ? t.results.preparing : t.results.download}
+        </button>
         <button type="button" className="btn btn-ghost" onClick={onScanAgain}>
           <RotateCcw size={17} aria-hidden /> {t.results.again}
         </button>
       </div>
+      {report === 'failed' ? (
+        <p className="inlineError center" role="alert">
+          {t.results.downloadFailed}
+        </p>
+      ) : null}
 
       <MetricInfoModal
         metricKey={infoModal?.key ?? null}

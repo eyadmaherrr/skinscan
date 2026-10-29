@@ -53,9 +53,16 @@ export default function MetricInfoModal({
   const { locale } = useI18n();
   const closeRef = useRef<HTMLButtonElement>(null);
 
+  // Focus moves into the dialog and back to whatever opened it when it closes (docs/UX_RULES.md G6).
   useEffect(() => {
     if (!metricKey) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeRef.current?.focus();
+    return () => opener?.focus({ preventScroll: true });
+  }, [metricKey]);
+
+  useEffect(() => {
+    if (!metricKey) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
