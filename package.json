@@ -2,7 +2,7 @@
   "name": "drmaher-skinscan",
   "version": "2.0.0",
   "private": true,
-  "description": "SkinScan by Dr Maher (Dr Maher Vision AI v2.0): informational, computer-vision based analysis of visible skin characteristics.",
+  "description": "SkinScan by Dr Maher (Dr Maher Vision AI v4.0): informational, computer-vision based analysis of visible skin characteristics.",
   "engines": {
     "node": ">=20.9.0"
   },

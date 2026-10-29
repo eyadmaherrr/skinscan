@@ -38,7 +38,10 @@ interface Outcome {
   overall?: number;
   diagnostics?: Record<string, number>;
   /** Extension components. */
-  pores?: { status: string; score: number | null; raw: number | null };
+  /** Apparent-age estimate: lower end of the reported span (years) and its probability. */
+  skinAge?: { minYears: number | null; maxYears: number | null; probability: number | null };
+  /** Skin-tone uniformity score (0–100, higher = more even). */
+  uniformity?: { score: number | null; band: string | null };
   acne?: { candidates: number | null; red: number | null; severity: string | null; pSevere: number | null };
   ms: number;
 }
@@ -228,32 +231,6 @@ const VARIANTS: Variant[] = [
     },
   },
   {
-    id: 'pore_dots',
-    expect: 'accept',
-    make: (img, base) => {
-      // A regular pattern of tiny (0.15 mm radius), 10% darker dots on the nose and upper cheeks.
-      const mmPx = base.face.sourceIod / 63;
-      const step = Math.max(2, Math.round(1.6 * mmPx));
-      const radius = Math.max(0.6, 0.15 * mmPx);
-      const centres: [number, number][] = [];
-      for (const region of ['nose', 'cheekL', 'cheekR']) {
-        const [cx, cy] = centroid(base, region, img);
-        for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) centres.push([cx + dx * step, cy - 2 * step + dy * step]);
-      }
-      return jpeg(
-        mapLinear(img, (x, y, [r, g, b]) => {
-          let k = 1;
-          for (const [cx, cy] of centres) {
-            const d = Math.hypot(x - cx, y - cy);
-            if (d < radius * 1.5) k = Math.min(k, 1 - 0.1 * Math.max(0, 1 - d / (radius * 1.5)));
-          }
-          return [r * k, g * k, b * k];
-        }),
-        95,
-      );
-    },
-  },
-  {
     id: 'acne_like',
     expect: 'accept',
     make: (img, base) => {
@@ -313,7 +290,12 @@ async function run(buffer: Buffer): Promise<{ outcome: Outcome; detail?: Detaile
         raw,
         overall: detail.result.overallConfidence,
         diagnostics: detail.quality.diagnostics,
-        pores: { status: detail.result.pores?.status ?? 'missing', score: detail.result.pores?.visibilityScore ?? null, raw: detail.extensions.poresRaw },
+        skinAge: {
+          minYears: detail.result.skinAge?.minYears ?? null,
+          maxYears: detail.result.skinAge?.maxYears ?? null,
+          probability: detail.result.skinAge?.probability ?? null,
+        },
+        uniformity: { score: detail.result.skinToneUniformity?.uniformityScore ?? null, band: detail.result.skinToneUniformity?.band ?? null },
         acne: {
           candidates: detail.result.acne?.lesionCandidateCount ?? null,
           red: detail.result.acne?.redToneCount ?? null,
@@ -433,14 +415,15 @@ function summarize(report: Record<string, { expect: string; note: string; origin
   }
   // Extensions
   lines.push('', '## Extension components', '');
-  lines.push('| Subject | Pores (status / score / raw) | Spot candidates (red) | Acne classifier (label, P(level≥1)) |', '|---|---|---|---|');
+  lines.push('| Subject | Apparent age (span, p) | Skin-tone uniformity (score, band) | Spot candidates (red) | Acne severity (label, P(level≥1)) |', '|---|---|---|---|---|');
   for (const [label, r] of subjects) {
     const o = r.original;
     if (!o.accepted) continue;
-    const pores = o.pores ? `${o.pores.status} / ${o.pores.score ?? '—'} / ${o.pores.raw?.toFixed(1) ?? '—'}` : 'n/a';
+    const age = o.skinAge?.minYears != null ? `${o.skinAge.minYears}–${o.skinAge.maxYears ?? '+'} (${o.skinAge.probability?.toFixed(2)})` : '—';
+    const uni = o.uniformity?.score != null ? `${o.uniformity.score} (${o.uniformity.band})` : '—';
     const acne = o.acne ? `${o.acne.candidates} (${o.acne.red})` : 'n/a';
     const sev = o.acne?.severity ? `${o.acne.severity}, ${o.acne.pSevere?.toFixed(2)}` : 'disabled';
-    lines.push(`| ${label} | ${pores} | ${acne} | ${sev} |`);
+    lines.push(`| ${label} | ${age} | ${uni} | ${acne} | ${sev} |`);
   }
   const extStability = (field: (o: Outcome) => number | null | undefined, name: string) => {
     const row: string[] = [];
@@ -456,7 +439,8 @@ function summarize(report: Record<string, { expect: string; note: string; origin
     lines.push(`| ${name} | ${row.join(' | ')} |`);
   };
   lines.push('', '| Stability (mean / max abs. change) | mirror | rescale_85 | reencode_q80 | noise_mild | jpeg_q30 | rotated_15 | dark_mild |', '|---|---|---|---|---|---|---|---|');
-  extStability((o) => o.pores?.score, 'pore score');
+  extStability((o) => o.uniformity?.score, 'skin-tone uniformity score');
+  extStability((o) => o.skinAge?.minYears, 'apparent age (lower end, years)');
   extStability((o) => o.acne?.candidates, 'spot candidates');
   extStability((o) => (o.acne?.pSevere == null ? null : o.acne.pSevere * 100), 'acne classifier P(level≥1) ×100');
   const construct = (vid: string, field: (o: Outcome) => number | null | undefined, name: string) => {
@@ -470,13 +454,22 @@ function summarize(report: Record<string, { expect: string; note: string; origin
     else lines.push(`| ${vid} | ${name} | not measurable | 0/0 |`);
   };
   lines.push('', '| Edit | Measure | Mean change | Increased in |', '|---|---|---|---|');
-  construct('pore_dots', (o) => o.pores?.raw, 'pore raw (weighted pores/cm²)');
+  construct('brown_patch', (o) => (o.uniformity?.score == null ? null : -o.uniformity.score), 'skin-tone unevenness (−uniformity)');
   construct('acne_like', (o) => o.acne?.candidates, 'spot candidates');
   construct('acne_like', (o) => o.acne?.red, 'red-toned candidates');
   construct('acne_like', (o) => o.acne?.pSevere, 'acne classifier P(level≥1)');
 
-  const times = subjects.map(([, r]) => r.original.ms).filter((ms) => ms > 0);
-  lines.push('', `Median analysis time: ${times.sort((a, b) => a - b)[Math.floor(times.length / 2)] ?? 'n/a'} ms`);
+  // Accepted photos only: rejected ones stop early and would hide slow analyses.
+  const times = subjects
+    .filter(([, r]) => r.original.accepted)
+    .map(([, r]) => r.original.ms)
+    .sort((a, b) => a - b);
+  lines.push(
+    '',
+    times.length
+      ? `Analysis time of accepted photos: median ${times[Math.floor(times.length / 2)]} ms, max ${times[times.length - 1]} ms (server limit: SKIN_SCAN_TIMEOUT_MS, default 25000)`
+      : 'Analysis time: n/a',
+  );
   return lines.join('\n');
 }
 

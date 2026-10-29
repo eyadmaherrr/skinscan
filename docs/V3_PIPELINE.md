@@ -1,5 +1,15 @@
 # Dr Maher Vision AI v3.0 — Architectural Specification & Migration Plan
 
+> **Superseded by v4.0 (October 2026) — kept for history.** The 24 anatomical
+> zones remain, but the independent per-zone measurement engine described
+> below (`features-v3/engine.ts`) was removed: it bypassed exposure
+> correction, expression and lighting confidence, reported pores, and
+> labelled provisional scores "calibrated". v4.0 scores each zone from the
+> face-wide metrics' own evidence and confidence, and restored the measurement
+> regions validated in the October 2026 evaluation. Current behaviour:
+> docs/SCORING.md ("Anatomical zones", "Measurement regions"), docs/ARCHITECTURE.md;
+> evidence: docs/TESTING.md §3.
+
 ## 1. Executive Summary
 
 This document specifies the architecture and implementation of **Dr Maher Vision AI v3.0** for SkinScan by Dr Maher Mahmoud Clinics.

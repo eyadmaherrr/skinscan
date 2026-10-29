@@ -148,10 +148,7 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   await yieldToEventLoop();
   checkDeadline(options.deadline);
 
-  // V3 Anatomical Facial Regions and independent regional measurements
-  const anatomicalV3 = buildAnatomicalRegionsV3(face.landmarks, face, image.width, image.height);
   const locale = options.locale ?? 'en';
-  const v3Aggregate = aggregateV3Analysis(face, anatomicalV3, quality, locale);
 
   // Exposure normalisation: colour contrasts in CIELAB scale with exposure, so
   // the photo is brought to a reference exposure using the eye whites, whose
@@ -203,6 +200,10 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   // Keep a stable key order for clients.
   const ordered = Object.fromEntries(METRIC_KEYS.map((k) => [k, analysis[k]])) as Record<MetricKey, MetricResult>;
 
+  // The 24 anatomical zones: where each measured characteristic was seen (same evidence, same confidence rules).
+  const anatomical = buildAnatomicalRegionsV3(face.landmarks, face, image.width, image.height);
+  const zones = aggregateV3Analysis(face, anatomical, masks, measurements, ordered, ctx.spots ?? []);
+
   // Extension components (acne spot candidates, pores, optional models). They
   // run after the core analysis and cannot change or break it.
   checkDeadline(options.deadline);
@@ -244,10 +245,10 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
     heatmaps,
     dermFoundation: ext.dermFoundation,
     analysisQuality: ext.analysisQuality,
-    regionsV3: v3Aggregate.regionsV3,
+    regionsV3: zones.regionsV3,
     v3: {
-      engineVersion: '3.5.0',
-      methodologyVersion: '3.5.0',
+      engineVersion: METHODOLOGY_VERSION,
+      methodologyVersion: METHODOLOGY_VERSION,
       imageQuality: {
         acceptable: true,
         issues: quality.issues,
@@ -262,8 +263,8 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
         landmarks: normalizedLandmarks,
         boundingBox: [minNormX, minNormY, maxNormX, maxNormY],
       },
-      regions: v3Aggregate.regionsV3,
-      featureSummaries: v3Aggregate.featureSummaries,
+      regions: zones.regionsV3,
+      featureSummaries: zones.featureSummaries,
       executionMs: Date.now() - pipelineStart,
     },
   };

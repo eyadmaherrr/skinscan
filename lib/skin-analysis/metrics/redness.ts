@@ -67,5 +67,6 @@ export function measureRedness(ctx: MetricContext): MetricMeasurement {
     reliability: 0.92 * (0.6 + 0.4 * ramp(5, 1.5, chromaNoise)),
     details: { baselineRatio: baseline, strongFraction: strong / n, meanExcess: sum / n, chromaNoise },
     map: excess,
+    scope: mask,
   };
 }

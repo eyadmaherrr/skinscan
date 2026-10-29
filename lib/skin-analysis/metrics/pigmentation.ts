@@ -201,5 +201,6 @@ export function measurePigmentation(ctx: MetricContext): MetricMeasurement {
     reliability: 0.85,
     details: { darkAreaFraction: spots / n, meanExcess: sum / n },
     map: excess,
+    scope: mask,
   };
 }

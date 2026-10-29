@@ -90,5 +90,6 @@ export function measureShine(ctx: MetricContext, illumination: number): MetricMe
     reliability: 0.62,
     details: { tZone, cheeks, illumination },
     map,
+    scope: all,
   };
 }

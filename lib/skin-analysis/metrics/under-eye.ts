@@ -42,6 +42,7 @@ export function measureUnderEye(ctx: MetricContext): MetricMeasurement {
   const deltas: number[] = [];
   const deltaB: number[] = [];
   const regionRaw: Partial<Record<RegionKey, number>> = {};
+  const scope = new Uint8Array(w * h);
   for (const [eye, cheek] of sides) {
     const eyeMask = masks.regions[eye];
     const ref = upperBand(masks.regions[cheek], w, h, 0.4);
@@ -51,6 +52,7 @@ export function measureUnderEye(ctx: MetricContext): MetricMeasurement {
     deltas.push(dL);
     deltaB.push(dB);
     regionRaw[eye] = Math.max(0, dL);
+    for (let i = 0; i < scope.length; i++) if (eyeMask[i]) scope[i] = 1;
   }
   const coverage = (masks.coverage.underEyeL + masks.coverage.underEyeR) / 2;
   if (deltas.length === 0) {
@@ -65,5 +67,6 @@ export function measureUnderEye(ctx: MetricContext): MetricMeasurement {
     coverage,
     reliability: 0.66 * (deltas.length === 2 ? 1 : 0.8) * (0.6 + 0.4 * ramp(6, 1.5, asymmetry)),
     details: { asymmetry, deltaB: deltaB.reduce((s, d) => s + d, 0) / deltaB.length },
+    scope,
   };
 }

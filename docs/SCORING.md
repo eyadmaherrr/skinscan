@@ -208,7 +208,11 @@ added acne-like spots. Without the classifier the grader is used alone
 factors, capped at 0.62 ("moderate"). Not a clinical grade: red-toned spots
 are not always acne.
 
-### Pore visibility (`extensions/pores.ts`)
+### Pore visibility (`extensions/pores.ts`) — removed, kept for reference
+
+Not reported since v3.5 and removed from the zone results in v4.0: the
+estimate changed by up to 17 points with mild camera noise (docs/TESTING.md).
+The method was:
 
 - **Task-specific quality gate** (stricter than the core gate): ≥ 6 px/mm on
   the face (inter-ocular distance ≥ ~380 px — a close phone selfie), blur
@@ -231,57 +235,60 @@ are not always acne.
   editing.
 - **Not measured:** pore size or diameter, sebum, hydration, barrier function.
 
-## Dr Maher Vision AI v3.0: Region-by-Region Anatomical Methodology
+## Anatomical zones (Dr Maher Vision AI v4.0)
 
-In Dr Maher Vision AI v3.0, analysis shifts from coarse whole-face averages to 24 discrete, anatomically anchored facial regions. Every region is segmented, assessed for local quality, measured, and reported independently.
+Results are also reported over 27 anatomical zones (`regionsV3` in the API
+response), so the interface can show *where* on the face a characteristic
+was seen. The zones are **not measured separately** (v3.0–v3.5 did, with
+simplified copies of the metrics that ignored expression, lighting and
+exposure correction and labelled the results "calibrated"; 4.0 removed that
+engine). Instead (`lib/skin-analysis/aggregation-v3.ts`):
 
-### 24 Canonical Anatomical Regions
+1. Each characteristic is measured once over the face by its metric module,
+   exactly as described above.
+2. Inside each zone, the metric's own per-pixel evidence is summarised with
+   the same statistic as the face-wide score (pigmentation: most affected
+   15%; redness: most affected 20%; texture and shine: mean of the local map;
+   blemishes: contrast-weighted spots per 10 cm²; under-eye darkness: the
+   value of that side) and calibrated with the same anchors.
+3. A zone's confidence is the face-wide confidence, lowered for small zones
+   (< 150 mm² analysed) and for zones only partly covered by the analysed
+   skin. A zone is scored only when that confidence is at least 0.40.
+4. If the face-wide score was withheld, no zone gets a score for it
+   (`insufficient_confidence`). Zones where a characteristic is not measured
+   at all (for example redness on the lips' surroundings, under-eye darkness
+   on the forehead) say `not_supported`.
 
-The 24 canonical regions are mapped from 478 MediaPipe landmark anchors and strict geometric boundaries:
-1. **Forehead, Temples & Glabella (6):** `foreheadCenter`, `foreheadLeft`, `foreheadRight`, `templeLeft`, `templeRight`, `glabella`
-2. **Periocular (4):** `upperEyeLeft`, `upperEyeRight`, `underEyeLeft`, `underEyeRight`
-3. **Nose (6):** `noseBridge`, `noseTip`, `nasalSidewallLeft`, `nasalSidewallRight`, `alarSkinLeft`, `alarSkinRight`
-4. **Cheeks (2):** `cheekLeft`, `cheekRight`
-5. **Perioral (4):** `perioralUpper`, `perioralLower`, `perioralLeft`, `perioralRight`
-6. **Chin (3):** `chinCenter`, `chinLeft`, `chinRight`
-7. **Jawline (2):** `jawlineLeft`, `jawlineRight`
+Zone scores are provisional, like the headline scores
+(`calibrationStatus: "provisional"`), and are noisier than them because
+they summarise less skin. The zones are mutually exclusive (every pixel
+belongs to at most one zone): forehead centre/left/right, temples,
+glabella, upper and under eyelids, nose bridge/tip/sidewalls/alar skin,
+cheeks, four perioral zones, chin centre/left/right and the jawline (27 in all; the public pages say 24).
 
-### Strict Zero-Overlap Guarantee
+Each zone also reports its own image quality (sharpness, clipped/crushed
+pixels, hair/accessory cover, usable skin) for transparency.
 
-To prevent double-counting and boundary ambiguity, regions follow a strict priority-based mutual exclusivity precedence tree:
-- Focal structures (under-eyes, glabella, nose, perioral, chin) take precedence over general expanses (forehead, cheeks, jawline).
-- Rasterized masks undergo pairwise exclusion, guaranteeing mathematically that every face pixel belongs to at most one anatomical region.
+## Measurement regions
 
-### Region-Specific Quality Assessment
+The six metrics are measured on seven regions placed from the landmarks
+(`lib/skin-analysis/regions.ts`): forehead (above the raised brow line),
+nose (a trapezoid along the midline, below the eyes), under-eye bands
+(0.06–0.26 IOD below the lower lid), cheeks (from 0.3 IOD below the lid,
+outside the nose line, down to the mouth corners), chin and, for the acne
+summary only, the jawline. This geometry keeps the nasolabial fold, the
+smile crease and the inner-eye shadows out of the cheeks. v3.0–v3.5 had
+replaced it with raw landmark contours whose cheeks reached the eyes and
+included the folds; 4.0 restored the validated geometry (docs/TESTING.md §3).
 
-Each region is assessed for local imaging quality prior to measurement:
-- `sharpness`: Local gradient energy over non-clipped pixels
-- `clippedFraction`: Fraction of pixels blown out (RGB ≥ 250)
-- `crushedFraction`: Fraction of pixels in deep shadow (RGB ≤ 12)
-- `usableCoverage`: Valid skin pixels after DeepLabV3 segmentation veto (hair, beard, glasses, background)
-- `snr`: Local signal-to-noise ratio
-
-### Explicit Measurement States (Never Fabricated Zeros)
-
-Every regional feature evaluation produces an explicit status:
-- `measured`: Sufficient usable skin, acceptable resolution, and exposure; score calibrated 0–100.
-- `low_quality`: Region is visible but degraded by blur, noise, or low physical resolution (e.g. pores < 4.5 px/mm).
-- `unavailable`: Measurement withheld with an explicit reason code:
-  - `insufficient_skin`: < 60 skin pixels or < 25% usable skin coverage
-  - `low_resolution`: Inadequate pixel density for fine detail
-  - `blurry`: High local motion or focus blur
-  - `overexposed` / `underexposed`: Local clipping or shadow crushing
-  - `occluded_by_hair` / `occluded_by_glasses`: Hair fringe or eyewear blocking skin
-  - `not_visible`: Region not present or feature anatomically unsupported
-- `not_supported`: Feature not applicable to this region (e.g., under-eye darkness on forehead).
-- `processing_error`: Internal execution error.
-
-Missing or unreliable measurements are **never silently replaced with zero**. An unmeasured region displays its explicit reason code and retake guidance.
+The aligned face is analysed at no more than 320 px between the eye centres
+(≈ 5.1 px/mm), the top of the resolution range the calibration was set on;
+closer photos are scaled down to it.
 
 ## Not measured
 
-- **Pore size / sebum / hydration** — not measurable from a normal photo. Pore
-  *visibility* is an experimental appearance estimate (above).
+- **Pore size / sebum / hydration** — not measurable from a normal photo; pore
+  *visibility* was tried and removed (above).
 - **Dryness / hydration** — no valid visual correlate in a normal photo.
 - **Acne severity, rosacea, melasma or any condition** — these are medical
   diagnoses and out of scope.

@@ -15,40 +15,37 @@ Landing → tips + consent                   rate limit (per IP hash) → size/t
   ◀─────────────── results / retake advice  image bytes are discarded after the request
 ```
 
-## Pipeline: Dr Maher Vision AI v3.0 (`lib/skin-analysis/`)
+## Pipeline: Dr Maher Vision AI v4.0 (`lib/skin-analysis/`)
 
 ```
 IMAGE INGESTION (image/decode.ts)
    │  magic-byte sniff, sharp decode with pixel limit, EXIF orientation, sRGB, ≤ 2560 px
-IMAGE VALIDATION & GATING
-   │  detect empty, corrupt, extreme aspect-ratio, or unreadable images
 FACE DETECTION (face-detection.ts)
    │  MediaPipe BlazeFace SSD + weighted NMS; reject no-face or multiple prominent faces
 LANDMARK DETECTION (landmarks.ts)
    │  MediaPipe Face Mesh V2, 478 points in two passes; presence & bounds check
 FACE ALIGNMENT & GEOMETRY (alignment.ts, quality.ts)
-   │  re-orient eyes horizontal, scale to ≤ 420 px IOD, compute px/mm from 63 mm mean IOD,
-   │  estimate 3D head pose (yaw, pitch, roll); gate off-angle or blurry portraits
-FACIAL PARSING & SKIN SEGMENTATION (segmentation.ts, skin-mask.ts)
-   │  DeepLabV3 face parsing into faceSkin, hair, bodySkin, background, clothes, others
-ANATOMICAL REGION GENERATION (regions-v3.ts)
-   │  24 canonical anatomical regions mapped from 478 MediaPipe landmark anchors;
-   │  enforces strict zero-overlap pairwise disjointness precedence tree and affine mapping
-REGION-SPECIFIC QUALITY ASSESSMENT (quality-v3.ts)
-   │  independent local SNR, gradient sharpness, highlight blowout, shadow clipping,
-   │  hair occlusion, and accessory obstruction per individual region
-REGION-SPECIFIC FEATURE EXTRACTION (features-v3/engine.ts)
-   │  modular measurement of pigmentation, redness, texture, blemishes, shine,
-   │  under-eye, and pores directly inside each region mask;
-   │  explicit reason codes for low-quality or unavailable regions (never fabricated zeros)
-MEASUREMENT VALIDATION & CONFIDENCE (confidence.ts, scoring.ts)
-   │  region and feature confidence based on local image quality, coverage, and SNR
-RESULT AGGREGATION & ROLLUP (aggregation-v3.ts)
-   │  area-weighted feature summaries across regions + backward-compatible legacy structures
-HEATMAPS & EXPLAINABLE RESULTS (extensions/projection.ts, explain.ts)
-   │  calibrated regional heatmaps + bilingual (English & Arabic) plain-language explanations
-REPORT GENERATION (report.ts, route.ts)
-   │  signed ScanSuccess response with legacy scores + new v3 anatomical breakdown
+   │  re-orient eyes horizontal, scale to ≤ 320 px IOD (≈ 5.1 px/mm, the calibrated range),
+   │  px/mm from the 63 mm mean IOD, 3-D head pose; gate off-angle, small or cropped faces
+SEGMENTATION & SKIN MASKS (segmentation.ts, regions.ts, skin-mask.ts)
+   │  MediaPipe Selfie Multiclass Segmentation used only to veto hair, accessories,
+   │  clothes and background; measurement regions placed from the landmarks
+QUALITY GATE (quality.ts)
+   │  exposure (clipping, eye whites, noise), lighting balance, sharpness, filters,
+   │  glasses, occlusion, coverage → reject with retake advice, or quality factors
+METRICS (metrics/*.ts)
+   │  exposure-normalised CIELAB / log-luminance measurements: pigmentation, redness,
+   │  texture, blemishes, shine, under-eye darkness (raw values in physical units)
+CALIBRATION & CONFIDENCE (scoring.ts, confidence.ts)
+   │  0–100 visibility index; confidence from quality factors × coverage; < 0.40 withheld
+ANATOMICAL ZONES (regions-v3.ts, aggregation-v3.ts, quality-v3.ts)
+   │  27 mutually exclusive zones; each metric's per-pixel evidence summarised per zone
+   │  with the same statistic, calibration and confidence rules (never scored when the
+   │  face-wide score was withheld)
+EXTENSIONS (extensions/*.ts)
+   │  spot & acne-like candidates, apparent age (FairFace), skin-tone uniformity
+HEATMAPS & EXPLANATIONS (extensions/projection.ts, explain.ts, text.ts)
+   │  calibrated heatmaps + bilingual (English & Arabic) plain-language explanations
 ```
 
 `index.ts` orchestrates the stages, yields to the event loop between heavy operations,
@@ -61,19 +58,19 @@ and enforces the scan deadline.
 | `types.ts`, `types-v3.ts` | Public API types (ScanSuccess, RegionReportV3, DetailedV3PipelineResult) |
 | `errors.ts` | `ScanError` codes, retake reasons, and bilingual advice |
 | `image/decode.ts` | Safe decoding, metadata stripping, and format sniffing |
-| `image/color.ts` | sRGB → linear → CIELAB, ITA (individual typology angle) |
+| `image/color.ts` | sRGB → linear → CIELAB, ITA (individual typology angle, evaluation only) |
 | `image/filters.ts` | Gaussian blur, cached blurs, morphology, noise estimation |
 | `image/detail.ts` | Noise-corrected band-pass contrast |
 | `image/warp.ts` | Affine resampling with anti-aliasing |
 | `models/runtime.ts` | ONNX Runtime CPU sessions, SHA-256 manifest verification |
 | `face-detection.ts`, `landmarks.ts`, `segmentation.ts` | ONNX model pre/post-processing |
-| `alignment.ts`, `face-topology.ts` | 478-landmark indices, canonical anchors, face alignment crop |
-| `regions-v3.ts` | 24 canonical anatomical regions with zero-overlap precedence |
-| `quality-v3.ts` | Region-specific quality assessment and feature feasibility gating |
-| `features-v3/engine.ts` | Regional measurement engine for pigmentation, redness, texture, etc. |
-| `aggregation-v3.ts` | Rollup of regional scores into feature summaries & legacy results |
-| `scoring.ts`, `confidence.ts`, `explain.ts` | Documented calibration anchors, confidence weighting, explanations |
-
+| `alignment.ts`, `face-topology.ts` | 478-landmark indices and contours, face alignment crop |
+| `regions.ts`, `skin-mask.ts` | Measurement regions (forehead, nose, cheeks, chin, under-eyes, jaw) and usable-skin masks |
+| `quality.ts` | Quality gate and per-photo quality factors (incl. expression) |
+| `metrics/*.ts` | The six measurements; each returns its raw value, per-pixel map and analysed skin |
+| `scoring.ts`, `confidence.ts`, `explain.ts`, `text.ts` | Calibration anchors, confidence weighting, explanations |
+| `regions-v3.ts`, `quality-v3.ts` | 27 anatomical zones (mutually exclusive) and per-zone image quality |
+| `aggregation-v3.ts` | Zone results from the metrics' own evidence and confidence |
 ### Replacing or adding a model
 
 A model is three things: the file in `models/`, its entry (with SHA-256) in
@@ -117,8 +114,8 @@ Success (200):
   "overallConfidence": 0.58,
   "imageQuality": { "acceptable": true, "notes": ["One side of your face was more brightly lit than the other."] },
   "regions": [{ "region": "forehead", "points": [[0.31, 0.22], …] }],
-  "engine": "Dr Maher Vision AI v2.0",
-  "methodologyVersion": "2.0.0"
+  "engine": "Dr Maher Vision AI v4.0",
+  "methodologyVersion": "4.0.0"
 }
 ```
 

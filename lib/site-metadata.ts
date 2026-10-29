@@ -6,8 +6,8 @@ import { publicConfig } from './public-config';
 
 /** Default descriptions by language. */
 const DEFAULT_DESCRIPTION: Record<Locale, string> = {
-  en: 'Analyze visible skin characteristics from a facial photo using Dr Maher Vision AI v3.5 computer vision. Informational only — not a medical diagnosis.',
-  ar: 'حلّل الخصائص الظاهرة لبشرتك من صورة للوجه باستخدام الرؤية الحاسوبية Dr Maher Vision AI v3.5. لأغراض المعلومات فقط، وليس تشخيصًا طبيًا.',
+  en: 'Analyze visible skin characteristics from a facial photo using Dr Maher Vision AI v4.0 computer vision. Informational only — not a medical diagnosis.',
+  ar: 'حلّل الخصائص الظاهرة لبشرتك من صورة للوجه باستخدام الرؤية الحاسوبية Dr Maher Vision AI v4.0. لأغراض المعلومات فقط، وليس تشخيصًا طبيًا.',
 };
 
 export interface PageMetaInfo {
@@ -33,48 +33,48 @@ export const ROUTE_METADATA: Record<string, Record<Locale, PageMetaInfo>> = {
   '/scan': {
     en: {
       title: `Start Skin Scan | ${SITE_NAME}`,
-      description: 'Launch the interactive camera or upload a photo for confidential in-browser facial skin analysis using Dr Maher Vision AI v3.5.',
+      description: 'Launch the interactive camera or upload a photo for confidential in-browser facial skin analysis using Dr Maher Vision AI v4.0.',
       keywords: ['skin scan online', 'take face photo', 'skin analysis camera', 'confidential skin test'],
     },
     ar: {
       title: `بدء فحص البشرة | ${SITE_NAME}`,
-      description: 'شغّل كاميرا الفحص التفاعلية أو ارفع صورة لتحليل فوري وخاص لملامح وبشرة الوجه عبر Dr Maher Vision AI v3.5.',
+      description: 'شغّل كاميرا الفحص التفاعلية أو ارفع صورة لتحليل فوري وخاص لملامح وبشرة الوجه عبر Dr Maher Vision AI v4.0.',
       keywords: ['بدء فحص البشرة', 'كاميرا فحص الوجه', 'تحليل مباشر للبشرة', 'فحص خصوصي'],
     },
   },
   '/about': {
     en: {
       title: `About Dr. Maher Mahmoud Clinics & Vision AI | ${SITE_NAME}`,
-      description: 'Learn about Dr. Maher Mahmoud Clinics, our clinical dermatology team, patient privacy pledges, and the principles behind Dr Maher Vision AI v3.5.',
+      description: 'Learn about Dr. Maher Mahmoud Clinics, our clinical dermatology team, patient privacy pledges, and the principles behind Dr Maher Vision AI v4.0.',
       keywords: ['about Dr Maher Mahmoud', 'dermatology clinics Cairo', 'skin doctor Egypt', 'AI ethics dermatology'],
     },
     ar: {
       title: `عن عيادات د. ماهر محمود وتقنية الذكاء الاصطناعي | ${SITE_NAME}`,
-      description: 'تعرف على عيادات د. ماهر محمود وفريق أطباء الجلدية، وتعهدات حماية خصوصية المرضى، والأسس العلمية لمحرك Dr Maher Vision AI v3.5.',
+      description: 'تعرف على عيادات د. ماهر محمود وفريق أطباء الجلدية، وتعهدات حماية خصوصية المرضى، والأسس العلمية لمحرك Dr Maher Vision AI v4.0.',
       keywords: ['عن دكتور ماهر محمود', 'عيادات جلدية في مصر', 'استشاري جلدية وتجميل', 'أخلاقيات الذكاء الاصطناعي'],
     },
   },
   '/how-it-works': {
     en: {
       title: `How It Works — 13-Stage Vision AI Pipeline | ${SITE_NAME}`,
-      description: 'Explore the 13-stage computer vision architecture of Dr Maher Vision AI v3.5: BlazeFace detection, 478 MediaPipe landmarks, zero-overlap 24-region segmentation, and deterministic scoring.',
+      description: 'Explore the 13-stage computer vision architecture of Dr Maher Vision AI v4.0: BlazeFace detection, 478 MediaPipe landmarks, zero-overlap 24-region segmentation, and deterministic scoring.',
       keywords: ['how skin scan works', 'facial landmarks 478', 'skin segmentation', 'computer vision pipeline', 'difference of gaussians skin'],
     },
     ar: {
       title: `كيف يعمل الفحص — مسار الذكاء الاصطناعي ذو 13 مرحلة | ${SITE_NAME}`,
-      description: 'تعرف على معمارية الرؤية الحاسوبية في Dr Maher Vision AI v3.5: كشف الوجه BlazeFace، 478 نقطة تشريحية، تقسيم 24 منطقة دون تداخل، وحسابات دقيقة غير عشوائية.',
+      description: 'تعرف على معمارية الرؤية الحاسوبية في Dr Maher Vision AI v4.0: كشف الوجه BlazeFace، 478 نقطة تشريحية، تقسيم 24 منطقة دون تداخل، وحسابات دقيقة غير عشوائية.',
       keywords: ['كيف يعمل فحص البشرة', 'معمارية الرؤية الحاسوبية', 'نقاط الوجه 478', 'تقسيم مناطق الوجه', 'خوارزميات تحليل البشرة'],
     },
   },
   '/features': {
     en: {
       title: `Features: 24 Anatomical Regions & 6 Skin Metrics | ${SITE_NAME}`,
-      description: 'Detailed overview of the 24 canonical facial regions analyzed by Dr Maher Vision AI v3.5 and the 6 evaluated skin characteristics: spots, redness, pigmentation, texture, shine and dark circles.',
+      description: 'Detailed overview of the 24 canonical facial regions analyzed by Dr Maher Vision AI v4.0 and the 6 evaluated skin characteristics: spots, redness, pigmentation, texture, shine and dark circles.',
       keywords: ['facial skin regions', 'forehead skin', 'cheek analysis', 'periorbital darkness', 'facial sebum analysis'],
     },
     ar: {
       title: `المميزات: 24 منطقة تشريحية و6 مقاييس للبشرة | ${SITE_NAME}`,
-      description: 'نظرة شاملة على الـ 24 منطقة تشريحية في الوجه التي يحللها محرك Dr Maher Vision AI v3.5 وخصائص البشرة الست: البقع، الاحمرار، التصبغ، الملمس، اللمعان، والهالات.',
+      description: 'نظرة شاملة على الـ 24 منطقة تشريحية في الوجه التي يحللها محرك Dr Maher Vision AI v4.0 وخصائص البشرة الست: البقع، الاحمرار، التصبغ، الملمس، اللمعان، والهالات.',
       keywords: ['مناطق تشريح الوجه', 'تحليل بشرة الخد والجبهة', 'مقاييس البشرة الست', 'هالات العينين'],
     },
   },
@@ -129,12 +129,12 @@ export const ROUTE_METADATA: Record<string, Record<Locale, PageMetaInfo>> = {
   '/skin-analysis/skin-texture': {
     en: {
       title: `Skin Texture & Surface Roughness Guide | ${SITE_NAME}`,
-      description: 'High-frequency gradient analysis of facial microrelief, roughness, surface uniformity, and barrier hydration cues across anatomical regions.',
+      description: 'Fine-scale contrast analysis of visible facial microrelief and roughness, with camera noise removed. Hydration cannot be measured from a photo.',
       keywords: ['skin texture analysis', 'facial roughness', 'skin microrelief', 'fine lines analysis', 'epidermal barrier texture'],
     },
     ar: {
       title: `دليل ملمس البشرة والخشونة السطحية | ${SITE_NAME}`,
-      description: 'تحليل التدرجات عالية التردد لتضاريس البشرة الدقيقة، الخشونة السطحية، تجانس الملمس، وعلامات ترطيب الحاجز الجلدي عبر المناطق التشريحية.',
+      description: 'تحليل التباين الدقيق لتضاريس البشرة الظاهرة وخشونتها مع إزالة ضوضاء الكاميرا. لا يمكن قياس الترطيب من صورة.',
       keywords: ['ملمس البشرة', 'خشونة الوجه', 'تضاريس الجلد الدقيقة', 'الخطوط الدقيقة', 'تجانس سطح البشرة'],
     },
   },

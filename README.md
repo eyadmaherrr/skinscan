@@ -2,16 +2,18 @@
 
 An informational, computer-vision based analysis of **visible** skin
 characteristics from a facial photo, powered by the clinic's analysis engine
-**Dr Maher Vision AI v2.0**. It is not a diagnosis and does not replace an
+**Dr Maher Vision AI v4.0**. It is not a diagnosis and does not replace an
 examination by a dermatologist.
 
 Production URL (planned): **https://skinscan.drmahermahmoud.com**
 
-**Dr Maher Vision AI v2.0** = three open-source Google MediaPipe models
+**Dr Maher Vision AI v4.0** = three open-source Google MediaPipe models
 (face detection, 478-point face landmarks, face/hair/skin segmentation;
-Apache-2.0) + the clinic's own image-quality gate and colorimetric /
-texture measurement methods (this repository). No model in it was trained
-on patient photos; see [docs/AI_SOURCES.md](docs/AI_SOURCES.md).
+Apache-2.0), the FairFace apparent-age classifier (Apache-2.0, fetched at
+build) + the clinic's own image-quality gate and colorimetric / texture
+measurement methods (this repository). No model in it was trained on
+patient photos; see [docs/AI_SOURCES.md](docs/AI_SOURCES.md). What changed
+in 4.0 and why: [docs/TESTING.md](docs/TESTING.md) §3.
 
 - Real analysis of the uploaded image — no random or demo scores.
 - Open-source models (Google MediaPipe, Apache-2.0) running **on our own
@@ -64,6 +66,8 @@ Other scripts:
 | `npm run evaluate` | Run the evaluation (quality gate, stability, skin-tone slices) |
 | `npx tsx scripts/diagnose.ts photo.jpg` | Print diagnostics and raw measurements for a photo |
 | `npx tsx scripts/debug-overlay.ts photo.jpg` | Render landmarks, regions and skin masks to `test-data/debug/` |
+| `npx tsx scripts/time-scan.ts photo.jpg …` | Time full scans and print the six scores with confidences |
+| `npx tsx scripts/expression-check.ts photo.jpg …` | Print the smile detector's measurements (expression lowers some confidences) |
 
 ## Environment variables
 
@@ -87,7 +91,10 @@ Copy `.env.example` to `.env.local`. All are optional.
 | `SKIN_SCAN_RATE_LIMIT` / `SKIN_SCAN_RATE_LIMIT_WINDOW_SECONDS` | `8` / `600` | Scans per client per window |
 | `ONNXRUNTIME_NODE_INSTALL` | `skip` (via `.npmrc`) | Skips ONNX Runtime's optional CUDA download on Linux |
 | `SKINSCAN_ACNE_LESIONS` | `true` | Spot & acne-like mark candidates (experimental section) |
-| `SKINSCAN_PORES` | `true` | Pore-visibility estimate (experimental section) |
+| `SKINSCAN_SKIN_AGE` | `true` | Apparent-age range (FairFace model, `models/skin_age.onnx`) |
+| `SKINSCAN_SKIN_TONE_UNIFORMITY` | `false` | Skin-tone uniformity — off since 4.0: failed evaluation (see docs/TESTING.md) |
+| `SKINSCAN_PORES` | `false` | Pore visibility — removed after evaluation; never reported even when on |
+| `SKINSCAN_SKIN_TYPE` / `SKINSCAN_SKIN_TYPE_MODEL` / `SKINSCAN_GLAMOUR_AI_URL` / `SKINSCAN_GLAMOUR_AI_TOKEN` | off | Experimental skin-type classifier (local model or remote service); not reported in the result |
 | `SKINSCAN_ACNE_SEVERITY_MODEL` | *(empty = off)* | File name (in `models/optional/`) of the optional acne-severity ONNX model (licence unresolved — see docs/AI_SOURCES.md) |
 | `DERM_FOUNDATION_ENABLED` / `DERM_FOUNDATION_URL` / `DERM_FOUNDATION_TOKEN` / `DERM_FOUNDATION_TIMEOUT_MS` | off | Optional self-hosted Derm Foundation embedding service (`services/derm-foundation`) |
 
@@ -101,15 +108,20 @@ Copy `.env.example` to `.env.local`. All are optional.
 2. **Face & landmarks** — MediaPipe BlazeFace finds the face; MediaPipe Face
    Mesh V2 places 478 landmarks; the face is rotated level and scaled to
    real-world millimetres.
-3. **Skin regions** — forehead, nose, cheeks, chin and under-eyes from the
-   landmarks; MediaPipe multiclass segmentation removes hair, glasses and
-   background; eyes, brows and lips are excluded.
+3. **Skin regions** — forehead, nose, cheeks, chin and under-eyes placed from
+   the landmarks (cheeks start below the under-eye band and stop at the mouth
+   corners, so smile folds stay out); MediaPipe multiclass segmentation
+   removes hair, glasses and background; eyes, brows and lips are excluded.
 4. **Measurements** — in CIELAB colour space and log luminance, relative to
    the person's own skin and corrected for lighting, shading and camera
    noise: pigmentation, redness, texture, spots/blemishes, shine, under-eye
    darkness.
 5. **Scores & confidence** — documented calibration to 0–100, confidence
    from photo quality and usable skin; low-confidence results are withheld.
+6. **Zones** — each measurement is also summarised over 27 anatomical zones
+   (where on the face it was seen), from the same evidence and with the same
+   confidence rules; a zone is never scored when the face-wide score was
+   withheld.
 
 Details: [docs/SCORING.md](docs/SCORING.md).
 
@@ -118,7 +130,9 @@ Details: [docs/SCORING.md](docs/SCORING.md).
 | Component | Default | Notes |
 |---|---|---|
 | Spot & acne-like mark candidates | on | Heuristic detector + fold filter; overlay and regional counts. Not a trained acne detector. |
-| Pore visibility | on | Only reported for close, sharp, low-noise photos; heat-map overlay. Appearance estimate, not pore size. |
+| Apparent age | on | FairFace age-range classifier; shown as a range with its probability. |
+| Skin-tone uniformity | **off** | Colour differences between forehead, cheeks, nose and chin (CIELAB ΔE). Rated every ordinary face "variable" and ignored added brown patches; not shown until reworked. |
+| Pore visibility | **removed** | Unstable under camera noise and compression (see docs/TESTING.md); not reported. |
 | Acne severity classifier | **off** | `python scripts/convert/convert_acne_classifier.py <pytorch_model.bin>` (from huggingface.co/afscomercial/dermatologic) writes `models/optional/acne_severity.onnx`; then set `SKINSCAN_ACNE_SEVERITY_MODEL=acne_severity.onnx` (a file name inside `models/optional/`). Resolve its data licence first. |
 | Derm Foundation | **off** | See `services/derm-foundation/README.md` (gated model, HAI-DEF terms, ~3 GB RAM service). No downstream task uses it yet. |
 

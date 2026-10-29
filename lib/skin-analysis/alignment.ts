@@ -14,7 +14,12 @@ import { segmentFace, type SegClass } from './segmentation';
  */
 
 export const MEAN_IOD_MM = 63;
-const IOD_MAX = 420;
+/**
+ * ≈ 5.1 px/mm: the top of the resolution range the calibration was set on
+ * (2.7–5.5 px/mm, docs/SCORING.md). Closer photos are scaled down to it, so
+ * every scan is measured at a calibrated resolution (and large crops stay fast).
+ */
+const IOD_MAX = 320;
 const MARGIN_IOD = 0.12;
 
 export interface AlignedFace {

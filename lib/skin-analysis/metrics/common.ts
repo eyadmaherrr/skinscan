@@ -40,6 +40,8 @@ export interface MetricMeasurement {
    * the analysed skin), for the heatmap of where the characteristic was seen.
    */
   map?: Float32Array;
+  /** The skin this metric analysed (aligned crop); the anatomical zones are scored inside it. */
+  scope?: Uint8Array;
 }
 
 export function union(masks: Record<RegionKey, Uint8Array>, keys: readonly RegionKey[]): Uint8Array {

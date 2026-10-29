@@ -6,9 +6,9 @@ against the official model cards and package metadata (October 2026). This
 is an engineering summary, not legal advice — have the clinic's counsel
 confirm before commercial launch.
 
-## Dr Maher Vision AI v3.0 — what it consists of
+## Dr Maher Vision AI v4.0 — what it consists of
 
-"Dr Maher Vision AI v3.0" is the name of SkinScan's analysis engine. It is
+"Dr Maher Vision AI v4.0" is the name of SkinScan's analysis engine. It is
 made of:
 
 1. the three open-source MediaPipe models below (unchanged weights, Apache

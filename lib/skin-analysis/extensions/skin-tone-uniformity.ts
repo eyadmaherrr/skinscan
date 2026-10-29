@@ -15,7 +15,7 @@ import type {
 } from '../types';
 
 /**
- * Skin-Tone & Uniformity Analysis Engine (Dr Maher Vision AI v3.5).
+ * Skin-Tone & Uniformity Analysis Engine (Dr Maher Vision AI v4.0).
  *
  * Describes skin colour with ITA (Chardon 1991; categories of Del Bino et al.), hue angle
  * (Thong, Joniak, Xiang — Sony AI, ICCV 2023) and the nearest Monk Skin Tone swatch,
@@ -46,7 +46,7 @@ import type {
  *  9. Spatial Delta E deviation heatmap across facial skin.
  */
 
-export const UNIFORMITY_METHODOLOGY_VERSION = '3.5.0';
+export const UNIFORMITY_METHODOLOGY_VERSION = '4.0.0';
 
 export interface UniformityAnalysisOptions {
   enabled: boolean;
@@ -91,7 +91,8 @@ export function computeRobustQuantiles(values: number[]): {
   iqr: number;
 } {
   if (!values.length) return { median: 0, iqr: 0 };
-  const sorted = values.slice().sort((a, b) => a - b);
+  // Typed-array numeric sort: same order as a comparator sort on the same doubles, much faster.
+  const sorted = Float64Array.from(values).sort();
   const n = sorted.length;
   const q25 = sorted[Math.floor(n * 0.25)];
   const q50 = n % 2 === 1 ? sorted[Math.floor(n * 0.5)] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;

@@ -52,7 +52,7 @@ export const ABOUT_CONTENT: Record<Locale, EducationalPageData> = {
         title: 'The Dr Maher Vision AI Initiative',
         paragraphs: [
           'In modern digital dermatology, commercial applications often rely on synthetic filters or black-box neural networks that hallucinate exaggerated skin flaws to sell cosmetics. Dr Maher Mahmoud initiated this project with a radically different mandate: uncompromising scientific honesty, local data privacy, and mathematical transparency.',
-          'Dr Maher Vision AI v3.5 operates entirely on validated computer vision methods. It distinguishes visible skin characteristics from clinical medical diagnoses, clearly delineates 24 anatomical facial regions, and evaluates image quality before calculating any score.',
+          'Dr Maher Vision AI v4.0 uses established computer-vision and colour-measurement methods. It describes visible skin characteristics instead of diagnosing conditions, measures them on defined areas of the face, and checks image quality before calculating any score.',
         ],
         callout: {
           type: 'privacy',
@@ -79,7 +79,7 @@ export const ABOUT_CONTENT: Record<Locale, EducationalPageData> = {
       },
       {
         question: 'How do you ensure fairness across diverse skin tones?',
-        answer: 'Dr Maher Vision AI v3.5 was rigorously calibrated and benchmarked across all Fitzpatrick phototypes (I through VI) and Monk Skin Tone categories, utilizing tone-adaptive delta thresholds and illuminance-invariant color representations.',
+        answer: 'Dr Maher Vision AI v4.0 is designed not to favour any skin tone: colour is measured against each person\'s own skin, exposure is normalised with the whites of the eyes, and no threshold depends on how light or dark the skin is. Fairness across every skin tone has not been fully demonstrated yet (the test photos so far range from very light to tan skin), and the scores are not clinically validated.',
       },
     ],
   },
@@ -99,7 +99,7 @@ export const ABOUT_CONTENT: Record<Locale, EducationalPageData> = {
         title: 'مبادرة Dr Maher Vision AI',
         paragraphs: [
           'في عالم تطبيقات العناية بالبشرة الحديثة، تعتمد الكثير من البرامج التجارية على فلاتر تجميلية أو شبكات عصبية غامضة تبالغ في إظهار عيوب البشرة لترويج المستحضرات. وجّه الدكتور ماهر محمود بتطوير هذا النظام وفق معايير مغايرة تمامًا: الأمانة العلمية المطلقة، حماية الخصوصية التامة، والشفافية الحسابية.',
-          'يعمل محرك Dr Maher Vision AI v3.5 بنماذج رؤية حاسوبية محلية وموثوقة تفصل بدقة بين الخصائص الظاهرية للبشرة والتشخيص الطبي، وتقسم الوجه تشريحيًا إلى 24 منطقة مستقلة.',
+          'يعتمد محرك Dr Maher Vision AI v4.0 على أساليب معروفة في الرؤية الحاسوبية وقياس الألوان، ويصف الخصائص الظاهرة للبشرة دون تشخيص أي حالة، ويقيسها على مناطق محددة من الوجه بعد التحقق من جودة الصورة.',
         ],
         callout: {
           type: 'privacy',
@@ -126,7 +126,7 @@ export const ABOUT_CONTENT: Record<Locale, EducationalPageData> = {
       },
       {
         question: 'كيف يضمن النظام العدالة وملاءمة درجات البشرة المختلفة؟',
-        answer: 'تمت معايرة واختبار محرك Dr Maher Vision AI v3.5 على كافة أنواع البشرة بمقياس فيتزباتريك (من النوع الأول حتى السادس) وفئات مونك، مع استخدام عتبات متكيفة مع لون البشرة الطبيعي لضمان نتائج متسقة وعادلة.',
+        answer: 'صُمم محرك Dr Maher Vision AI v4.0 بحيث لا ينحاز لأي لون بشرة: يُقاس اللون مقارنة ببشرة الشخص نفسه، وتُضبط الإضاءة باستخدام بياض العين، ولا تعتمد أي عتبة على درجة لون البشرة. لكن عدالته على كل درجات البشرة لم تثبت بالكامل بعد (صور الاختبار حتى الآن من البشرة شديدة الفتاحة إلى القمحية)، والنتائج غير معتمدة سريريًا.',
       },
     ],
   },
@@ -137,7 +137,7 @@ export const HOW_IT_WORKS_CONTENT: Record<Locale, EducationalPageData> = {
     slug: '/how-it-works',
     badge: 'Computer Vision Architecture',
     title: 'How It Works — The 13-Stage Vision AI Pipeline',
-    subtitle: 'A transparent, step-by-step breakdown of how Dr Maher Vision AI v3.5 processes facial photographs with zero hallucination.',
+    subtitle: 'A transparent, step-by-step breakdown of how Dr Maher Vision AI v4.0 processes a facial photo, and when it withholds a score instead of guessing.',
     lastUpdated: 'October 2026',
     reviewer: 'Dr. Maher Mahmoud Clinics Engineering Team',
     breadcrumbs: [
@@ -163,7 +163,7 @@ export const HOW_IT_WORKS_CONTENT: Record<Locale, EducationalPageData> = {
       {
         title: 'Stage 7–8: Multi-Class Segmentation Veto & 24 Anatomical Regions',
         paragraphs: [
-          'Stage 7 employs MediaPipe Selfie Multiclass Segmentation to distinguish hair, clothing, background, and eyeglasses. Crucially, Dr Maher Vision AI v3.5 implements a "veto architecture": non-skin elements are masked out, while skin boundaries are derived geometrically from landmark contours, preventing false erosion on dark Fitzpatrick skin tones.',
+          'Stage 7 employs MediaPipe Selfie Multiclass Segmentation to distinguish hair, clothing, background, and eyeglasses. Dr Maher Vision AI v4.0 uses it only as a "veto": non-skin pixels are masked out, while the analysed areas are drawn from the face landmarks. The segmentation model is less accurate on the darkest skin tones, so it never decides on its own what counts as skin.',
           'Stage 8 constructs 24 canonical, mutually exclusive anatomical facial regions (Forehead, Glabella, Cheeks, Periorbital zones, Nasolabial folds, Chin, etc.). Priority-based polygon clipping guarantees exactly zero pixel overlap between adjacent regions.',
         ],
         callout: {
@@ -196,7 +196,7 @@ export const HOW_IT_WORKS_CONTENT: Record<Locale, EducationalPageData> = {
     slug: '/how-it-works',
     badge: 'معمارية الرؤية الحاسوبية',
     title: 'كيف يعمل الفحص — مسار الذكاء الاصطناعي ذو 13 مرحلة',
-    subtitle: 'شرح مفصل وموثق خطوة بخطوة لكيفية معالجة Dr Maher Vision AI v3.5 لصور الوجه دون أي اختلاق أو تزييف.',
+    subtitle: 'شرح مفصل خطوة بخطوة لكيفية معالجة Dr Maher Vision AI v4.0 لصورة الوجه، ومتى يمتنع عن إعطاء نتيجة بدلًا من التخمين.',
     lastUpdated: 'أكتوبر 2026',
     reviewer: 'الفريق الهندسي لعيادات د. ماهر محمود',
     breadcrumbs: [
@@ -258,7 +258,7 @@ export const FEATURES_CONTENT: Record<Locale, EducationalPageData> = {
     slug: '/features',
     badge: 'Anatomical Precision',
     title: '24 Anatomical Regions & 6 Skin Characteristics',
-    subtitle: 'Every millimeter of facial skin has unique biological properties. Dr Maher Vision AI v3.5 analyzes each region independently.',
+    subtitle: 'Different areas of the face behave differently. Dr Maher Vision AI v4.0 measures each characteristic once, then shows zone by zone where on the face it was seen.',
     lastUpdated: 'October 2026',
     reviewer: 'Dr. Maher Mahmoud, Consultant Dermatologist',
     breadcrumbs: [
@@ -269,7 +269,7 @@ export const FEATURES_CONTENT: Record<Locale, EducationalPageData> = {
       {
         title: 'The 24 Canonical Facial Regions',
         paragraphs: [
-          'Unlike generic beauty apps that apply a broad blur filter over the entire face, Dr Maher Vision AI v3.5 maps facial skin into 24 distinct anatomical zones with strict landmark-governed boundaries:',
+          'Unlike generic beauty apps that apply a broad blur filter over the entire face, Dr Maher Vision AI v4.0 reports its findings over 24 distinct anatomical zones with landmark-governed boundaries:',
         ],
         bulletPoints: [
           'Upper Forehead (Left, Center, Right): Sun-exposed zones prone to actinic changes and dehydration lines.',
@@ -316,7 +316,7 @@ export const FEATURES_CONTENT: Record<Locale, EducationalPageData> = {
     slug: '/features',
     badge: 'دقة تشريحية متقدمة',
     title: '24 منطقة تشريحية و6 مقاييس لبشرة الوجه',
-    subtitle: 'كل مليمتر في بشرة الوجه يحمل خصائص حيوية فريدة. يحلل محرك Dr Maher Vision AI v3.5 كل منطقة باستقلالية كاملة.',
+    subtitle: 'تختلف مناطق الوجه في خصائصها. يقيس محرك Dr Maher Vision AI v4.0 كل خاصية مرة واحدة، ثم يوضح منطقة بمنطقة أين ظهرت على الوجه.',
     lastUpdated: 'أكتوبر 2026',
     reviewer: 'د. ماهر محمود، استشاري الأمراض الجلدية',
     breadcrumbs: [
@@ -327,7 +327,7 @@ export const FEATURES_CONTENT: Record<Locale, EducationalPageData> = {
       {
         title: 'المناطق التشريحية الـ 24 المعتمدة',
         paragraphs: [
-          'على عكس تطبيقات التجميل العامة التي تطبق فلاتر سطحية على كامل الوجه، يقسم نظام Dr Maher Vision AI v3.5 بشرة الوجه إلى 24 منطقة تشريحية محددة بنقاط هندسية دقيقة:',
+          'على عكس تطبيقات التجميل العامة التي تطبق فلاتر سطحية على كامل الوجه، يعرض نظام Dr Maher Vision AI v4.0 نتائجه على 24 منطقة تشريحية محددة بنقاط الوجه:',
         ],
         bulletPoints: [
           'الجبهة (أعلى الجبهة يسار، وسط، يمين): مناطق معرضة للشمس ولخطوط الجفاف السطحية.',
@@ -490,7 +490,7 @@ export const TOPICS_INDEX: Record<Locale, EducationalPageData> = {
       {
         title: 'Deep-Dive Topics',
         paragraphs: [
-          'Explore our specialized clinical guides covering each visible skin metric evaluated by Dr Maher Vision AI v3.5:',
+          'Explore our specialized clinical guides covering each visible skin metric evaluated by Dr Maher Vision AI v4.0:',
         ],
       },
     ],
@@ -513,7 +513,7 @@ export const TOPICS_INDEX: Record<Locale, EducationalPageData> = {
       {
         title: 'Skin Texture & Surface Roughness',
         path: '/skin-analysis/skin-texture',
-        description: 'High-frequency gradient analysis of facial microrelief and epidermal barrier hydration cues.',
+        description: 'Fine-scale contrast analysis of visible facial microrelief and roughness (hydration cannot be measured from a photo).',
       },
       {
         title: 'Skin Shine & Sebum Reflection',
@@ -549,7 +549,7 @@ export const TOPICS_INDEX: Record<Locale, EducationalPageData> = {
       {
         title: 'الأدلة التخصصية المفصلة',
         paragraphs: [
-          'تصفح أدلتنا التخصصية التي تشرح كل ميزة ومقياس يحلله محرك Dr Maher Vision AI v3.5:',
+          'تصفح أدلتنا التخصصية التي تشرح كل ميزة ومقياس يحلله محرك Dr Maher Vision AI v4.0:',
         ],
       },
     ],
@@ -572,7 +572,7 @@ export const TOPICS_INDEX: Record<Locale, EducationalPageData> = {
       {
         title: 'ملمس البشرة والخشونة',
         path: '/skin-analysis/skin-texture',
-        description: 'تحليل تضاريس الجلد الدقيقة وعلامات ترطيب الحاجز الواقي للبشرة.',
+        description: 'تحليل التباين الدقيق لتضاريس البشرة الظاهرة وخشونتها (لا يمكن قياس الترطيب من صورة).',
       },
       {
         title: 'لمعان البشرة وانعكاس الدهون',
@@ -607,7 +607,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
           title: 'Visual Detection of Facial Spots',
           paragraphs: [
             'Facial blemishes present distinct photometric signatures: localized circular depressions or elevations characterized by increased a* redness (erythema) or decreased L* luminance.',
-            'Dr Maher Vision AI v3.5 employs multi-scale Difference-of-Gaussians (DoG) filtering combined with Hessian matrix curvature checks. A valid spot candidate must exhibit balanced eigenvalues (λ₁/λ₂ ≈ 1), preventing linear wrinkles or shadow folds from being misclassified as blemishes.',
+            'Dr Maher Vision AI v4.0 employs multi-scale Difference-of-Gaussians (DoG) filtering combined with Hessian matrix curvature checks. A valid spot candidate must exhibit balanced eigenvalues (λ₁/λ₂ ≈ 1), preventing linear wrinkles or shadow folds from being misclassified as blemishes.',
           ],
         },
         {
@@ -646,7 +646,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
           title: 'الرصد البصري لبقع الوجه',
           paragraphs: [
             'تتميز بقع الوجه بخصائص ضوئية واضحة: مناطق موضعية دائرية تتسم بارتفاع قناة الاحمرار a* (الحمامى) أو انخفاض الإضاءة L*.',
-            'يستخدم محرك Dr Maher Vision AI v3.5 مرشحات الفرق بين غاوسيان (DoG) مقرونة بمصفوفة انحناء هيسي (Hessian Matrix). ويشترط لتأكيد البقعة أن تكون متناظرة الأبعاد دائريًا، لمنع اعتبار الخطوط التعبيرية أو ثنايا التجاعيد كحبوب.',
+            'يستخدم محرك Dr Maher Vision AI v4.0 مرشحات الفرق بين غاوسيان (DoG) مقرونة بمصفوفة انحناء هيسي (Hessian Matrix). ويشترط لتأكيد البقعة أن تكون متناظرة الأبعاد دائريًا، لمنع اعتبار الخطوط التعبيرية أو ثنايا التجاعيد كحبوب.',
           ],
         },
         {
@@ -692,7 +692,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
         {
           title: 'CIE L*a*b* Chrominance Separation',
           paragraphs: [
-            'Dr Maher Vision AI v3.5 analyzes skin color in the perceptually uniform CIE L*a*b* color space. The L* channel measures perceptual lightness, while a* and b* measure red-green and yellow-blue chroma. By evaluating local deviations (ΔL*) relative to the regional background baseline, the engine measures localized pigment deposits without distortion from ambient lighting.',
+            'Dr Maher Vision AI v4.0 analyzes skin color in the perceptually uniform CIE L*a*b* color space. The L* channel measures perceptual lightness, while a* and b* measure red-green and yellow-blue chroma. A spot counts as pigment only when it is darker than the surrounding skin and its colour changes too, which separates pigment from ordinary shading; elongated marks such as folds are discarded. Patches larger than about 1.5 cm cannot be told apart from lighting and are not captured.',
           ],
         },
       ],
@@ -725,7 +725,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
         {
           title: 'القياس في الفضاء اللوني CIE L*a*b*',
           paragraphs: [
-            'يحلل محرك Dr Maher Vision AI v3.5 درجات اللون في فضاء CIE L*a*b* الدقيق. تقيس القناة L* درجة السطوع والإضاءة، بينما تقيس القناتان a* وb* التدرجات اللونية. ومن خلال حساب فروق الإضاءة النسبية، يتم رصد البقع الداكنة بدقة بعيدًا عن تأثيرات الإضاءة المحيطة.',
+            'يحلل محرك Dr Maher Vision AI v4.0 درجات اللون في فضاء CIE L*a*b*. تقيس القناة L* درجة السطوع، بينما تقيس القناتان a* وb* التدرجات اللونية. ولا تُحسب البقعة تصبغًا إلا إذا كانت أغمق من الجلد المحيط وتغيّر لونها أيضًا، وهذا يفصل التصبغ عن الظلال العادية، وتُستبعد العلامات الطولية مثل الثنايا. أما البقع الأكبر من 1.5 سم تقريبًا فلا يمكن فصلها عن الإضاءة ولا تُحتسب.',
           ],
         },
       ],
@@ -761,7 +761,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
           title: 'Skin Tone Adaptive Calibration',
           paragraphs: [
             'Erythema presents differently across skin phototypes. In very light skin (Fitzpatrick I–II), redness appears as vibrant pink; in deep skin (Fitzpatrick V–VI), increased melanin masks superficial erythema, shifting its visual appearance toward purplish or dark tones.',
-            'Dr Maher Vision AI v3.5 adapts its redness extraction thresholds according to Individual Typology Angle (ITA°), ensuring fair, balanced evaluation across all complexions.',
+            'Dr Maher Vision AI v4.0 measures redness against each person\'s own skin, using a ratio of a* to lightness that shadows do not change, so the same rule applies fairly to every complexion. The skin-tone angle (ITA°) is recorded only to check fairness, never to score.',
           ],
         },
       ],
@@ -795,7 +795,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
           title: 'المعايرة المتكيفة مع لون البشرة',
           paragraphs: [
             'يختلف مظهر الاحمرار بين درجات البشرة المختلفة؛ ففي البشرة الفاتحة يظهر كدرجات وردية فاقعة، بينما في البشرة الداكنة تحجب صبغة الميلانين الاحمرار السطحي جزئيًا ليظهر بلون مائل للأرجواني أو البني الداكن.',
-            'يكيف نظام Dr Maher Vision AI v3.5 عتبات قياس الاحمرار وفق زاوية تصنيف البشرة (ITA°) لضمان دقة متكافئة وعادلة لكل ألوان البشرة.',
+            'يقيس نظام Dr Maher Vision AI v4.0 الاحمرار مقارنة ببشرة الشخص نفسه، باستخدام نسبة a* إلى السطوع التي لا تتأثر بالظلال، فتُطبق القاعدة نفسها بعدل على كل ألوان البشرة. أما زاوية تصنيف البشرة (ITA°) فتُسجل فقط للتحقق من العدالة، ولا تُستخدم في حساب النتيجة.',
           ],
         },
       ],
@@ -812,7 +812,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
       slug: '/skin-analysis/skin-texture',
       badge: 'Skin Topic Guide',
       title: 'Skin Texture & Surface Roughness Guide',
-      subtitle: 'Analyzing facial microrelief, epidermal uniformity, fine lines, and stratum corneum hydration cues.',
+      subtitle: 'Analyzing visible facial microrelief, roughness and fine lines. Hydration itself cannot be measured from a photo.',
       lastUpdated: 'October 2026',
       reviewer: 'Dr. Maher Mahmoud, Consultant Dermatologist',
       breadcrumbs: [
@@ -831,7 +831,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
         {
           title: 'High-Frequency Gradient Analysis',
           paragraphs: [
-            'Dr Maher Vision AI v3.5 isolates high-frequency spatial gradients in the luminance channel. By evaluating gradient magnitude distributions within each anatomical region, the engine objectively quantifies surface micro-roughness.',
+            'Dr Maher Vision AI v4.0 measures fine-scale (0.2–1 mm) relative contrast in the skin\'s brightness. The camera\'s own noise is estimated and subtracted, so darker skin and dim photos are not scored as rougher.',
           ],
         },
       ],
@@ -865,7 +865,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
         {
           title: 'تحليل التدرجات عالية التردد',
           paragraphs: [
-            'يعزل نظام Dr Maher Vision AI v3.5 الترددات المكانية العالية في قنوات الإضاءة لقياس تفاوت وتشتت التضاريس السطحية بموضوعية رياضية دقيقة في كل منطقة.',
+            'يقيس نظام Dr Maher Vision AI v4.0 التباين النسبي الدقيق (0.2–1 مم) في سطوع البشرة، مع تقدير ضوضاء الكاميرا وطرحها حتى لا تُحسب البشرة الداكنة أو الصور الخافتة أكثر خشونة.',
           ],
         },
       ],
@@ -901,7 +901,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
         {
           title: 'Detection Algorithms in Vision AI',
           paragraphs: [
-            'Dr Maher Vision AI v3.5 evaluates localized luminance peaks and highlight cluster density, distinguishing broad diffuse glow from concentrated specular oil glares.',
+            'Dr Maher Vision AI v4.0 evaluates localized luminance peaks and highlight cluster density, distinguishing broad diffuse glow from concentrated specular oil glares.',
           ],
         },
       ],
@@ -971,7 +971,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
         {
           title: 'Digital Measurement Principles',
           paragraphs: [
-            'Dr Maher Vision AI v3.5 computes the infraorbital lightness differential (ΔL*) by comparing under-eye skin to adjacent malar cheek skin under calibrated lighting. Downward-angled lighting is flagged to prevent overhead room lights from casting false structural shadows.',
+            'Dr Maher Vision AI v4.0 compares the lightness (ΔL*) of the under-eye skin with the cheek just below it, on each side. Overhead light casts shadows that look the same as dark circles, so this result is never given high confidence and is withheld when the lighting is uneven or the two sides disagree.',
           ],
         },
       ],
@@ -1005,7 +1005,7 @@ export const TOPIC_PAGES_CONTENT: Record<string, Record<Locale, EducationalPageD
         {
           title: 'مبادئ القياس الرقمي في النظام',
           paragraphs: [
-            'يقيس محرك Dr Maher Vision AI v3.5 فرق الإضاءة النسبي (ΔL*) بين جلد تحت العين وأعلى الخد المجاور مع التحقق من زاوية الإضاءة لمنع الظلال السقفية من تضخيم النتيجة.',
+            'يقارن محرك Dr Maher Vision AI v4.0 سطوع (ΔL*) جلد تحت العين بالخد أسفله مباشرة، لكل جانب على حدة. ولأن الإضاءة العلوية تُلقي ظلالًا تشبه الهالات الداكنة، لا تُعطى هذه النتيجة ثقة عالية أبدًا، وتُحجب عندما تكون الإضاءة غير متساوية أو يختلف الجانبان.',
           ],
         },
       ],

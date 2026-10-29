@@ -7,10 +7,12 @@ import {
 import { LM } from '../lib/skin-analysis/face-topology';
 import type { AlignedFace } from '../lib/skin-analysis/alignment';
 import { buildAnatomicalRegionsV3 } from '../lib/skin-analysis/regions-v3';
-import { assessRegionQuality, checkFeatureFeasibility } from '../lib/skin-analysis/quality-v3';
+import { assessRegionQuality } from '../lib/skin-analysis/quality-v3';
 import { aggregateV3Analysis } from '../lib/skin-analysis/aggregation-v3';
-import { measureRegionFeature, type RegionalMeasurementContext } from '../lib/skin-analysis/features-v3/engine';
-import type { QualityAssessment } from '../lib/skin-analysis/quality';
+import type { MetricMeasurement } from '../lib/skin-analysis/metrics/common';
+import { band } from '../lib/skin-analysis/scoring';
+import type { SkinMasks } from '../lib/skin-analysis/skin-mask';
+import { ALL_REGION_KEYS, METRIC_KEYS, type MetricKey, type MetricResult, type RegionKey } from '../lib/skin-analysis/types';
 
 function makeMockAlignedFace(width = 300, height = 300): AlignedFace {
   const n = width * height;
@@ -161,26 +163,6 @@ function makeMockAlignedFace(width = 300, height = 300): AlignedFace {
   };
 }
 
-function makeMockQuality(): QualityAssessment {
-  return {
-    issues: [],
-    notes: [],
-    factors: {
-      sharpness: 0.9,
-      exposure: 0.95,
-      lighting: 0.9,
-      pose: 1.0,
-      resolution: 0.85,
-      naturalDetail: 0.9,
-      noise: 0.95,
-      expression: 1.0,
-    },
-    diagnostics: {
-      scleraY: 0.48,
-    },
-  };
-}
-
 describe('V3 Anatomical Regions Pipeline', () => {
   it('constructs all canonical anatomical regions defined in V3 specification', () => {
     const face = makeMockAlignedFace();
@@ -247,66 +229,80 @@ describe('V3 Anatomical Regions Pipeline', () => {
     assert.ok(blownQuality.clippedFraction > 0.8, 'Blown cheek should have high clippedFraction');
   });
 
-  it('enforces explicit unavailable state with honest reason codes instead of fake zeros', () => {
+  it('scores zones only from the face-wide evidence, and withholds them with the headline score', () => {
     const face = makeMockAlignedFace();
-    const anatomicalV3 = buildAnatomicalRegionsV3(face.landmarks, face, 600, 600);
-    const forehead = anatomicalV3.regions.foreheadCenter;
-    const quality = assessRegionQuality(forehead, face);
+    const anatomical = buildAnatomicalRegionsV3(face.landmarks, face, 600, 600);
+    const n = face.width * face.height;
+    const { regions } = anatomical;
 
-    const ctx: RegionalMeasurementContext = {
-      face,
-      allRegions: anatomicalV3.regions,
-      illumination: 0.5,
-      baselineRednessRatio: 0.2,
-      cache: new Map(),
-    };
+    // Redness measured over the whole face, strongest on the left cheek; pigmentation withheld.
+    const scope = anatomical.usableSkin;
+    const rednessMap = new Float32Array(n);
+    for (let i = 0; i < n; i++) if (scope[i]) rednessMap[i] = regions.cheekLeft.mask[i] ? 9 : 1;
+    const masks = makeMockMasks(n, regions.underEyeLeft.mask, regions.underEyeRight.mask);
+    const measurements: MetricMeasurement[] = [
+      { key: 'redness', raw: 5.5, regionRaw: {}, coverage: 1, reliability: 0.9, details: {}, map: rednessMap, scope },
+      { key: 'pigmentation', raw: 2, regionRaw: {}, coverage: 1, reliability: 0.85, details: {}, map: new Float32Array(n).fill(2), scope },
+      { key: 'underEye', raw: 3, regionRaw: { underEyeL: 3, underEyeR: 6 }, coverage: 1, reliability: 0.6, details: {}, scope: masks.all },
+    ];
+    const analysis = makeMockAnalysis({ redness: [50, 0.8], pigmentation: [null, 0.3], underEye: [30, 0.5] });
 
-    // Under-eye feature is anatomically unsupported on the forehead
-    const underEyeOnForehead = measureRegionFeature('underEye', forehead, quality, ctx);
-    assert.equal(underEyeOnForehead.status, 'unavailable');
-    assert.equal(underEyeOnForehead.score, null);
-    assert.equal(underEyeOnForehead.confidence, null);
-    assert.ok(underEyeOnForehead.unavailableReason !== undefined);
+    const zones = aggregateV3Analysis(face, anatomical, masks, measurements, analysis, []);
 
-    // Feature feasibility check returns explicit reasons
-    const lowResFeasibility = checkFeatureFeasibility('pores', 'cheekLeft', quality, 3.0); // 3.0 px/mm is below 4.5
-    assert.equal(lowResFeasibility, 'low_resolution');
-  });
-
-  it('aggregates region measurements into complete V3 summary and legacy results', () => {
-    const face = makeMockAlignedFace();
-    const anatomicalV3 = buildAnatomicalRegionsV3(face.landmarks, face, 600, 600);
-    const quality = makeMockQuality();
-
-    const aggregate = aggregateV3Analysis(face, anatomicalV3, quality, 'en');
-
-    // Verify regionsV3
-    assert.ok(aggregate.regionsV3);
     for (const key of ANATOMICAL_REGION_KEYS_V3) {
-      const rep = aggregate.regionsV3[key];
-      assert.ok(rep);
-      assert.equal(rep.key, key);
-      assert.ok(rep.features);
       for (const f of FEATURE_KEYS_V3) {
-        assert.ok(rep.features[f], `Region ${key} missing feature ${f}`);
+        const res = zones.regionsV3[key].features[f];
+        assert.ok(res, `Zone ${key} missing feature ${f}`);
+        assert.ok(res.calibrationStatus !== 'calibrated', 'zone scores are never presented as calibrated');
+        if (res.score === null) assert.equal(res.confidence, null, 'no confidence without a score');
+        // A zone is never more certain than the face-wide measurement.
+        if (res.confidence !== null) assert.ok(res.confidence <= analysis[f].confidence);
       }
+      // Withheld for the face → withheld in every zone (no fabricated zone scores).
+      assert.equal(zones.regionsV3[key].features.pigmentation?.score, null);
     }
 
-    // Verify featureSummaries
-    assert.ok(aggregate.featureSummaries);
-    for (const f of FEATURE_KEYS_V3) {
-      const summary = aggregate.featureSummaries[f];
-      assert.ok(summary);
-      assert.equal(summary.feature, f);
-      assert.ok(summary.totalRegionCount > 0);
-    }
+    // Unsupported pairings say so explicitly.
+    assert.equal(zones.regionsV3.foreheadCenter.features.underEye?.status, 'not_supported');
+    assert.equal(zones.regionsV3.perioralUpper.features.redness?.status, 'not_supported');
 
-    // Verify legacyAnalysis compatibility
-    assert.ok(aggregate.legacyAnalysis);
-    for (const k of ['pigmentation', 'redness', 'texture', 'blemishes', 'shine', 'underEye'] as const) {
-      const res = aggregate.legacyAnalysis[k];
-      assert.ok(res, `Legacy result for ${k} must exist`);
-      assert.ok(res.confidence >= 0 && res.confidence <= 1);
-    }
+    // Redness is found where the evidence is; the summary is the headline result.
+    const cheek = zones.regionsV3.cheekLeft.features.redness;
+    const forehead = zones.regionsV3.foreheadCenter.features.redness;
+    assert.equal(cheek?.status, 'measured');
+    assert.ok((cheek?.score ?? 0) > (forehead?.score ?? 100), 'the red cheek scores higher than the forehead');
+    assert.equal(zones.featureSummaries.redness.overallScore, 50);
+    assert.equal(zones.featureSummaries.redness.prominentRegions[0], 'cheekLeft');
+    assert.equal(zones.featureSummaries.pigmentation.status, 'unavailable');
+
+    // Under-eye zones take their own side's value.
+    const left = zones.regionsV3.underEyeLeft.features.underEye;
+    const right = zones.regionsV3.underEyeRight.features.underEye;
+    if (left?.status === 'measured' && right?.status === 'measured') assert.notEqual(left.raw, right.raw);
   });
 });
+
+function makeMockMasks(n: number, underEyeL: Uint8Array, underEyeR: Uint8Array): SkinMasks {
+  const regions = Object.fromEntries(ALL_REGION_KEYS.map((k) => [k, new Uint8Array(n)])) as Record<RegionKey, Uint8Array>;
+  regions.underEyeL = underEyeL;
+  regions.underEyeR = underEyeR;
+  const all = new Uint8Array(n);
+  for (let i = 0; i < n; i++) all[i] = underEyeL[i] | underEyeR[i];
+  const coverage = Object.fromEntries(ALL_REGION_KEYS.map((k) => [k, 1])) as Record<RegionKey, number>;
+  return { regions, all, allWithHighlights: all, regionsWithHighlights: regions, geometric: all, coverage };
+}
+
+function makeMockAnalysis(given: Partial<Record<MetricKey, [number | null, number]>>): Record<MetricKey, MetricResult> {
+  const out = {} as Record<MetricKey, MetricResult>;
+  for (const k of METRIC_KEYS) {
+    const [score, confidence] = given[k] ?? [null, 0.2];
+    out[k] = {
+      score,
+      band: score === null ? null : band(score),
+      confidence,
+      confidenceLabel: score === null ? 'insufficient' : 'moderate',
+      explanation: '',
+    };
+  }
+  return out;
+}

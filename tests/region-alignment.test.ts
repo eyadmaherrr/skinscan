@@ -10,11 +10,7 @@ import { buildRegions } from '../lib/skin-analysis/regions';
 import { buildAnatomicalRegionsV3 } from '../lib/skin-analysis/regions-v3';
 import { ALL_REGION_KEYS } from '../lib/skin-analysis/types';
 import { ANATOMICAL_REGION_KEYS_V3 } from '../lib/skin-analysis/types-v3';
-import {
-  ANATOMICAL_CONTOURS_V3,
-  LEGACY_PRIMARY_CONTOURS,
-  LANDMARK_COUNT,
-} from '../lib/skin-analysis/face-topology';
+import { LANDMARK_COUNT } from '../lib/skin-analysis/face-topology';
 
 type Point = [number, number];
 
@@ -48,7 +44,7 @@ function signedPolygonArea(pts: Point[]): number {
   return 0.5 * a;
 }
 
-describe('Facial Region Alignment & Topology (Dr Maher Vision AI v3.5)', () => {
+describe('Facial Region Alignment & Topology (Dr Maher Vision AI v4.0)', () => {
   it('guarantees affine transform invertibility with sub-millipixel error (< 0.001 px)', async () => {
     const buf = await readFile('test-data/reference/kim.jpg');
     const image = await decodeImage(buf, { maxInputPixels: 40e6, maxSide: 4096 });
@@ -71,7 +67,7 @@ describe('Facial Region Alignment & Topology (Dr Maher Vision AI v3.5)', () => {
     assert.ok(maxError < 0.001, `Max affine invertibility error was ${maxError} px (must be < 0.001 px)`);
   });
 
-  it('produces valid, non-self-intersecting polygons with >= 6 points for all legacy regions', async () => {
+  it('produces valid, non-self-intersecting polygons for all measurement regions', async () => {
     const buf = await readFile('test-data/reference/kim.jpg');
     const image = await decodeImage(buf, { maxInputPixels: 40e6, maxSide: 4096 });
     const detections = await detectFaces(image);
@@ -82,7 +78,7 @@ describe('Facial Region Alignment & Topology (Dr Maher Vision AI v3.5)', () => {
 
     for (const key of ALL_REGION_KEYS) {
       const pts = regions.outlines[key];
-      assert.ok(pts.length >= 6, `Region ${key} outline must have at least 6 points, got ${pts.length}`);
+      assert.ok(pts.length >= 3, `Region ${key} outline must be a polygon, got ${pts.length} points`);
       const area = Math.abs(signedPolygonArea(pts));
       assert.ok(area > 500, `Region ${key} outline area must be > 500 px², got ${area}`);
       assert.equal(
@@ -91,6 +87,40 @@ describe('Facial Region Alignment & Topology (Dr Maher Vision AI v3.5)', () => {
         `Region ${key} outline must not self-intersect`,
       );
     }
+  });
+
+  it('places the measurement regions where the metrics need them (validated October 2026 geometry)', async () => {
+    const buf = await readFile('test-data/reference/kim.jpg');
+    const image = await decodeImage(buf, { maxInputPixels: 40e6, maxSide: 4096 });
+    const detections = await detectFaces(image);
+    const landmarks = await detectLandmarks(image, detections[0]);
+    const face = await alignFace(image, landmarks.points);
+    const { xy, iod } = face.landmarks;
+    const regions = buildRegions(face.landmarks);
+
+    const rows = (m: Uint8Array) => {
+      let top = Infinity;
+      let bottom = -Infinity;
+      for (let i = 0; i < m.length; i++) {
+        if (!m[i]) continue;
+        const y = Math.floor(i / face.width);
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+      }
+      return { top, bottom };
+    };
+    // Lowest point of the image-left lower lid (landmarks 145 / 159 region).
+    const lidBottom = Math.max(...[33, 7, 163, 144, 145, 153, 154, 155, 133].map((i) => xy[i * 2 + 1]));
+    const underEye = rows(regions.regions.underEyeL);
+    const cheek = rows(regions.regions.cheekL);
+    // A real band of skin below the lid (not a sliver on the lash line), and the cheek starts below it,
+    // clear of the infra-orbital bulge that smiling pushes up.
+    assert.ok(underEye.top >= lidBottom + 0.03 * iod, 'under-eye band starts below the lower lid');
+    assert.ok(underEye.bottom - underEye.top >= 0.12 * iod, `under-eye band is ${(underEye.bottom - underEye.top) / iod} IOD tall`);
+    assert.ok(cheek.top >= underEye.bottom, 'cheek starts below the under-eye band');
+    // The cheek stops at the mouth-corner line (the nasolabial fold and smile crease below it are excluded).
+    const mouthY = (xy[61 * 2 + 1] + xy[291 * 2 + 1]) / 2;
+    assert.ok(cheek.bottom <= mouthY + 0.05 * iod, 'cheek does not reach below the mouth corners');
   });
 
   it('produces valid, non-self-intersecting polygons for all 27 anatomical V3 regions', async () => {

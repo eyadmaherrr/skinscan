@@ -72,14 +72,20 @@ function boxBlur(src: Float32Array, w: number, h: number, r: number): Float32Arr
       acc += src[row + add] - src[row + sub];
     }
   }
-  for (let x = 0; x < w; x++) {
-    let acc = 0;
-    for (let k = -r; k <= r; k++) acc += tmp[Math.min(h - 1, Math.max(0, k)) * w + x];
-    for (let y = 0; y < h; y++) {
-      out[y * w + x] = acc * norm;
-      const add = Math.min(h - 1, y + r + 1);
-      const sub = Math.max(0, y - r);
-      acc += tmp[add * w + x] - tmp[sub * w + x];
+  // Columns: one running sum per column, swept row by row (contiguous memory access).
+  // Same additions in the same order as a column-by-column sweep, so the result is identical.
+  const acc = new Float64Array(w);
+  for (let k = -r; k <= r; k++) {
+    const row = Math.min(h - 1, Math.max(0, k)) * w;
+    for (let x = 0; x < w; x++) acc[x] += tmp[row + x];
+  }
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    const add = Math.min(h - 1, y + r + 1) * w;
+    const sub = Math.max(0, y - r) * w;
+    for (let x = 0; x < w; x++) {
+      out[row + x] = acc[x] * norm;
+      acc[x] += tmp[add + x] - tmp[sub + x];
     }
   }
   return out;

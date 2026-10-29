@@ -125,5 +125,6 @@ export function measureBlemishes(ctx: MetricContext): MetricMeasurement {
     coverage,
     reliability: 0.8,
     details: { count: blobs.length, redCount, darkCount: blobs.length - redCount, areaCm2: mm2(area, p) / 100 },
+    scope: mask,
   };
 }

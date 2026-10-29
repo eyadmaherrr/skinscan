@@ -1,75 +1,207 @@
 import type { AlignedFace } from './alignment';
-import { confidenceLabel } from './confidence';
-import { band, calibrate } from './scoring';
-import { ANATOMICAL_REGION_KEYS_V3, type FeatureKeyV3, type FeatureStatusV3, type FeatureSummaryV3, type RegionKeyV3, type RegionReportV3 } from './types-v3';
+import { confidenceLabel, MIN_REPORTABLE } from './confidence';
+import { ramp } from './image/stats';
+import { mm2, topFractionMean, type MetricMeasurement } from './metrics/common';
+import type { Spot } from './metrics/blemishes';
 import type { AnatomicalFacialRegionsV3 } from './regions-v3';
 import { assessRegionQuality } from './quality-v3';
-import { measureRegionFeature, type RegionalMeasurementContext } from './features-v3/engine';
+import { band, calibrate, CALIBRATION } from './scoring';
+import type { SkinMasks } from './skin-mask';
+import {
+  ANATOMICAL_REGION_KEYS_V3,
+  FEATURE_KEYS_V3,
+  type FeatureKeyV3,
+  type FeatureSummaryV3,
+  type RegionFeatureResultV3,
+  type RegionKeyV3,
+  type RegionReportV3,
+  type RegionUnavailableReason,
+} from './types-v3';
 import type { MetricKey, MetricResult } from './types';
-import { quantiles } from './image/stats';
-import type { QualityAssessment } from './quality';
+
+/**
+ * Anatomical-zone results (27 zones).
+ *
+ * The zones are not measured separately: each characteristic is measured once
+ * over the face by its metric module (exposure-normalised, with fold
+ * suppression, noise correction and so on), and its per-pixel evidence is then
+ * summarised inside each zone with the same statistic and calibration as the
+ * headline score. A zone's confidence is the headline confidence (so
+ * expression, lighting, exposure and resolution count the same way), reduced
+ * for small or partly covered zones, and no zone is scored when the headline
+ * score was withheld. Zone scores are provisional, like the headline scores.
+ */
 
 export interface AggregateV3Output {
   regionsV3: Record<RegionKeyV3, RegionReportV3>;
   featureSummaries: Record<FeatureKeyV3, FeatureSummaryV3>;
-  legacyAnalysis: Record<MetricKey, MetricResult>;
-  overallConfidence: number;
+}
+
+const FOREHEAD: RegionKeyV3[] = ['foreheadCenter', 'foreheadLeft', 'foreheadRight', 'glabella', 'templeLeft', 'templeRight'];
+const NOSE: RegionKeyV3[] = ['noseBridge', 'noseTip', 'nasalSidewallLeft', 'nasalSidewallRight', 'alarSkinLeft', 'alarSkinRight'];
+const CHEEKS: RegionKeyV3[] = ['cheekLeft', 'cheekRight'];
+const CHIN: RegionKeyV3[] = ['chinCenter', 'chinLeft', 'chinRight'];
+
+/** Zones each characteristic is measured in (the regions of each metric module). */
+const SUPPORTED: Record<FeatureKeyV3, ReadonlySet<RegionKeyV3>> = {
+  pigmentation: new Set([...FOREHEAD, ...CHEEKS, ...CHIN]),
+  redness: new Set([...FOREHEAD, ...NOSE, ...CHEEKS, ...CHIN]),
+  texture: new Set([...FOREHEAD, ...NOSE, ...CHEEKS, ...CHIN]),
+  blemishes: new Set([...FOREHEAD, ...NOSE, ...CHEEKS, ...CHIN]),
+  shine: new Set([...FOREHEAD, ...NOSE, ...CHEEKS]),
+  underEye: new Set(['underEyeLeft', 'underEyeRight']),
+};
+
+/** Statistic of the per-pixel map inside a zone: the same one the headline metric uses over the face. */
+const TOP_FRACTION: Partial<Record<FeatureKeyV3, number>> = { pigmentation: 0.15, redness: 0.2 };
+
+/** Smallest analysed area that gets its own zone score. */
+const MIN_ZONE_MM2 = 20;
+
+function withheld(
+  feature: FeatureKeyV3,
+  status: RegionFeatureResultV3['status'],
+  reason?: RegionUnavailableReason,
+): RegionFeatureResultV3 {
+  return {
+    feature,
+    status,
+    raw: null,
+    score: null,
+    band: null,
+    confidence: null,
+    confidenceLabel: null,
+    calibrationStatus: 'provisional',
+    warnings: [],
+    ...(reason ? { unavailableReason: reason } : {}),
+  };
 }
 
 /**
- * Executes region-by-region measurement across all 24 anatomical regions,
- * generates region quality assessments and feature results, and aggregates
- * them into both v3 feature summaries and legacy MetricResults.
+ * Raw value of a characteristic inside one zone, in the metric's own unit (see scoring.ts).
+ * `overlap` lists the pixel indices of the zone that the metric analysed.
+ */
+function zoneRaw(
+  feature: FeatureKeyV3,
+  m: MetricMeasurement,
+  overlap: Int32Array,
+  face: AlignedFace,
+  masks: SkinMasks,
+  spots: Spot[],
+): number | null {
+  if (feature === 'underEye') {
+    // A comparison per side: the side this zone lies on.
+    let best: number | null = null;
+    let bestOverlap = 0;
+    for (const side of ['underEyeL', 'underEyeR'] as const) {
+      const v = m.regionRaw[side];
+      if (v === undefined) continue;
+      const sideMask = masks.regions[side];
+      let n = 0;
+      for (const i of overlap) if (sideMask[i]) n++;
+      if (n > bestOverlap) {
+        bestOverlap = n;
+        best = v;
+      }
+    }
+    return best;
+  }
+  if (feature === 'blemishes') {
+    // Contrast-weighted spots per 10 cm², as for the whole face.
+    const inZone = new Set(overlap);
+    let weighted = 0;
+    for (const s of spots) if (inZone.has(s.y * face.width + s.x)) weighted += Math.min(1, s.strength / 2);
+    return weighted / (mm2(overlap.length, face.pxPerMm) / 1000);
+  }
+  if (!m.map) return null;
+  const values = new Float32Array(overlap.length);
+  for (let k = 0; k < overlap.length; k++) values[k] = m.map[overlap[k]];
+  const top = TOP_FRACTION[feature];
+  if (top) return topFractionMean(values, top);
+  // Texture and shine maps are already local averages (noise-corrected contrast, highlight share).
+  let s = 0;
+  for (let k = 0; k < values.length; k++) s += values[k];
+  return values.length ? s / values.length : null;
+}
+
+/** Pixel indices of a mask, in row-major order. */
+function indicesOf(mask: Uint8Array): Int32Array {
+  let n = 0;
+  for (let i = 0; i < mask.length; i++) if (mask[i]) n++;
+  const out = new Int32Array(n);
+  n = 0;
+  for (let i = 0; i < mask.length; i++) if (mask[i]) out[n++] = i;
+  return out;
+}
+
+/**
+ * Builds the 27 zone reports and a summary per characteristic, after the
+ * core metrics and their confidences are known.
  */
 export function aggregateV3Analysis(
   face: AlignedFace,
-  anatomicalRegions: AnatomicalFacialRegionsV3,
-  quality: QualityAssessment,
-  locale: 'en' | 'ar' = 'en',
+  anatomical: AnatomicalFacialRegionsV3,
+  masks: SkinMasks,
+  measurements: MetricMeasurement[],
+  analysis: Record<MetricKey, MetricResult>,
+  spots: Spot[],
 ): AggregateV3Output {
-  const { regions } = anatomicalRegions;
-  const { lab } = face;
-
-  // Scene-wide reference anchors
-  const scleraY = quality.diagnostics.scleraY;
-  const illumination = Number.isFinite(scleraY) && scleraY > 0 ? scleraY : 0.6;
-
-  // Compute face-wide 20th percentile of a* / (L* + 16) as shading-invariant redness baseline
-  const aRatios: number[] = [];
-  for (let i = 0; i < anatomicalRegions.usableSkin.length; i++) {
-    if (anatomicalRegions.usableSkin[i]) {
-      aRatios.push(lab.a[i] / (lab.L[i] + 16));
-    }
-  }
-  const baselineRednessRatio = aRatios.length ? quantiles(Float32Array.from(aRatios), [0.2])[0] : 0.2;
-
-  const ctx: RegionalMeasurementContext = {
-    face,
-    allRegions: regions,
-    illumination,
-    baselineRednessRatio,
-    cache: new Map(),
-  };
-
+  const p = face.pxPerMm;
   const regionsV3 = {} as Record<RegionKeyV3, RegionReportV3>;
-  const featuresToRun: FeatureKeyV3[] = [
-    'pigmentation',
-    'redness',
-    'texture',
-    'blemishes',
-    'shine',
-    'underEye',
-    'pores',
-  ];
+  const scored: Record<FeatureKeyV3, { key: RegionKeyV3; score: number }[]> = Object.fromEntries(
+    FEATURE_KEYS_V3.map((f) => [f, []]),
+  ) as unknown as Record<FeatureKeyV3, { key: RegionKeyV3; score: number }[]>;
 
-  // 1. Process each anatomical region individually
   for (const key of ANATOMICAL_REGION_KEYS_V3) {
-    const region = regions[key];
-    const rQuality = assessRegionQuality(region, face);
+    const region = anatomical.regions[key];
+    const regionPixels = indicesOf(region.mask);
+    const features: RegionReportV3['features'] = {};
 
-    const featureResults: RegionReportV3['features'] = {};
-    for (const f of featuresToRun) {
-      featureResults[f] = measureRegionFeature(f, region, rQuality, ctx);
+    for (const feature of FEATURE_KEYS_V3) {
+      if (!SUPPORTED[feature].has(key)) {
+        features[feature] = withheld(feature, 'not_supported');
+        continue;
+      }
+      const m = measurements.find((x) => x.key === feature);
+      const headline = analysis[feature];
+      if (!m || !m.scope || m.raw === null || headline.score === null) {
+        features[feature] = withheld(feature, 'unavailable', 'insufficient_confidence');
+        continue;
+      }
+      const scope = m.scope;
+      const overlap = regionPixels.filter((i) => scope[i] === 1);
+      const overlapPx = overlap.length;
+      if (mm2(overlapPx, p) < MIN_ZONE_MM2) {
+        features[feature] = withheld(feature, 'unavailable', region.unavailableReasons[0] ?? 'not_visible');
+        continue;
+      }
+      const raw = zoneRaw(feature, m, overlap, face, masks, spots);
+      if (raw === null || !Number.isFinite(raw)) {
+        features[feature] = withheld(feature, 'unavailable', 'not_visible');
+        continue;
+      }
+      // Smaller zones give noisier statistics; partly covered ones are less representative.
+      const share = region.pixelCount ? overlapPx / region.pixelCount : 0;
+      const confidence =
+        headline.confidence * (0.7 + 0.3 * ramp(MIN_ZONE_MM2, 150, mm2(overlapPx, p))) * (0.7 + 0.3 * ramp(0.3, 0.8, share));
+      if (confidence < MIN_REPORTABLE) {
+        features[feature] = withheld(feature, 'unavailable', 'insufficient_confidence');
+        continue;
+      }
+      const score = calibrate(feature, raw);
+      features[feature] = {
+        feature,
+        status: 'measured',
+        raw: Math.round(raw * 100) / 100,
+        score,
+        band: band(score),
+        confidence: Math.round(confidence * 100) / 100,
+        confidenceLabel: confidenceLabel(confidence),
+        unit: CALIBRATION[feature].unit,
+        calibrationStatus: 'provisional',
+        warnings: [],
+      };
+      scored[feature].push({ key, score });
     }
 
     regionsV3[key] = {
@@ -81,138 +213,31 @@ export function aggregateV3Analysis(
       usableSkinPixels: region.usableSkinPixels,
       skinCoverage: region.skinCoverage,
       areaMm2: region.areaMm2,
-      quality: rQuality,
-      features: featureResults,
+      quality: assessRegionQuality(region, face, regionPixels),
+      features,
       outline: region.outlineSource,
       outlineSource: region.outlineSource,
       unavailableReasons: region.unavailableReasons,
     };
-
   }
 
-  // 2. Aggregate Feature Summaries across regions
+  // The summary per characteristic is the headline result; the zones say where it was seen.
   const featureSummaries = {} as Record<FeatureKeyV3, FeatureSummaryV3>;
-  const legacyAnalysis = {} as Record<MetricKey, MetricResult>;
-
-  const legacyMetricKeys: MetricKey[] = [
-    'pigmentation',
-    'redness',
-    'texture',
-    'blemishes',
-    'shine',
-    'underEye',
-  ];
-
-  for (const f of featuresToRun) {
-    const measuredList: { regionKey: RegionKeyV3; score: number; confidence: number; weight: number }[] = [];
-
-    for (const key of ANATOMICAL_REGION_KEYS_V3) {
-      const res = regionsV3[key].features[f];
-      if (res && res.status === 'measured' && res.score !== null && res.confidence !== null) {
-        // Weight by region usable skin area
-        const weight = Math.max(1, regionsV3[key].areaMm2);
-        measuredList.push({ regionKey: key, score: res.score, confidence: res.confidence, weight });
-      }
-    }
-
-    let overallScore: number | null = null;
-    let overallConf = 0;
-    const prominent: RegionKeyV3[] = [];
-
-    if (measuredList.length > 0) {
-      let weightedScoreSum = 0;
-      let weightedConfSum = 0;
-      let totalWeight = 0;
-
-      for (const item of measuredList) {
-        weightedScoreSum += item.score * item.weight;
-        weightedConfSum += item.confidence * item.weight;
-        totalWeight += item.weight;
-      }
-
-      overallScore = totalWeight > 0 ? Math.round(weightedScoreSum / totalWeight) : 0;
-      overallConf = totalWeight > 0 ? Math.round((weightedConfSum / totalWeight) * 100) / 100 : 0;
-
-      // Identify prominent regions (top 2 highest scores)
-      measuredList.sort((a, b) => b.score - a.score);
-      for (let i = 0; i < Math.min(2, measuredList.length); i++) {
-        if (measuredList[i].score >= 25) prominent.push(measuredList[i].regionKey);
-      }
-    }
-
-    const featureStatus: FeatureStatusV3 = measuredList.length > 0 ? 'measured' : 'unavailable';
-    const overallScoreBand = overallScore !== null ? band(overallScore) : null;
-    const confLabel = confidenceLabel(overallConf);
-
-    featureSummaries[f] = {
-      feature: f,
-      status: featureStatus,
-      overallScore,
-      overallBand: overallScoreBand,
-      overallConfidence: overallConf,
-      overallConfidenceLabel: confLabel,
-      prominentRegions: prominent,
-      measuredRegionCount: measuredList.length,
-      totalRegionCount: ANATOMICAL_REGION_KEYS_V3.length,
+  for (const feature of FEATURE_KEYS_V3) {
+    const headline = analysis[feature];
+    const zones = scored[feature].sort((a, b) => b.score - a.score);
+    featureSummaries[feature] = {
+      feature,
+      status: headline.score === null ? 'unavailable' : 'measured',
+      overallScore: headline.score,
+      overallBand: headline.band,
+      overallConfidence: headline.confidence,
+      overallConfidenceLabel: headline.confidenceLabel,
+      prominentRegions: zones.filter((z) => z.score >= 25).slice(0, 2).map((z) => z.key),
+      measuredRegionCount: zones.length,
+      totalRegionCount: SUPPORTED[feature].size,
     };
-
-    // If it's one of the 6 legacy metrics, construct backward-compatible MetricResult
-    if (legacyMetricKeys.includes(f as MetricKey)) {
-      const mKey = f as MetricKey;
-      let explanation = '';
-      if (overallScore === null) {
-        explanation =
-          locale === 'ar'
-            ? 'تعذر قياس هذه الخاصية بدقة كافية في هذه الصورة.'
-            : 'This feature could not be measured reliably from this photo.';
-      } else {
-        const bandText = overallScoreBand ?? 'minimal';
-        explanation =
-          locale === 'ar'
-            ? `مستوى ${bandText} لوضوح هذه الخاصية على البشرة في هذه الصورة.`
-            : `A ${bandText} level of this visual characteristic was observed.`;
-      }
-
-      // Map v3 prominent regions into legacy region keys
-      const legacyRegions = mapV3RegionsToLegacy(prominent);
-
-      legacyAnalysis[mKey] = {
-        score: overallScore,
-        band: overallScoreBand,
-        confidence: overallConf,
-        confidenceLabel: confLabel,
-        explanation,
-        regions: legacyRegions.length ? legacyRegions : undefined,
-      };
-    }
   }
 
-  // Calculate overall analysis confidence across all core metrics
-  let confSum = 0;
-  for (const k of legacyMetricKeys) confSum += legacyAnalysis[k].confidence;
-  const overallConfidence = Math.round((confSum / legacyMetricKeys.length) * 100) / 100;
-
-  return {
-    regionsV3,
-    featureSummaries,
-    legacyAnalysis,
-    overallConfidence,
-  };
-}
-
-/** Maps fine v3 anatomical keys into legacy 9 core regions. */
-function mapV3RegionsToLegacy(v3Keys: RegionKeyV3[]): import('./types').RegionKey[] {
-  const result = new Set<import('./types').RegionKey>();
-  for (const k of v3Keys) {
-    if (k.startsWith('forehead') || k === 'glabella') result.add('forehead');
-    else if (k.startsWith('nose') || k.startsWith('nasal') || k.startsWith('alar')) result.add('nose');
-    else if (k === 'cheekLeft' || k === 'templeLeft') result.add('cheekL');
-    else if (k === 'cheekRight' || k === 'templeRight') result.add('cheekR');
-    else if (k.startsWith('chin')) result.add('chin');
-    else if (k === 'underEyeLeft') result.add('underEyeL');
-    else if (k === 'underEyeRight') result.add('underEyeR');
-    else if (k === 'jawlineLeft') result.add('jawL');
-    else if (k === 'jawlineRight') result.add('jawR');
-  }
-  return Array.from(result);
+  return { regionsV3, featureSummaries };
 }

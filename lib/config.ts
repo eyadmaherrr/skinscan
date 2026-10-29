@@ -70,8 +70,12 @@ export function extensionConfig() {
     /** Optional remote HuggingFace Inference Endpoint or microservice for Glamour AI model. */
     glamourAiUrl: process.env.SKINSCAN_GLAMOUR_AI_URL?.trim() || '',
     glamourAiToken: process.env.SKINSCAN_GLAMOUR_AI_TOKEN?.trim() || '',
-    /** Skin-Tone Uniformity analysis component. */
-    skinToneUniformity: flag('SKINSCAN_SKIN_TONE_UNIFORMITY', true),
+    /**
+     * Skin-tone uniformity: off since v4.0. The evaluation (docs/TESTING.md) found it
+     * rated every ordinary reference face "variable" and did not respond to added
+     * brown patches (0/9), so it is not shown until it is reworked and re-evaluated.
+     */
+    skinToneUniformity: flag('SKINSCAN_SKIN_TONE_UNIFORMITY', false),
     /** Optional Derm Foundation embedding service (services/derm-foundation). */
     dermFoundationEnabled: flag('DERM_FOUNDATION_ENABLED', false),
     dermFoundationUrl: process.env.DERM_FOUNDATION_URL?.trim() || '',

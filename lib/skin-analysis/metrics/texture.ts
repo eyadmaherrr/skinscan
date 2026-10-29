@@ -57,5 +57,6 @@ export function measureTexture(ctx: MetricContext): MetricMeasurement {
     reliability: 0.88 * ramp(0.95, 0.5, noiseShare) * (0.5 + 0.5 * quality.factors.naturalDetail),
     details: { measured: measured * 100, noise: noise * 100, noiseShare },
     map,
+    scope: mask,
   };
 }

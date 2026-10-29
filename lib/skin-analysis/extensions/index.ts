@@ -19,7 +19,7 @@ import { analyzePores } from './pores';
 import { renderHeatmap } from './projection';
 import { estimateSkinAge } from './skin-age';
 import { analyzeSkinType } from './glamour-skin-type';
-import { analyzeSkinToneUniformity } from './skin-tone-uniformity';
+import { analyzeSkinToneUniformity, UNIFORMITY_METHODOLOGY_VERSION } from './skin-tone-uniformity';
 
 /**
  * Runs the extension components after the core metrics. Each component is
@@ -170,7 +170,7 @@ export async function runExtensions(ctx: MetricContext, image: RgbImage, notes: 
     skinToneUniformity = {
       status: 'failed',
       experimental: true,
-      methodologyVersion: '3.5.0',
+      methodologyVersion: UNIFORMITY_METHODOLOGY_VERSION,
       uniformityScore: null,
       band: null,
       regionalMetrics: {},

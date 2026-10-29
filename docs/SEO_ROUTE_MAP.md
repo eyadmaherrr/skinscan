@@ -1,7 +1,7 @@
-# Dr Maher Vision AI v3.0 & SkinScan — Multi-Page SEO Route Map
+# Dr Maher Vision AI v4.0 & SkinScan — Multi-Page SEO Route Map
 
 **Product:** SkinScan by Dr. Maher Mahmoud Clinics  
-**Engine:** Dr Maher Vision AI v3.0  
+**Engine:** Dr Maher Vision AI v4.0  
 **Updated:** October 2026  
 **Architecture:** Next.js App Router bilingual routing (`app/(en)/` for English and `app/ar/` for Arabic).
 
@@ -27,7 +27,7 @@ SkinScan is engineered with a strict multi-page architecture ensuring that every
 | `/how-it-works` | `/ar/how-it-works` | 13-Stage Vision AI Pipeline | `en`: `/how-it-works`, `ar`: `/ar/how-it-works` | `MedicalWebPage`, `BreadcrumbList` |
 | `/features` | `/ar/features` | 24 Regions & 7 Skin Metrics | `en`: `/features`, `ar`: `/ar/features` | `MedicalWebPage`, `BreadcrumbList` |
 | `/skin-analysis` | `/ar/skin-analysis` | Photographic Skin Analysis Hub | `en`: `/skin-analysis`, `ar`: `/ar/skin-analysis` | `MedicalWebPage`, `BreadcrumbList` |
-| `/skin-analysis/pores` | `/ar/skin-analysis/pores` | Facial Pores & Nyquist Optical Gate | `en`: `/skin-analysis/pores`, `ar`: `/ar/skin-analysis/pores` | `MedicalWebPage`, `BreadcrumbList` |
+| ~~`/skin-analysis/pores`~~ (not built; pores removed) | ~~`/ar/skin-analysis/pores`~~ | Facial Pores & Nyquist Optical Gate | `en`: `/skin-analysis/pores`, `ar`: `/ar/skin-analysis/pores` | `MedicalWebPage`, `BreadcrumbList` |
 | `/skin-analysis/acne` | `/ar/skin-analysis/acne` | Blemish & Acne-Like Mark Detection | `en`: `/skin-analysis/acne`, `ar`: `/ar/skin-analysis/acne` | `MedicalWebPage`, `BreadcrumbList` |
 | `/skin-analysis/pigmentation` | `/ar/skin-analysis/pigmentation` | Melanin Distribution & Dark Spots | `en`: `/skin-analysis/pigmentation`, `ar`: `/ar/skin-analysis/pigmentation` | `MedicalWebPage`, `BreadcrumbList` |
 | `/skin-analysis/redness` | `/ar/skin-analysis/redness` | Facial Erythema & Microcirculation | `en`: `/skin-analysis/redness`, `ar`: `/ar/skin-analysis/redness` | `MedicalWebPage`, `BreadcrumbList` |
@@ -45,7 +45,7 @@ SkinScan is engineered with a strict multi-page architecture ensuring that every
 ### 3.1. Interactive Scanner (`/scan` & `/ar/scan`)
 - **Title (EN):** `Start Skin Scan | SkinScan by Dr Maher`
 - **Title (AR):** `بدء فحص البشرة | SkinScan من د. ماهر`
-- **Meta Description:** Confidential in-browser facial skin analysis powered by Dr Maher Vision AI v3.0.
+- **Meta Description:** Confidential in-browser facial skin analysis powered by Dr Maher Vision AI v4.0.
 - **Robots:** `index: true, follow: true`
 
 ### 3.2. About the Clinic & Vision AI (`/about` & `/ar/about`)

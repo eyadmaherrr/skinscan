@@ -1,7 +1,7 @@
 import type { ConfidenceLabel, ScoreBand } from './types';
 
 /**
- * All 24 canonical anatomical regions in Dr Maher Vision AI v3.0.
+ * The 27 anatomical zones (Dr Maher Vision AI v4.0); see aggregation-v3.ts for how they are scored.
  * Every region is tracked, masked, and analyzed independently.
  */
 export const ANATOMICAL_REGION_KEYS_V3 = [
@@ -49,15 +49,8 @@ export const ANATOMICAL_REGION_KEYS_V3 = [
 
 export type RegionKeyV3 = (typeof ANATOMICAL_REGION_KEYS_V3)[number];
 
-export const FEATURE_KEYS_V3 = [
-  'pigmentation',
-  'redness',
-  'texture',
-  'blemishes',
-  'shine',
-  'underEye',
-  'pores',
-] as const;
+/** The characteristics reported per zone: the six core metrics (pores were removed after evaluation). */
+export const FEATURE_KEYS_V3 = ['pigmentation', 'redness', 'texture', 'blemishes', 'shine', 'underEye'] as const;
 
 export type FeatureKeyV3 = (typeof FEATURE_KEYS_V3)[number];
 
@@ -85,7 +78,9 @@ export type RegionUnavailableReason =
   | 'overexposed'
   | 'underexposed'
   | 'uneven_lighting'
-  | 'not_visible';
+  | 'not_visible'
+  /** The characteristic was withheld for the whole face, or this zone's share was too unreliable. */
+  | 'insufficient_confidence';
 
 export interface RegionQualityV3 {
   /** Local sharpness relative to face standard (0–1). */
@@ -162,8 +157,8 @@ export interface FeatureSummaryV3 {
 }
 
 export interface DetailedV3PipelineResult {
-  engineVersion: '3.5.0';
-  methodologyVersion: '3.5.0';
+  engineVersion: string;
+  methodologyVersion: string;
   imageQuality: {
     acceptable: boolean;
     issues: string[];
