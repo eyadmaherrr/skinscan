@@ -162,6 +162,18 @@ export const ROUTE_METADATA: Record<string, Record<Locale, PageMetaInfo>> = {
       keywords: ['الهالات السوداء', 'غمقان تحت العين', 'تصبغات حول العين', 'ظلال تجويف العين', 'العناية بمحيط العين'],
     },
   },
+  '/products': {
+    en: {
+      title: `Product Check: What a Skincare Product's Ingredients Are Used For | ${SITE_NAME}`,
+      description: 'Scan a skincare product barcode or type its number to see its key ingredients and what they are commonly used for, with sources. Informational only, not medical advice.',
+      keywords: ['skincare ingredient checker', 'cosmetic barcode scanner', 'what does niacinamide do', 'skincare ingredients explained'],
+    },
+    ar: {
+      title: `فحص المنتجات: فيمَ تُستخدم مكوّنات منتج العناية بالبشرة | ${SITE_NAME}`,
+      description: 'امسح باركود منتج العناية بالبشرة أو اكتب رقمه لترى مكوّناته الأساسية وفيمَ تُستخدم عادةً، مع المصادر. للمعلومات فقط، وليست نصيحة طبية.',
+      keywords: ['فحص مكونات منتجات البشرة', 'ماسح باركود مستحضرات التجميل', 'فوائد النياسيناميد', 'شرح مكونات العناية بالبشرة'],
+    },
+  },
   '/contact': {
     en: {
       title: `Contact Dr. Maher Mahmoud Clinics | ${SITE_NAME}`,

@@ -43,12 +43,25 @@ Before taking or uploading a photo the user must tick a consent box stating
 that the scan is informational, not a diagnosis, and that the photo will be
 analysed and not stored.
 
+## Product check (barcode)
+
+The barcode is read from the camera **in the browser**; no frame or photo
+leaves the device. Only the barcode number (and the browser's reading of
+its format) is sent, in the body of `POST /api/product-lookup`, so it does
+not appear in URLs or access logs. Our server asks Open Beauty Facts for
+that number (no IP, account or other data is passed on) and fetches the
+product photo itself, so the patient's browser never contacts Open Beauty
+Facts. Results are cached in memory by barcode only, never by patient. See
+[PRODUCT_SCAN.md](PRODUCT_SCAN.md).
+
 ## Logging
 
 Server logs contain one line per scan: outcome code, quality-issue codes,
 duration and overall confidence. They never contain image data, file names,
 IP addresses, user agents or any personal data. Unexpected errors log only
-the error message.
+the error message. Product lookups log only the outcome, duration and how
+many ingredients were described — never the barcode, since what a patient
+puts on their skin is personal.
 
 ## Rate limiting
 
@@ -63,7 +76,11 @@ expire after the rate-limit window.
 - Fonts are self-hosted at build time (`next/font`), so the visitor's browser
   makes no requests to Google.
 - The only external links are to drmahermahmoud.com (booking/clinic pages),
-  opened in a new tab.
+  opened in a new tab, and, on a product-check result, to the product's
+  Open Beauty Facts page, its licence and the cited sources (PubMed,
+  EUR-Lex).
+- The product check's server asks Open Beauty Facts for a barcode number
+  (see above); nothing else is sent to it.
 
 If analytics are added later they **must not** receive images, image URLs,
 scores linked to identities, names, emails, phone numbers or any medical

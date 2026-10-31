@@ -30,6 +30,8 @@ export const serverConfig = {
   /** Scans allowed per client IP per rolling window. */
   rateLimitMax: int('SKIN_SCAN_RATE_LIMIT', 8, 1, 1000),
   rateLimitWindowMs: int('SKIN_SCAN_RATE_LIMIT_WINDOW_SECONDS', 600, 10, 86_400) * 1000,
+  /** Product barcode lookups allowed per client IP in the same window (they are cheap, but each one may reach Open Beauty Facts). */
+  productRateLimitMax: int('SKINSCAN_PRODUCT_RATE_LIMIT', 30, 1, 1000),
   /** Threads ONNX Runtime may use per inference. */
   onnxThreads: int('SKIN_SCAN_ONNX_THREADS', 2, 1, 16),
   /** The clinic website, whose patient accounts SkinScan uses (sign-in, session checks). */

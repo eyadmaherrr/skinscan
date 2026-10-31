@@ -14,7 +14,8 @@ const clinicOrigin = originOf(process.env.NEXT_PUBLIC_CLINIC_URL || 'https://www
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // wasm-unsafe-eval: the barcode reader (ZXing WebAssembly, served from /vendor) on browsers without BarcodeDetector.
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data:",
   "font-src 'self'",

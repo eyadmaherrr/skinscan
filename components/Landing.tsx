@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Clock, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowRight, Clock, ScanBarcode, ShieldCheck, UserRound } from 'lucide-react';
 import FaceScanIllustration from './FaceScanIllustration';
 import { useI18n } from './LocaleProvider';
 
@@ -20,6 +20,9 @@ export default function Landing({ onStart, signInNeeded }: { onStart: () => void
           <button type="button" className="btn btn-primary" onClick={onStart}>
             {t.landing.start} <ArrowRight className="flipRtl" size={18} aria-hidden />
           </button>
+          <a href={href('/products')} className="btn btn-ghost">
+            <ScanBarcode size={18} aria-hidden /> {t.landing.checkProduct}
+          </a>
         </div>
         <p className="finePrint">{t.landing.finePrint}</p>
         <ul className="trustRow" aria-label={t.landing.about}>

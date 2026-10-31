@@ -23,6 +23,7 @@ SkinScan is engineered with a strict multi-page architecture ensuring that every
 |---|---|---|---|---|
 | `/` | `/ar` | Interactive Home & Overview | `en`: `/`, `ar`: `/ar`, `x-default`: `/` | `MedicalClinic`, `WebPage` |
 | `/scan` | `/ar/scan` | Dedicated Scanner Route | `en`: `/scan`, `ar`: `/ar/scan` | `MedicalWebPage`, `BreadcrumbList` |
+| `/products` | `/ar/products` | Product Check (barcode → ingredients, see PRODUCT_SCAN.md) | `en`: `/products`, `ar`: `/ar/products` | none (default page metadata) |
 | `/about` | `/ar/about` | Dr. Maher Mahmoud Clinics & Team | `en`: `/about`, `ar`: `/ar/about` | `MedicalClinic`, `BreadcrumbList` |
 | `/how-it-works` | `/ar/how-it-works` | 13-Stage Vision AI Pipeline | `en`: `/how-it-works`, `ar`: `/ar/how-it-works` | `MedicalWebPage`, `BreadcrumbList` |
 | `/features` | `/ar/features` | 24 Regions & 7 Skin Metrics | `en`: `/features`, `ar`: `/ar/features` | `MedicalWebPage`, `BreadcrumbList` |

@@ -14,7 +14,7 @@ const en: LegalContent = {
   badge: 'Privacy Policy',
   title: 'Privacy & Data Protection',
   subtitle: 'How Dr. Maher Mahmoud Clinics handles your photo and your personal information when you use SkinScan.',
-  updated: 'Last updated: October 2026',
+  updated: 'Last updated: November 2026',
   sections: [
     {
       title: 'Your photo is not kept',
@@ -64,6 +64,11 @@ const en: LegalContent = {
         <>
           <strong>On your device:</strong> the photo on the results page and the downloadable report are created in your
           browser. Closing the page discards them.
+        </>,
+        <>
+          <strong>Product check:</strong> when you check a skincare product, the barcode is read in your browser and only
+          its number is sent. SkinScan’s server looks that number up in Open Beauty Facts, an open product database; no
+          picture, name or account detail is passed on, and the barcode is not logged.
         </>,
       ],
     },
@@ -128,7 +133,7 @@ const ar: LegalContent = {
   badge: 'سياسة الخصوصية',
   title: 'الخصوصية وحماية البيانات',
   subtitle: 'كيف تتعامل عيادات د. ماهر محمود مع صورتك وبياناتك الشخصية عند استخدام SkinScan.',
-  updated: 'آخر تحديث: أكتوبر 2026',
+  updated: 'آخر تحديث: نوفمبر 2026',
   sections: [
     {
       title: 'لا نحتفظ بصورتك',
@@ -175,6 +180,11 @@ const ar: LegalContent = {
         <>
           <strong>على جهازك:</strong> الصورة في صفحة النتائج والتقرير القابل للتنزيل يُنشآن في متصفحك، ويتم التخلص منهما
           عند إغلاق الصفحة.
+        </>,
+        <>
+          <strong>فحص المنتجات:</strong> عند فحص منتج للعناية بالبشرة، يُقرأ الباركود في متصفحك ولا يُرسَل إلا رقمه. يبحث
+          خادم SkinScan عن هذا الرقم في Open Beauty Facts، وهي قاعدة بيانات مفتوحة للمنتجات؛ ولا تُرسَل أي صورة أو اسم أو
+          بيانات حساب، ولا يُسجَّل الباركود.
         </>,
       ],
     },

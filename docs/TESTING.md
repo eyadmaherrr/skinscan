@@ -22,6 +22,13 @@ suites as of v4.0 (28 October 2026, all passing). Among them:
   result, are withheld whenever it is withheld, and are never labelled
   "calibrated";
 - rate limiting, sign-in, site lock, SEO routes, report, i18n;
+- **product check** (`products.test.ts`, `product-api.test.ts`, added
+  1 November 2026; 122 tests in total then): barcode check digits and UPC-E,
+  the ingredient table (every entry sourced, whole-name matching, titanium
+  dioxide / zinc oxide only in sunscreens, nothing described without an
+  ingredient list) and the lookup route against a local stand-in for Open
+  Beauty Facts (sign-in, not found, only the barcode sent, cache, photos
+  only from the database's image host, database down);
 - API: missing image (400), non-multipart (400), disguised file (415),
   unsupported declared type (415), blank image → retake advice with no stack
   trace, and a real frontal photo analysed **deterministically** (identical

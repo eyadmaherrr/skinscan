@@ -7,8 +7,9 @@
     "node": ">=20.9.0"
   },
   "scripts": {
+    "predev": "node scripts/copy-barcode-wasm.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/fetch-models.mjs",
+    "prebuild": "node scripts/fetch-models.mjs && node scripts/copy-barcode-wasm.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -19,6 +20,7 @@
     "fetch-models": "node scripts/fetch-models.mjs"
   },
   "dependencies": {
+    "barcode-detector": "3.2.2",
     "lucide-react": "1.53.0",
     "next": "16.3.8",
     "onnxruntime-node": "1.24.3",

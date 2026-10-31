@@ -22,6 +22,7 @@ describe('Multi-Page SEO Architecture & Metadata', () => {
   const routes = [
     '/',
     '/scan',
+    '/products',
     '/about',
     '/how-it-works',
     '/features',
@@ -37,7 +38,7 @@ describe('Multi-Page SEO Architecture & Metadata', () => {
     '/terms',
   ];
 
-  it('provides complete, distinct metadata for all 16 routes in English and Arabic', () => {
+  it('provides complete, distinct metadata for all 17 routes in English and Arabic', () => {
     const enTitles = new Set<string>();
     const arTitles = new Set<string>();
 
@@ -124,9 +125,9 @@ describe('Multi-Page SEO Architecture & Metadata', () => {
     assert.ok(schema.url.includes('/skin-analysis/acne'));
   });
 
-  it('compiles a comprehensive sitemap with all 15 bilingual routes (30 entries)', () => {
+  it('compiles a comprehensive sitemap with all 16 bilingual routes (32 entries)', () => {
     const map = sitemap();
-    assert.ok(map.length >= 30);
+    assert.ok(map.length >= 32);
 
     for (const entry of map) {
       assert.ok(/^https?:\/\//.test(entry.url));
@@ -138,8 +139,8 @@ describe('Multi-Page SEO Architecture & Metadata', () => {
 
     const enUrls = map.filter((e) => !e.url.includes('/ar'));
     const arUrls = map.filter((e) => e.url.includes('/ar'));
-    assert.strictEqual(enUrls.length, 15);
-    assert.strictEqual(arUrls.length, 15);
+    assert.strictEqual(enUrls.length, 16);
+    assert.strictEqual(arUrls.length, 16);
   });
 
   it('enforces search engine robots policy with API disallowed', () => {

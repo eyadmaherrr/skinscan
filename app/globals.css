@@ -4292,3 +4292,364 @@ html[dir='rtl'] .flipRtl {
     transition: none;
   }
 }
+
+/* =========================================================
+   PRODUCT CHECK (/products: components/ProductScanApp.tsx,
+   BarcodeScanner.tsx, ProductResult.tsx). docs/UX_RULES.md applies:
+   one primary action, 44 px targets, logical properties for RTL.
+   ========================================================= */
+.page-product {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.productStart h1,
+.productTitle h1 {
+  font-size: clamp(26px, 3.2vw, 34px);
+  font-weight: 800;
+}
+
+.productStart .retakeIcon {
+  margin-inline: 0;
+}
+
+/* Headings focused from code when the step changes, not by the visitor. */
+.page-product h1:focus {
+  outline: none;
+}
+
+.productOr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.productOr::before,
+.productOr::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line-2);
+}
+
+.barcodeForm {
+  margin-top: 16px;
+}
+
+.barcodeForm label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 14.5px;
+}
+
+.barcodeField {
+  display: flex;
+  gap: 10px;
+}
+
+.barcodeField input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: #ffffff;
+  color: var(--text);
+  font: 600 18px/1.2 var(--font-ui);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  text-align: start;
+}
+
+.barcodeField input:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 2px;
+  border-color: var(--accent-line);
+}
+
+.barcodeField input[aria-invalid='true'] {
+  border-color: rgba(217, 45, 32, 0.5);
+}
+
+.barcodeForm .fine {
+  margin: 8px 0 0;
+}
+
+.productStart .notice {
+  margin-top: 20px;
+}
+
+/* ---------- Camera ---------- */
+.barcodeCamera {
+  margin-top: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.barcodeViewport {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius-tile);
+  background: #0b2d4d;
+}
+
+.barcodeViewport video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.barcodeFrame {
+  position: absolute;
+  inset: 32% 10%;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  border-radius: var(--radius-control);
+  box-shadow: 0 0 0 999px rgba(11, 45, 77, 0.35);
+}
+
+.barcodeStatus {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.barcodeClose {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(11, 45, 77, 0.6);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.barcodeClose:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.barcodeHint {
+  margin: 0;
+}
+
+.barcodeError {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+}
+
+.barcodeError svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* ---------- Result ---------- */
+.productResult {
+  width: min(760px, 100%);
+}
+
+.productCard {
+  padding: clamp(22px, 3vw, 32px);
+}
+
+.productHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.productImage {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-tile);
+  background: #ffffff;
+  border: 1px solid var(--line-2);
+}
+
+.productImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.productImageEmpty {
+  color: var(--muted);
+  background: var(--bg-2);
+}
+
+.productTitle {
+  min-width: 0;
+}
+
+.productTitle .eyebrow {
+  margin-bottom: 10px;
+}
+
+.productTitle h1 {
+  overflow-wrap: anywhere;
+}
+
+.productMeta {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.productNotAdvice {
+  display: flex;
+  gap: 8px;
+  margin: 20px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.productNotAdvice svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.productSection {
+  margin-top: 28px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.benefitList,
+.ingredientList {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.benefitList li,
+.ingredientList li {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--radius-row);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  color: var(--body);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.benefitList b,
+.ingredientList b {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.ingredientListed {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.productEmpty {
+  margin-top: 24px;
+  padding: 16px 18px;
+  border-radius: var(--r-sm);
+  background: var(--warn-surface);
+  border: 1px solid #fedf89;
+}
+
+.productEmpty h2 {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.productEmpty p {
+  margin: 8px 0 0;
+  color: var(--body);
+  line-height: 1.6;
+}
+
+.productDetails {
+  margin-top: 16px;
+  color: var(--body);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.productDetails summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.productDetails p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.productDetails ol {
+  margin: 4px 0 0;
+  padding-inline-start: 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.productAttribution {
+  margin: 20px 0 0;
+}
+
+.productActions .btn {
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .barcodeField {
+    flex-direction: column;
+  }
+
+  .productHead {
+    gap: 14px;
+  }
+
+  .productImage {
+    width: 72px;
+    height: 72px;
+  }
+
+  .productActions .btn {
+    width: 100%;
+  }
+}

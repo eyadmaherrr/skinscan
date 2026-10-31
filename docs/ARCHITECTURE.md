@@ -185,6 +185,14 @@ Statuses: `ok`, `insufficient_quality`, `disabled`, `not_configured`,
 whenever they were not computed — never defaults. Embeddings, model paths and
 model names are never returned.
 
+## Product check (`/products`)
+
+Barcode scanner and ingredient descriptions, separate from the photo
+pipeline: `components/{ProductScanApp,BarcodeScanner,ProductResult}.tsx`,
+`lib/products/*`, `POST /api/product-lookup` (Open Beauty Facts by barcode,
+cited ingredient table). Contract, data source, licence and rules:
+[PRODUCT_SCAN.md](PRODUCT_SCAN.md).
+
 ## Security
 
 - Uploads: content-length pre-check, `multipart/form-data` only, declared type
@@ -195,7 +203,8 @@ model names are never returned.
   concurrency cap; cooperative deadline.
 - Responses `Cache-Control: no-store`; errors never contain stack traces.
 - Security headers on every route (CSP in production, `X-Frame-Options:
-  DENY`, `nosniff`, `Permissions-Policy: camera=(self)`, HSTS).
+  DENY`, `nosniff`, `Permissions-Policy: camera=(self)`, HSTS). The CSP
+  allows `'wasm-unsafe-eval'` for the self-hosted barcode reader.
 - Model files are checksum-verified before loading.
 
 ## Patient sign-in (shared with drmahermahmoud.com)

@@ -12,6 +12,7 @@ interface SitemapEntry {
 const PAGES: readonly SitemapEntry[] = [
   { path: '/', changeFrequency: 'weekly', priority: 1.0 },
   { path: '/scan', changeFrequency: 'weekly', priority: 0.9 },
+  { path: '/products', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/how-it-works', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/features', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/skin-analysis', changeFrequency: 'monthly', priority: 0.8 },

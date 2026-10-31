@@ -33,3 +33,6 @@ models/optional/
 
 # downloaded at build time by scripts/fetch-models.mjs (checksum in models/manifest.json)
 models/skin_age.onnx
+
+# copied from node_modules by scripts/copy-barcode-wasm.mjs (barcode reader for browsers without BarcodeDetector)
+public/vendor/

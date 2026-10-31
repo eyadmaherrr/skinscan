@@ -13,6 +13,7 @@ import {
   LogOut,
   Mail,
   Menu,
+  ScanBarcode,
   ScanFace,
   ShieldCheck,
   Sparkles,
@@ -35,6 +36,8 @@ interface Props {
   onHome?: () => void;
   /** Highlight "Skin Scan" (the scan page); content and legal pages pass false. */
   scanActive?: boolean;
+  /** Highlight "Product check" (the barcode page). */
+  productsActive?: boolean;
   /**
    * When set, every navigation link points here instead (the maintenance
    * page keeps visitors on it, as on drmahermahmoud.com's /503).
@@ -47,7 +50,7 @@ function switchLanguage(target: Locale) {
   window.location.href = localePath(stripLocale(window.location.pathname), target);
 }
 
-export default function BrandHeader({ onHome, scanActive = true, hrefOverride }: Props) {
+export default function BrandHeader({ onHome, scanActive = true, productsActive = false, hrefOverride }: Props) {
   const { t, locale, href } = useI18n();
   const { patient, loading, openSignIn, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
@@ -93,6 +96,7 @@ export default function BrandHeader({ onHome, scanActive = true, hrefOverride }:
 
   const links = [
     { id: 'scan', href: scanHome, label: t.nav.scan, icon: ScanFace, active: scanActive, onClick: goHome },
+    { id: 'products', href: to(href('/products')), label: t.nav.products, icon: ScanBarcode, active: productsActive },
     { id: 'how', href: to(href('/how-it-works')), label: t.nav.howItWorks, icon: ListChecks },
     { id: 'features', href: to(href('/features')), label: t.nav.features, icon: Sparkles },
     { id: 'book', href: booking, label: t.nav.book, icon: CalendarDays },
@@ -100,6 +104,7 @@ export default function BrandHeader({ onHome, scanActive = true, hrefOverride }:
 
   // Every page, for the phone menu.
   const menu = [
+    { href: to(href('/products')), label: t.nav.products, icon: ScanBarcode },
     { href: to(href('/how-it-works')), label: t.nav.howItWorks, icon: ListChecks },
     { href: to(href('/features')), label: t.nav.features, icon: Sparkles },
     { href: to(href('/skin-analysis')), label: t.nav.topics, icon: BookOpen },
