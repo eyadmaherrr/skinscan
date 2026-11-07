@@ -20,6 +20,7 @@
     "fetch-models": "node scripts/fetch-models.mjs"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "barcode-detector": "3.2.2",
     "lucide-react": "1.53.0",
     "next": "16.3.8",
