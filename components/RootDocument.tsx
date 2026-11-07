@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Cairo, Inter, Montserrat } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import AssistantWidget from './AssistantWidget';
 import AuthModal from './AuthModal';
 import CookieBanner from './CookieBanner';
@@ -43,6 +44,7 @@ export default function RootDocument({ locale, children }: { locale: Locale; chi
             <CookieBanner />
           </AuthProvider>
         </LocaleProvider>
+        <Analytics />
       </body>
     </html>
   );
