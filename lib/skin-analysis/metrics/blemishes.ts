@@ -1,7 +1,7 @@
 import type { AlignedFace } from '../alignment';
 import { gaussianBlur } from '../image/filters';
 import type { RegionKey } from '../types';
-import { detectBlobs } from './blobs';
+import { detectBlobs, hessianRatio } from './blobs';
 import { countPixels, mm2, regionCoverage, union, type MetricContext, type MetricMeasurement } from './common';
 
 /** A detected spot in aligned-crop pixel coordinates. */
@@ -32,10 +32,37 @@ export interface Spot {
 const REGIONS: RegionKey[] = ['forehead', 'cheekL', 'cheekR', 'chin', 'nose'];
 const RED_CONTRAST = 3;
 const DARK_CONTRAST = 4;
+/** Minimum ratio of the smaller to the larger Hessian eigenvalue for a round spot. */
+export const MIN_BLOBNESS = 0.3;
+
+/**
+ * Blob-likeness of a spot: Hessian eigenvalue ratio of L* (dark spots) or a*
+ * (red spots), smoothed at the spot's scale, on a small window around it.
+ * Skin folds (smile lines, creases) are shaded *lines*: one eigenvalue is
+ * large and the other near zero, so they score near 0; a round spot scores
+ * near 1.
+ */
+export function blobness(face: AlignedFace, s: Pick<Spot, 'x' | 'y' | 'sigma' | 'tone'>): number {
+  const plane = s.tone === 'dark' ? face.lab.L : face.lab.a;
+  const sign = s.tone === 'dark' ? 1 : -1; // dark spot = local minimum of L*, red spot = local maximum of a*
+  const r = Math.ceil(4 * s.sigma) + 2;
+  const x0 = Math.max(0, s.x - r);
+  const y0 = Math.max(0, s.y - r);
+  const x1 = Math.min(face.width - 1, s.x + r);
+  const y1 = Math.min(face.height - 1, s.y + r);
+  const w = x1 - x0 + 1;
+  const h = y1 - y0 + 1;
+  if (w < 5 || h < 5) return 0;
+  const patch = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) patch[y * w + x] = sign * plane[(y0 + y) * face.width + x0 + x];
+  return hessianRatio(gaussianBlur(patch, w, h, s.sigma), w, h, s.x - x0, s.y - y0);
+}
 
 /**
  * Multi-scale spot detector (≈1.5–5 mm, redder or darker than the
  * surrounding skin) restricted to `mask`. Regions are assigned from `regions`.
+ * Only blob-like detections are returned: a fold or crease also stands out
+ * from the skin around it, but it is a line, not a spot (see `blobness`).
  */
 export function detectSpots(
   face: AlignedFace,
@@ -76,17 +103,19 @@ export function detectSpots(
   };
   const blobs = detectBlobs(responses, sigmas, () => 1, mask, w, h, 0.85);
   const keys = Object.keys(regions) as RegionKey[];
-  return blobs.map((b) => {
-    const i = b.y * w + b.x;
-    return {
-      x: b.x,
-      y: b.y,
-      sigma: b.sigma,
-      strength: b.strength,
-      tone: redness.get(b.sigma)?.[i] ? 'red' : 'dark',
-      region: keys.find((k) => regions[k]?.[i]) ?? null,
-    };
-  });
+  return blobs
+    .map((b): Spot => {
+      const i = b.y * w + b.x;
+      return {
+        x: b.x,
+        y: b.y,
+        sigma: b.sigma,
+        strength: b.strength,
+        tone: redness.get(b.sigma)?.[i] ? 'red' : 'dark',
+        region: keys.find((k) => regions[k]?.[i]) ?? null,
+      };
+    })
+    .filter((s) => blobness(face, s) >= MIN_BLOBNESS);
 }
 
 export function measureBlemishes(ctx: MetricContext): MetricMeasurement {

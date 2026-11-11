@@ -5,7 +5,7 @@ import type { AddressInfo } from 'node:net';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import type { AlignedFace } from '../lib/skin-analysis/alignment';
-import { blobness } from '../lib/skin-analysis/extensions/acne';
+import { blobness } from '../lib/skin-analysis/metrics/blemishes';
 import { classifyAcneSeverity } from '../lib/skin-analysis/extensions/acne-severity';
 import {
   DERM_FOUNDATION_DIM,

@@ -24,7 +24,16 @@ export const QUALITY_THRESHOLDS = {
   multipleFaceScore: 0.6,
   multipleFaceAreaRatio: 0.2,
   minLandmarkPresence: 0.5,
-  maxOutsideFraction: 0.04,
+  /** Share of the face-outline points that may lie outside the photo (a tight close-up). */
+  maxOutsideFraction: 0.5,
+  /** Share of the measured skin areas that may lie outside the photo. */
+  maxSkinOutsidePhoto: 0.05,
+  /**
+   * Pitch read from a level face. The top of the forehead sits in front of the
+   * chin, so the forehead-to-chin line leans back even when the head is upright
+   * (median over the level reference portraits: 7.8 degrees).
+   */
+  neutralPitchDeg: 7.5,
   maxYawDeg: 24,
   maxPitchDeg: 25,
   maxRollDeg: 30,
@@ -101,12 +110,26 @@ export function estimatePose(points: Float32Array): Pose {
   const yaw = (Math.atan2(rz - lz, Math.hypot(rx - lx, ry - ly)) * 180) / Math.PI;
   const [, ty, tz] = p(LM.foreheadTop);
   const [, cy, cz] = p(LM.chin);
-  const pitch = (Math.atan2(cz - tz, cy - ty) * 180) / Math.PI;
+  const pitch = (Math.atan2(cz - tz, cy - ty) * 180) / Math.PI - QUALITY_THRESHOLDS.neutralPitchDeg;
   const [ax, ay] = p(LM.eyeOuterImgLeft);
   const [bx, by] = p(LM.eyeOuterImgRight);
   const roll = (Math.atan2(by - ay, bx - ax) * 180) / Math.PI;
   return { yaw, pitch, roll };
 }
+
+/** Features that must lie inside the photo: eye corners, outer brows, nose tip, mouth corners, lower lip. */
+const CORE_FEATURES: number[] = [
+  LM.eyeOuterImgLeft,
+  LM.eyeInnerImgLeft,
+  LM.eyeInnerImgRight,
+  LM.eyeOuterImgRight,
+  LM.leftBrowOuter,
+  LM.rightBrowOuter,
+  LM.noseTip,
+  LM.mouthCornerImgLeft,
+  LM.mouthCornerImgRight,
+  LM.lowerLipBottom,
+];
 
 /** Checks on the landmarks in source-image coordinates. */
 export function checkLandmarks(
@@ -117,14 +140,19 @@ export function checkLandmarks(
 ): { issue: QualityIssueCode | null; pose: Pose } {
   const pose = estimatePose(landmarks.points);
   if (landmarks.presence < QUALITY_THRESHOLDS.minLandmarkPresence) return { issue: 'no_face', pose };
-  let outside = 0;
+  // A close-up may trim the hairline, the chin or the sides: the skin masks
+  // only use pixels inside the photo, and assessAlignedFace limits how much of
+  // the measured skin may be missing. The eyes, brows, nose and mouth must be
+  // in the photo, and most of the outline with them.
   const tolX = width * 0.005;
   const tolY = height * 0.005;
-  for (const i of FACE_OVAL) {
+  const isOutside = (i: number) => {
     const x = landmarks.points[i * 3];
     const y = landmarks.points[i * 3 + 1];
-    if (x < -tolX || y < -tolY || x > width + tolX || y > height + tolY) outside++;
-  }
+    return x < -tolX || y < -tolY || x > width + tolX || y > height + tolY;
+  };
+  if (CORE_FEATURES.some(isOutside)) return { issue: 'face_cropped', pose };
+  const outside = FACE_OVAL.filter(isOutside).length;
   if (outside / FACE_OVAL.length > QUALITY_THRESHOLDS.maxOutsideFraction) return { issue: 'face_cropped', pose };
   if (sourceIod < QUALITY_THRESHOLDS.minSourceIod) return { issue: 'face_too_small', pose };
   if (
@@ -269,7 +297,13 @@ export function assessAlignedFace(
   const notes: QualityNoteCode[] = [];
   const { width: w, height: h, rgb, lab, seg } = face;
   const diagnostics: Record<string, number> = {};
-  const skin = geometricSkin;
+  // Statistics use only skin that is inside the photo (a close-up may trim the outline).
+  const geometricCount = countMask(geometricSkin);
+  const skin = new Uint8Array(geometricSkin.length);
+  for (let i = 0; i < skin.length; i++) skin[i] = geometricSkin[i] && face.valid[i] ? 1 : 0;
+  const outsidePhoto = geometricCount ? 1 - countMask(skin) / geometricCount : 0;
+  diagnostics.outsidePhoto = outsidePhoto;
+  if (outsidePhoto > T.maxSkinOutsidePhoto) issues.push('face_cropped');
 
   // --- Exposure -----------------------------------------------------------
   const clipped = fractionWhere(skin, (i) => Math.max(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]) >= 250);
@@ -358,7 +392,6 @@ export function assessAlignedFace(
   diagnostics.occluded = occluded;
   if (occluded > T.maxOccludedFraction) issues.push('face_obstructed');
 
-  const geometricCount = countMask(geometricSkin);
   const coverage = geometricCount ? countMask(usableSkin) / geometricCount : 0;
   diagnostics.coverage = coverage;
   if (coverage < T.minSkinCoverage) issues.push('insufficient_skin');

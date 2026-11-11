@@ -8,7 +8,13 @@ import type { MetricKey, QualityIssueCode, ScanErrorCode, ScoreBand } from './ty
  */
 
 export type RegionGroup = 'forehead' | 'nose' | 'cheeks' | 'chin' | 'underEyes' | 'jawline';
-export type InsufficientReason = 'low_resolution' | 'not_enough_skin' | 'not_visible' | 'low_confidence' | 'expression';
+export type InsufficientReason =
+  | 'low_resolution'
+  | 'not_enough_skin'
+  | 'not_visible'
+  | 'low_confidence'
+  | 'expression'
+  | 'expression_and_conditions';
 /** Non-blocking observations about the photo. */
 export type QualityNoteCode = 'uneven_side_light' | 'partly_covered' | 'low_resolution' | 'smiling';
 
@@ -150,6 +156,8 @@ const en: AnalysisText = {
       'The photo conditions did not allow a reliable measurement. Brighter, even lighting and a sharp photo may help.',
     expression:
       'Smiling creases the cheeks, and those folds look like darker or textured skin. A photo with a relaxed, neutral expression is needed to measure this.',
+    expression_and_conditions:
+      'This could not be measured reliably from this photo. A relaxed, neutral expression and brighter, even lighting are both needed.',
   },
   quality: {
     no_face: 'We could not find a face in this photo. Please take a photo facing the camera directly.',
@@ -347,6 +355,8 @@ const ar: AnalysisText = {
     low_confidence: 'لم تسمح ظروف التصوير بقياس موثوق. قد تساعد إضاءة أقوى ومتساوية وصورة واضحة.',
     expression:
       'الابتسامة تُحدث ثنيات في الخدين تبدو كبشرة أغمق أو ذات ملمس. نحتاج إلى صورة بتعبير وجه هادئ ومحايد لقياس ذلك.',
+    expression_and_conditions:
+      'تعذّر قياس ذلك بدقة من هذه الصورة. نحتاج إلى تعبير وجه هادئ ومحايد مع إضاءة أقوى ومتساوية.',
   },
   quality: {
     no_face: 'لم نتمكن من العثور على وجه في هذه الصورة. يُرجى التقاط صورة وأنت تنظر مباشرةً إلى الكاميرا.',

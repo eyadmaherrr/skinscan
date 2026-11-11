@@ -1,8 +1,5 @@
-import type { AlignedFace } from '../alignment';
 import type { RgbImage } from '../image/decode';
-import { gaussianBlur } from '../image/filters';
 import { detectSpots, type Spot } from '../metrics/blemishes';
-import { hessianRatio } from '../metrics/blobs';
 import { union, type MetricContext } from '../metrics/common';
 import { regionGroup } from '../explain';
 import { analysisText, type RegionGroup } from '../text';
@@ -21,47 +18,23 @@ import { cropToSourceScale, round4, toNormalized } from './projection';
  * types apart, so counts are approximate and labelled as candidates.
  *
  * Skin folds (smile lines, creases) are shaded *lines* that can trigger a
- * spot detector. Candidates are therefore kept only when their local shape
- * is blob-like: the two eigenvalues of the Hessian of the darkness (or
- * redness) map at the spot's scale must be of similar size; a fold gives one
- * large and one near-zero eigenvalue.
+ * spot detector; the detector itself discards them (`blobness` in
+ * metrics/blemishes.ts), so the candidates listed here are exactly the spots
+ * the "visible spots & blemishes" score counts, plus those on the jawline.
  */
 
 const SUMMARY_REGIONS: RegionKey[] = ['forehead', 'nose', 'cheekL', 'cheekR', 'chin', 'jawL', 'jawR'];
 const MIN_VISIBLE = 0.3;
 const MAX_LESIONS = 150;
-/** Minimum ratio of the smaller to the larger Hessian eigenvalue for a round spot. */
-const MIN_BLOBNESS = 0.3;
-
-/**
- * Blob-likeness of a spot: Hessian eigenvalue ratio of L* (dark spots) or a*
- * (red spots), smoothed at the spot's scale, on a small window around it.
- */
-export function blobness(face: AlignedFace, s: Spot): number {
-  const plane = s.tone === 'dark' ? face.lab.L : face.lab.a;
-  const sign = s.tone === 'dark' ? 1 : -1; // dark spot = local minimum of L*, red spot = local maximum of a*
-  const r = Math.ceil(4 * s.sigma) + 2;
-  const x0 = Math.max(0, s.x - r);
-  const y0 = Math.max(0, s.y - r);
-  const x1 = Math.min(face.width - 1, s.x + r);
-  const y1 = Math.min(face.height - 1, s.y + r);
-  const w = x1 - x0 + 1;
-  const h = y1 - y0 + 1;
-  if (w < 5 || h < 5) return 0;
-  const patch = new Float32Array(w * h);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) patch[y * w + x] = sign * plane[(y0 + y) * face.width + x0 + x];
-  return hessianRatio(gaussianBlur(patch, w, h, s.sigma), w, h, s.x - x0, s.y - y0);
-}
 
 export function buildAcneReport(ctx: MetricContext, image: RgbImage, classifier: AcneSeverity): AcneReport {
   const { face, masks } = ctx;
-  const detected: Spot[] = [...(ctx.spots ?? [])];
+  const spots: Spot[] = [...(ctx.spots ?? [])];
   const jawVisible = (['jawL', 'jawR'] as const).filter((k) => masks.coverage[k] >= MIN_VISIBLE);
   if (jawVisible.length) {
     const jawMasks = Object.fromEntries(jawVisible.map((k) => [k, masks.regions[k]])) as Partial<Record<RegionKey, Uint8Array>>;
-    detected.push(...detectSpots(face, union(jawMasks as Record<RegionKey, Uint8Array>, jawVisible), jawMasks));
+    spots.push(...detectSpots(face, union(jawMasks as Record<RegionKey, Uint8Array>, jawVisible), jawMasks));
   }
-  const spots = detected.filter((s) => blobness(face, s) >= MIN_BLOBNESS);
 
   const scale = cropToSourceScale(face);
   const lesions: LesionCandidate[] = spots

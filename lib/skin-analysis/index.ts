@@ -73,6 +73,7 @@ const EXPRESSION_SENSITIVE: MetricKey[] = ['pigmentation', 'texture', 'underEye'
 
 /** Most actionable problem first; at most two are reported to the user. */
 const ISSUE_PRIORITY: QualityIssueCode[] = [
+  'face_cropped',
   'sunglasses',
   'glasses',
   'blurry',
@@ -90,6 +91,18 @@ const ISSUE_PRIORITY: QualityIssueCode[] = [
  * median over the reference portraits was L* ≈ 75, i.e. Y ≈ 0.48.
  */
 const REFERENCE_SCLERA_Y = 0.48;
+
+/**
+ * Luminance of the exposure reference. Eye whites reflect more light than
+ * any skin, so when they read darker than the skin they are in shadow
+ * (narrowed eyes, deep-set eyes, a brow shadow) and would overstate how much
+ * the photo needs brightening; the skin level is then the better lower bound.
+ */
+export function referenceWhiteY(scleraY: number, skinL: number): number {
+  if (!Number.isFinite(scleraY) || scleraY <= 0) return scleraY;
+  const skinY = Number.isFinite(skinL) && skinL > 8 ? ((skinL + 16) / 116) ** 3 : 0;
+  return Math.max(scleraY, skinY);
+}
 
 export function exposureGain(scleraY: number): number {
   if (!Number.isFinite(scleraY) || scleraY <= 0) return 1;
@@ -153,7 +166,7 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   // Exposure normalisation: colour contrasts in CIELAB scale with exposure, so
   // the photo is brought to a reference exposure using the eye whites, whose
   // brightness does not depend on skin tone. Gating above used the raw values.
-  const scleraY = quality.diagnostics.scleraY;
+  const scleraY = referenceWhiteY(quality.diagnostics.scleraY, quality.diagnostics.skinL);
   const gain = exposureGain(scleraY);
   if (gain !== 1) face.lab = rgbToLabImage(face.rgb, face.width * face.height, gain);
   quality.diagnostics.exposureGain = gain;
@@ -180,9 +193,11 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
     const confidence = metricConfidence(m, quality.factors);
     confidences.push(confidence);
     const reportable = m.raw !== null && confidence >= MIN_REPORTABLE;
-    // Say why a metric was withheld when the expression is the main reason.
+    // Say why a metric was withheld: the expression alone (a neutral face would have been enough),
+    // or the expression together with the photo conditions (it would not).
     if (!reportable && m.raw !== null && quality.factors.expression < 0.5 && EXPRESSION_SENSITIVE.includes(m.key)) {
-      m.insufficientReason = 'expression';
+      const neutral = metricConfidence(m, { ...quality.factors, expression: 1 });
+      m.insufficientReason = neutral >= MIN_REPORTABLE ? 'expression' : 'expression_and_conditions';
     }
     const score = reportable ? calibrate(m.key, m.raw as number) : null;
     const scoreBand = score === null ? null : band(score);

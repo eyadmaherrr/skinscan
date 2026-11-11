@@ -1,4 +1,4 @@
-import { maskedGaussianBlur } from '../image/filters';
+import { gaussianBlur, maskedGaussianBlur } from '../image/filters';
 import type { RegionKey } from '../types';
 import { countPixels, union, type MetricContext, type MetricMeasurement } from './common';
 
@@ -23,6 +23,8 @@ import { countPixels, union, type MetricContext, type MetricMeasurement } from '
 
 const T_ZONE: RegionKey[] = ['forehead', 'nose'];
 const CHEEKS: RegionKey[] = ['cheekL', 'cheekR'];
+/** Physical sharpness (Gaussian σ, mm) at which highlights are measured, whatever the camera resolution. */
+const SHARPNESS_MM = 0.4;
 
 export function measureShine(ctx: MetricContext, illumination: number): MetricMeasurement {
   const { face, masks } = ctx;
@@ -34,9 +36,16 @@ export function measureShine(ctx: MetricContext, illumination: number): MetricMe
   if (countPixels(all) < 500) {
     return { key: 'shine', raw: null, regionRaw: {}, coverage, reliability: 0, insufficientReason: 'not_enough_skin', details: {} };
   }
-  const { Y, a, b } = face.lab;
-  const chroma = new Float32Array(Y.length);
-  for (let i = 0; i < chroma.length; i++) chroma[i] = Math.hypot(a[i], b[i]);
+  // Highlights are small, so a sharper photo shows more of them. They are therefore measured at
+  // one fixed physical sharpness: luminance and chroma are blurred up to SHARPNESS_MM, allowing for
+  // the blur a pixel of this photo already has (≈ half a pixel).
+  const native = 0.5 / p;
+  const extra = Math.sqrt(Math.max(0, SHARPNESS_MM * SHARPNESS_MM - native * native)) * p;
+  const { a, b } = face.lab;
+  const Y = gaussianBlur(face.lab.Y, w, h, extra);
+  const rawChroma = new Float32Array(Y.length);
+  for (let i = 0; i < rawChroma.length; i++) rawChroma[i] = Math.hypot(a[i], b[i]);
+  const chroma = gaussianBlur(rawChroma, w, h, extra);
   // Diffuse (non-shiny) reference level: a first pass finds obvious highlight
   // candidates, the second pass averages only the remaining skin, so broad
   // highlights do not raise their own reference and hide themselves.

@@ -100,6 +100,9 @@ export async function POST(request: Request) {
   }
 
   let timer: ReturnType<typeof setTimeout> | undefined;
+  // Until the analysis starts, this request holds the slot and must give it back itself
+  // (for example when reading the upload fails); afterwards the analysis releases it.
+  let analysisOwnsSlot = false;
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
     const analysis = analyzeImage(buffer, {
@@ -110,6 +113,7 @@ export async function POST(request: Request) {
     });
     // The slot is released only when the work has really stopped.
     analysis.then(release, release);
+    analysisOwnsSlot = true;
     const timeout = new Promise<never>((_, reject) => {
       timer = setTimeout(() => reject(new ScanError('timeout')), serverConfig.timeoutMs + 1000);
     });
@@ -125,5 +129,6 @@ export async function POST(request: Request) {
     return failure(new ScanError('analysis_failed'), locale);
   } finally {
     if (timer) clearTimeout(timer);
+    if (!analysisOwnsSlot) release();
   }
 }
