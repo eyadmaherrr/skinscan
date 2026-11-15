@@ -39,18 +39,28 @@ export interface LabImage {
 
 /**
  * Convert an interleaved RGB (3 channels) 8-bit buffer to CIELAB + luminance
- * planes. `gain` scales linear light first (exposure normalisation).
+ * planes. `gain` scales linear light first (exposure normalisation); a
+ * three-value gain scales red, green and blue separately (white balance).
+ * `redLinear`, when given, replaces the linear red value of every pixel where
+ * it is not NaN (recovered clipped highlights, see highlight-recovery.ts).
  */
-export function rgbToLabImage(rgb: Uint8Array, pixelCount: number, gain = 1): LabImage {
+export function rgbToLabImage(
+  rgb: Uint8Array,
+  pixelCount: number,
+  gain: number | readonly [number, number, number] = 1,
+  redLinear?: Float32Array,
+): LabImage {
+  const [gr, gg, gb] = typeof gain === 'number' ? [gain, gain, gain] : gain;
   const L = new Float32Array(pixelCount);
   const a = new Float32Array(pixelCount);
   const b = new Float32Array(pixelCount);
   const Y = new Float32Array(pixelCount);
   const logY = new Float32Array(pixelCount);
   for (let i = 0, o = 0; i < pixelCount; i++, o += 3) {
-    const r = SRGB_TO_LINEAR[rgb[o]] * gain;
-    const g = SRGB_TO_LINEAR[rgb[o + 1]] * gain;
-    const bl = SRGB_TO_LINEAR[rgb[o + 2]] * gain;
+    const override = redLinear ? redLinear[i] : Number.NaN;
+    const r = (override === override ? override : SRGB_TO_LINEAR[rgb[o]]) * gr;
+    const g = SRGB_TO_LINEAR[rgb[o + 1]] * gg;
+    const bl = SRGB_TO_LINEAR[rgb[o + 2]] * gb;
     const x = 0.4124564 * r + 0.3575761 * g + 0.1804375 * bl;
     const y = 0.2126729 * r + 0.7151522 * g + 0.072175 * bl;
     const z = 0.0193339 * r + 0.119192 * g + 0.9503041 * bl;

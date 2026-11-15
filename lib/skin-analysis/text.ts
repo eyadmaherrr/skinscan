@@ -14,7 +14,8 @@ export type InsufficientReason =
   | 'not_visible'
   | 'low_confidence'
   | 'expression'
-  | 'expression_and_conditions';
+  | 'expression_and_conditions'
+  | 'colour_cast';
 /** Non-blocking observations about the photo. */
 export type QualityNoteCode = 'uneven_side_light' | 'partly_covered' | 'low_resolution' | 'smiling';
 
@@ -158,6 +159,8 @@ const en: AnalysisText = {
       'Smiling creases the cheeks, and those folds look like darker or textured skin. A photo with a relaxed, neutral expression is needed to measure this.',
     expression_and_conditions:
       'This could not be measured reliably from this photo. A relaxed, neutral expression and brighter, even lighting are both needed.',
+    colour_cast:
+      'The light in this photo is strongly coloured (for example warm indoor light), which makes shine hard to judge. A photo in daylight or white light is needed to measure this.',
   },
   quality: {
     no_face: 'We could not find a face in this photo. Please take a photo facing the camera directly.',
@@ -357,6 +360,8 @@ const ar: AnalysisText = {
       'الابتسامة تُحدث ثنيات في الخدين تبدو كبشرة أغمق أو ذات ملمس. نحتاج إلى صورة بتعبير وجه هادئ ومحايد لقياس ذلك.',
     expression_and_conditions:
       'تعذّر قياس ذلك بدقة من هذه الصورة. نحتاج إلى تعبير وجه هادئ ومحايد مع إضاءة أقوى ومتساوية.',
+    colour_cast:
+      'الإضاءة في هذه الصورة ملوّنة بوضوح (مثل الإضاءة الدافئة داخل المنزل)، ما يصعّب تقدير اللمعان. نحتاج إلى صورة في ضوء النهار أو ضوء أبيض لقياس ذلك.',
   },
   quality: {
     no_face: 'لم نتمكن من العثور على وجه في هذه الصورة. يُرجى التقاط صورة وأنت تنظر مباشرةً إلى الكاميرا.',

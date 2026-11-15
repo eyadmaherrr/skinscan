@@ -11,7 +11,9 @@ import { ALL_REGION_KEYS, REGION_KEYS, type RegionKey } from './types';
  *  3. the segmenter does not confidently label it hair, accessory,
  *     background or clothing (veto-only use of the segmenter, see segmentation.ts),
  *  4. it is not a deep shadow / stray hair (much darker than its region),
- *  5. for colour metrics: it is not clipped (overexposed) or near-black.
+ *  5. for colour metrics: it is not clipped (overexposed) or near-black. A
+ *     pixel whose red channel alone was clipped and has been recovered
+ *     (highlight-recovery.ts) is kept.
  * Masks are eroded slightly so region borders do not contaminate measurements.
  */
 
@@ -31,7 +33,7 @@ export interface SkinMasks {
 }
 
 export function buildSkinMasks(face: AlignedFace, regions: FaceRegions): SkinMasks {
-  const { width: w, height: h, rgb, lab, seg, valid } = face;
+  const { width: w, height: h, rgb, lab, seg, valid, recovered } = face;
   const n = w * h;
   const veto = new Uint8Array(n);
   const clippedOrDark = new Uint8Array(n);
@@ -46,7 +48,7 @@ export function buildSkinMasks(face: AlignedFace, regions: FaceRegions): SkinMas
       veto[i] = 1;
     }
     const max = Math.max(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
-    if (max >= 250 || lab.L[i] < 6) clippedOrDark[i] = 1;
+    if ((max >= 250 && !recovered?.[i]) || lab.L[i] < 6) clippedOrDark[i] = 1;
   }
 
   const erodeR = Math.max(1, Math.round(face.pxPerMm * 0.6));

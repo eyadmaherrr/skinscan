@@ -3,7 +3,7 @@ import type { QualityNoteCode } from './text';
 import type { FaceDetection } from './face-detection';
 import { FACE_OVAL, IRIS_RING_IMG_LEFT, IRIS_RING_IMG_RIGHT, LM } from './face-topology';
 import type { FaceLandmarks } from './landmarks';
-import { chroma, hueAngle, individualTypologyAngle } from './image/color';
+import { chroma, hueAngle, individualTypologyAngle, SRGB_TO_LINEAR } from './image/color';
 import { bandContrast } from './image/detail';
 import { downsample, downsampleMask, erode, estimateNoiseSigma } from './image/filters';
 import { countMask, maskedValues, median, quantiles, ramp } from './image/stats';
@@ -38,6 +38,8 @@ export const QUALITY_THRESHOLDS = {
   maxPitchDeg: 25,
   maxRollDeg: 30,
   maxClippedFraction: 0.15,
+  /** Share of the skin whose (clipped) red channel may be estimated; beyond it the colour is mostly guessed. */
+  maxRecoveredFraction: 0.6,
   maxCrushedFraction: 0.2,
   minScleraL: 32,
   minSkinL: 10,
@@ -306,13 +308,39 @@ export function assessAlignedFace(
   if (outsidePhoto > T.maxSkinOutsidePhoto) issues.push('face_cropped');
 
   // --- Exposure -----------------------------------------------------------
-  const clipped = fractionWhere(skin, (i) => Math.max(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]) >= 250);
+  // Clipped = colour lost. Pixels whose red channel alone was clipped and has
+  // been recovered from the other two are counted separately.
+  const recoveredMask = face.recovered;
+  const clipped = fractionWhere(
+    skin,
+    (i) => Math.max(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]) >= 250 && !recoveredMask?.[i],
+  );
+  const recovered = recoveredMask ? fractionWhere(skin, (i) => recoveredMask[i] === 1) : 0;
+  diagnostics.recoveredRed = recovered;
   const crushed = fractionWhere(skin, (i) => Math.max(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]) <= 12);
   const skinL = median(maskedValues(lab.L, skin));
   const sclera = scleraMask(face, regions);
   const scleraCount = countMask(sclera);
   const scleraL = scleraCount >= 20 ? quantiles(maskedValues(lab.L, sclera), [0.75])[0] : Number.NaN;
   diagnostics.scleraY = scleraCount >= 20 ? quantiles(maskedValues(lab.Y, sclera), [0.75])[0] : Number.NaN;
+  // Colour of the eye whites (light colour reference): median a*, b* of their brighter half.
+  if (scleraCount >= 20) {
+    const Ls = maskedValues(lab.L, sclera);
+    const cut = quantiles(Ls, [0.5])[0];
+    const bright = new Uint8Array(sclera.length);
+    for (let i = 0; i < sclera.length; i++) bright[i] = sclera[i] && lab.L[i] >= cut ? 1 : 0;
+    diagnostics.scleraA = median(maskedValues(lab.a, bright));
+    diagnostics.scleraB = median(maskedValues(lab.b, bright));
+    // Mean linear RGB of the same pixels: the light-colour reference for white balance.
+    const sum = [0, 0, 0];
+    let count = 0;
+    for (let i = 0; i < bright.length; i++) {
+      if (!bright[i]) continue;
+      for (let c = 0; c < 3; c++) sum[c] += SRGB_TO_LINEAR[rgb[i * 3 + c]];
+      count++;
+    }
+    [diagnostics.scleraR, diagnostics.scleraG, diagnostics.scleraBlue] = sum.map((v) => v / count);
+  }
   const noiseSigma = estimateNoiseSigma(lab.Y, skin, w, h);
   const skinY = median(maskedValues(lab.Y, skin));
   const snr = noiseSigma > 0 ? skinY / noiseSigma : 100;
@@ -327,7 +355,7 @@ export function assessAlignedFace(
   diagnostics.blurIndex = blur;
   const scleraUsable = !Number.isNaN(scleraL) && blur <= T.maxBlurIndex;
 
-  if (clipped > T.maxClippedFraction) issues.push('too_bright');
+  if (clipped > T.maxClippedFraction || recovered > T.maxRecoveredFraction) issues.push('too_bright');
   if (crushed > T.maxCrushedFraction || skinL < T.minSkinL || (scleraUsable && scleraL < T.minScleraL)) {
     issues.push('too_dark');
   } else if (snr < T.minSnr) {
@@ -336,6 +364,8 @@ export function assessAlignedFace(
   const exposureFromSclera = scleraUsable ? ramp(T.minScleraL, 55, scleraL) : 0.85;
   const exposure = Math.min(
     ramp(T.maxClippedFraction, 0.02, clipped),
+    // Estimated colour is less certain than measured colour.
+    0.5 + 0.5 * ramp(T.maxRecoveredFraction, 0.1, recovered),
     ramp(T.maxCrushedFraction, 0.03, crushed),
     0.4 + 0.6 * exposureFromSclera,
   );
@@ -368,8 +398,15 @@ export function assessAlignedFace(
   //  - beauty filters remove fine skin detail while the eyes stay sharp;
   //  - heavy sharpening / "clarity" / HDR edits exaggerate it far beyond real skin.
   const p = face.pxPerMm;
-  const fine = bandContrast(lab.logY, usableSkin, w, h, Math.max(0.5, 0.15 * p), Math.max(1.2, 0.6 * p)).corrected;
-  const mid = bandContrast(lab.logY, usableSkin, w, h, Math.max(0.5, 0.2 * p), Math.max(1.2, 1.0 * p)).corrected;
+  // Judged only on measured pixels: a recovered red channel is an estimate (see highlight-recovery.ts),
+  // and these limits were set with clipped pixels left out.
+  let detailSkin = usableSkin;
+  if (recoveredMask) {
+    detailSkin = new Uint8Array(usableSkin.length);
+    for (let i = 0; i < detailSkin.length; i++) detailSkin[i] = usableSkin[i] && !recoveredMask[i] ? 1 : 0;
+  }
+  const fine = bandContrast(lab.logY, detailSkin, w, h, Math.max(0.5, 0.15 * p), Math.max(1.2, 0.6 * p)).corrected;
+  const mid = bandContrast(lab.logY, detailSkin, w, h, Math.max(0.5, 0.2 * p), Math.max(1.2, 1.0 * p)).corrected;
   Object.assign(diagnostics, { skinFineDetail: fine, skinMidDetail: mid });
   const checkDetail = p >= 3 && blur <= T.maxBlurIndex;
   const naturalDetail = checkDetail ? Math.min(ramp(T.minFineDetail, 0.018, fine), ramp(T.maxSkinDetail, 0.05, mid)) : 1;

@@ -19,7 +19,10 @@ import { measureTexture } from './metrics/texture';
 import { measureUnderEye } from './metrics/under-eye';
 import { runExtensions, type ExtensionResults } from './extensions';
 import { PALETTES, renderHeatmap } from './extensions/projection';
+import { recoverClippedRed } from './highlight-recovery';
+import { whiteBalanceFromSclera } from './white-balance';
 import { assessAlignedFace, checkDetections, checkLandmarks, type QualityAssessment } from './quality';
+import { ramp } from './image/stats';
 import { buildRegions } from './regions';
 import { buildAnatomicalRegionsV3 } from './regions-v3';
 import { aggregateV3Analysis } from './aggregation-v3';
@@ -70,6 +73,10 @@ export interface DetailedAnalysis {
 
 /** Metrics whose measurement is distorted by smiling (cheek folds, raised under-eyes). */
 const EXPRESSION_SENSITIVE: MetricKey[] = ['pigmentation', 'texture', 'underEye'];
+
+/** Colour-cast correction (CIELAB units on the eye whites) below which shine is fully trusted, and at which it is withheld. */
+const SHINE_CAST_FREE = 4;
+const SHINE_CAST_LIMIT = 12;
 
 /** Most actionable problem first; at most two are reported to the user. */
 const ISSUE_PRIORITY: QualityIssueCode[] = [
@@ -150,6 +157,13 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   checkDeadline(options.deadline);
 
   const regions = buildRegions(face.landmarks);
+  // Bright skin often clips only the red channel; estimate it so those pixels keep their colour.
+  const recovery = recoverClippedRed(face, regions);
+  if (recovery.count > 0) {
+    face.redLinear = recovery.redLinear;
+    face.recovered = recovery.recovered;
+    face.lab = rgbToLabImage(face.rgb, face.width * face.height, 1, face.redLinear);
+  }
   const masks = buildSkinMasks(face, regions);
   const quality = assessAlignedFace(face, regions, masks.geometric, masks.all, pose);
   if (quality.issues.length) {
@@ -168,8 +182,22 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   // brightness does not depend on skin tone. Gating above used the raw values.
   const scleraY = referenceWhiteY(quality.diagnostics.scleraY, quality.diagnostics.skinL);
   const gain = exposureGain(scleraY);
-  if (gain !== 1) face.lab = rgbToLabImage(face.rgb, face.width * face.height, gain);
-  quality.diagnostics.exposureGain = gain;
+  // White balance: a clear colour cast of the light (seen on the eye whites) is removed.
+  const d = quality.diagnostics;
+  const wb = whiteBalanceFromSclera([d.scleraR, d.scleraG, d.scleraBlue]);
+  const gains = wb.gains.map((g) => g * gain) as [number, number, number];
+  if (gains.some((g) => g !== 1)) face.lab = rgbToLabImage(face.rgb, face.width * face.height, gains, face.redLinear);
+  Object.assign(quality.diagnostics, {
+    exposureGain: gain,
+    colourCastA: wb.cast[0],
+    colourCastB: wb.cast[1],
+    whiteBalanceR: wb.gains[0],
+    whiteBalanceB: wb.gains[2],
+  });
+  // A corrected colour cast leaves some uncertainty in colour measurements.
+  const corrected = Math.hypot(wb.correction[0], wb.correction[1]);
+  quality.diagnostics.colourCorrection = corrected;
+  quality.factors.exposure *= 1 - 0.25 * Math.min(1, corrected / 20);
   const illumination = Number.isFinite(scleraY) && scleraY > 0 ? scleraY * gain : 0.6;
   const ctx: MetricContext = { face, masks, quality, cache: new Map(), locale };
   const steps: ((c: MetricContext) => MetricMeasurement)[] = [
@@ -190,6 +218,11 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
   const analysis = {} as Record<MetricKey, MetricResult>;
   const confidences: number[] = [];
   for (const m of measurements) {
+    // Shine is found as highlights paler than the surrounding skin, so it depends on the colour of
+    // the light more than any other metric: what remains of a corrected colour cast (up to the
+    // normal spread of eye-white colour) still shifts it by 15-25 points. After a clear cast it is
+    // therefore trusted less, and withheld after a strong one.
+    if (m.key === 'shine') m.reliability *= ramp(SHINE_CAST_LIMIT, SHINE_CAST_FREE, corrected);
     const confidence = metricConfidence(m, quality.factors);
     confidences.push(confidence);
     const reportable = m.raw !== null && confidence >= MIN_REPORTABLE;
@@ -199,6 +232,7 @@ export async function analyzeImageDetailed(buffer: Buffer, options: AnalyzeOptio
       const neutral = metricConfidence(m, { ...quality.factors, expression: 1 });
       m.insufficientReason = neutral >= MIN_REPORTABLE ? 'expression' : 'expression_and_conditions';
     }
+    if (!reportable && m.raw !== null && m.key === 'shine' && corrected > SHINE_CAST_FREE) m.insufficientReason = 'colour_cast';
     const score = reportable ? calibrate(m.key, m.raw as number) : null;
     const scoreBand = score === null ? null : band(score);
     const regionsShown = score !== null && score >= 25 ? prominentRegions(m) : [];

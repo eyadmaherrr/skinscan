@@ -36,6 +36,10 @@ export interface AlignedFace {
   /** Inter-ocular distance in the original photo, in pixels. */
   sourceIod: number;
   cropToSource: Affine;
+  /** Linear red value of recovered clipped-red pixels (NaN elsewhere); see highlight-recovery.ts. */
+  redLinear?: Float32Array;
+  /** 1 where a clipped red channel was recovered. */
+  recovered?: Uint8Array;
   /** Segmentation probabilities resampled into the crop. */
   seg: Record<SegClass, Float32Array>;
 }

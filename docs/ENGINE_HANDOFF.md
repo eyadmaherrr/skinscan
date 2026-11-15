@@ -14,6 +14,7 @@ and what is left. Read `CLAUDE.md` → the knowledge base first.
 | **Withheld results give the right advice**: "neutral expression" only when that alone would fix it, otherwise expression *and* lighting. | `index.ts`, `text.ts` (EN + AR) | New reason `expression_and_conditions`. |
 | **Tight close-ups are accepted.** A photo that trims about 5% of the hairline, chin or sides was always rejected as "face cropped" (2 of 36 outline points outside was enough). Now the eyes, brows, nose and mouth must be in the photo and at most 5% of the measured skin may be outside it; only skin inside the photo is measured. | `quality.ts` (`checkLandmarks`, `maxSkinOutsidePhoto`), `index.ts` | 5% trims: 0/9 accepted before, 15/18 after, scores within a few points of the uncropped photo. 10% trims are still rejected: shine drifted 9-20 points when they were let through. |
 | **Head tilt is measured from level.** The forehead-to-chin line leans back about 7.5 degrees on an upright head, so the 25 degree limit was really +17 / -32. | `quality.ts` (`neutralPitchDeg`) | Level reference portraits read 3-18 degrees before (median 7.8), about -4 to +10 after. Also raises the pose confidence factor on level faces. |
+| **Bright and warm photos are no longer rejected as "too bright".** Skin often clips only the red channel; it is now recovered from green and blue (diffuse skin colour plus a neutral surface reflection), and only pixels whose colour is really lost count as overexposed. A clear colour cast of the light is removed using the eye whites (beyond the normal spread between people). Shine, which depends most on light colour, is trusted less after a correction and withheld after a strong one, with its own message. | `highlight-recovery.ts`, `white-balance.ts`, `image/color.ts`, `skin-mask.ts`, `quality.ts`, `index.ts`, `text.ts` (EN + AR) | Edited copies of the 9 accepted portraits, accepted before → after: 15% brighter 2 → 9, 30% brighter 0 → 5, warm 2 → 9, strongly warm 0 → 7, pink 5 → 9, contrast 2 → 7, saturated 7 → 9 (the rest: real overexposure or uneven lighting). Redness on accepted copies within about ±7 of the original (menon -13 to -18). Unedited portraits unchanged except epps shine 11 → 4. Edit detection ignores recovered pixels, so the edited reference portraits stay rejected. Shine still moves 15-25 points with light colour inside the normal eye-white range (a cool copy of ohara: 50 → 88); a better shine measure is open. |
 | **A failed upload no longer leaks a scan slot** (two leaks made every scan return "busy" until restart). | `app/api/skin-scan/route.ts` | — |
 
 ## Left for the next session (no effect on what patients see)
@@ -27,7 +28,7 @@ and what is left. Read `CLAUDE.md` → the knowledge base first.
    anchors were set"); bump `METHODOLOGY_VERSION` (4.1.0) and, if wanted, the
    engine name (it appears in `lib/brand.ts`, `lib/site-metadata.ts`,
    `lib/content/pages-content.ts` and the docs).
-3. **Tests** for the new behaviour: mirror table is a self-inverse
+3. **Tests** for the new behaviour (recovery and white balance have unit tests in `tests/highlight-recovery.test.ts` and `tests/white-balance.test.ts`): mirror table is a self-inverse
    permutation; a line-shaped detection is not counted as a blemish; shine
    on a down-scaled copy stays within a few points; `referenceWhiteY`;
    the `expression_and_conditions` reason; the slot is released when
@@ -45,16 +46,15 @@ and what is left. Read `CLAUDE.md` → the knowledge base first.
    redness reads "pronounced" on two ordinary portraits (provisional
    anchors); every accepted reference photo is a broad smile (WQ-18);
    scans take 2–8 s on this machine.
-6. **"Too bright" is strict for bright, warm phone photos, on purpose.**
-   Copies of the accepted portraits made about a third of a stop brighter,
-   or tinted warm, are rejected 7 times out of 9, because more than 15% of
-   the skin then has a maxed-out red channel. Counting only fully white
-   pixels as blown out was tried and reverted: the red-clipped pixels pull
-   the redness baseline down and redness rose by up to 19 points. A real
-   fix needs highlight recovery or a white-balance step, plus real phone
-   photos to test on. Also untested for lack of photos: hijab, beards,
-   fringes, heavy make-up. HEIC files only open in Safari (the upload
-   message already says so).
+6. **Bright and warm photos (fixed 15 Nov 2026, see the table above).**
+   Left to check: real phone photos under warm indoor light (only edited
+   copies of studio portraits were tested); calibration anchors for shine
+   on recovered highlights; the extensions (acne grade, skin age, skin
+   type) still get the uncorrected pixels. A strong cool cast can still
+   be rejected as "not a colour photo" (the colour check runs before white
+   balance). Also untested for lack of photos: hijab, beards, fringes,
+   heavy make-up. HEIC files only open in Safari (the upload message
+   already says so).
 7. `warpRgb` takes at most 4×4 samples per output pixel, so the face
    detector input (128 px from up to 2560 px) is slightly aliased. No
    failure was traced to it.

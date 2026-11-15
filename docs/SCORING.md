@@ -31,7 +31,17 @@ photo ──▶ quality gate ──▶ skin regions ──▶ raw measurement (p
    mis-score lighter or darker skin. Redness, pigmentation and under-eye
    darkness are therefore measured against the person's surrounding skin.
 2. **Remove lighting effects.** Exposure is normalised with the eye whites
-   (whose brightness does not depend on skin tone). Shading scales the
+   (whose brightness does not depend on skin tone). A clear colour cast of
+   the light is removed with the eye whites too (`white-balance.ts`): their
+   CIELAB a*, b* is compared with the typical value on well-balanced
+   portraits (a* 2.5, b* 5), differences within the normal spread between
+   people (6 units per axis) are left alone, and only the excess is removed
+   with per-channel gains in linear light (at most 1.5x), keeping the eye
+   whites' brightness. Bright skin often clips only the red channel; those
+   pixels are recovered from green and blue (`highlight-recovery.ts`) as
+   the local diffuse skin colour plus a neutral surface reflection
+   (dichromatic model), so shiny highlights stay pale and bright skin keeps
+   its colour. Shading scales the
    CIELAB vector (L*+16, a*, b*) uniformly, so ratios like a*/(L*+16) are
    used to separate colour changes from shadows. Fine-detail measurements use
    log luminance (relative contrast) with the camera-noise contribution
@@ -152,10 +162,10 @@ then asks for a neutral expression).
 |---|---|
 | No face / several faces | BlazeFace; a second face scoring ≥ 0.6 and ≥ 20% of the main face's area |
 | Face too small | inter-ocular distance < 70 px |
-| Face cut off | > 4% of face-outline landmarks outside the photo |
-| Head angle | yaw > 24°, pitch > 25° or roll > 30° |
+| Face cut off | an eye corner, outer brow, nose tip, mouth corner or the lower lip outside the photo, > 50% of face-outline landmarks outside, or > 5% of the measured skin outside |
+| Head angle | yaw > 24°, pitch > 25° (measured from level: 7.5° is subtracted) or roll > 30° |
 | Too dark | > 20% of skin pixels near-black, eye whites L* < 32 (sharp photos only), skin L* < 10, or SNR < 5 |
-| Too bright | > 15% of skin pixels clipped |
+| Too bright | > 15% of skin pixels clipped with the colour lost (two or more channels near the limit, or red clipped and not recoverable), or > 60% of skin with a recovered red channel |
 | Uneven lighting | cheek luminance ratio > 3.5 |
 | Blurry | re-blur index > 0.62 |
 | Filter / heavy edit | noise-corrected fine detail < 0.7% (smoothing) or > 9% (sharpening/HDR) |
