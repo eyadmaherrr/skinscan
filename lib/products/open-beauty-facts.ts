@@ -23,6 +23,7 @@ const FIELDS = [
   'quantity',
   'ingredients_text',
   'ingredients_text_en',
+  'ingredients_text_ar',
   'ingredients_tags',
   'categories_tags',
   'image_front_small_url',
@@ -58,6 +59,7 @@ interface RawProduct {
   quantity?: string;
   ingredients_text?: string;
   ingredients_text_en?: string;
+  ingredients_text_ar?: string;
   ingredients_tags?: string[];
   categories_tags?: string[];
   image_front_small_url?: string;
@@ -129,7 +131,8 @@ async function fetchEntry(code: string): Promise<Entry> {
 
   const raw = body.product;
   const names = { en: text(raw.product_name_en), ar: text(raw.product_name_ar), any: text(raw.product_name) };
-  const ingredientsText = text(raw.ingredients_text_en) ?? text(raw.ingredients_text);
+  // INCI lists are Latin worldwide; an Arabic-only list (Egyptian packs) is the last resort.
+  const ingredientsText = text(raw.ingredients_text_en) ?? text(raw.ingredients_text) ?? text(raw.ingredients_text_ar);
   const { listed, matches } = matchIngredients({
     text: ingredientsText,
     tags: strings(raw.ingredients_tags),
@@ -146,6 +149,7 @@ async function fetchEntry(code: string): Promise<Entry> {
       quantity: text(raw.quantity),
       image,
       ingredientsText: ingredientsText ? ingredientsText.slice(0, MAX_INGREDIENTS_TEXT) : null,
+      ingredientsFrom: listed ? 'openBeautyFacts' : null,
       ingredientCount: listed,
       matches,
     },
@@ -177,9 +181,11 @@ export async function lookupProduct(
   return {
     product: { ...rest, name },
     source: {
+      id: 'openBeautyFacts',
       name: 'Open Beauty Facts',
       url: `https://world.openbeautyfacts.org/product/${code}`,
       licence: 'ODbL',
+      licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/',
       imageLicence: entry.imageLicence,
     },
   };

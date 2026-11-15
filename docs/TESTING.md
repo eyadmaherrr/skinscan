@@ -28,7 +28,11 @@ suites as of v4.0 (28 October 2026, all passing). Among them:
   dioxide / zinc oxide only in sunscreens, nothing described without an
   ingredient list) and the lookup route against a local stand-in for Open
   Beauty Facts (sign-in, not found, only the barcode sent, cache, photos
-  only from the database's image host, database down);
+  only from the database's image host, database down). 15 November 2026
+  (141 tests in total): Egyptian products — Arabic spellings, "+" lists,
+  barcodes only the Egyptian listing knows, Open Beauty Facts name with
+  Egyptian ingredients, Egyptian answers while OBF is down, lookup by id,
+  English and Arabic name search;
 - API: missing image (400), non-multipart (400), disguised file (415),
   unsupported declared type (415), blank image → retake advice with no stack
   trace, and a real frontal photo analysed **deterministically** (identical

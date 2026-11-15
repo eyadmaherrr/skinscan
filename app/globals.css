@@ -4386,6 +4386,77 @@ html[dir='rtl'] .flipRtl {
   margin-top: 20px;
 }
 
+/* ---------- Name search results ---------- */
+.productSearch {
+  margin-top: 8px;
+}
+
+.productSearch .productSection {
+  margin-top: 20px;
+  font-size: 20px;
+}
+
+.searchList {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.searchList button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-row);
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.searchList button:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  background: var(--hover-tint);
+}
+
+.searchList button:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 2px;
+}
+
+.searchList button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.searchList span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.searchList b {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.searchList small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.searchList svg {
+  flex: none;
+  color: var(--accent);
+}
+
 /* ---------- Camera ---------- */
 .barcodeCamera {
   margin-top: 24px;

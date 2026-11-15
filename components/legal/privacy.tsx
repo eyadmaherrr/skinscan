@@ -67,8 +67,9 @@ const en: LegalContent = {
         </>,
         <>
           <strong>Product check:</strong> when you check a skincare product, the barcode is read in your browser and only
-          its number is sent. SkinScan’s server looks that number up in Open Beauty Facts, an open product database; no
-          picture, name or account detail is passed on, and the barcode is not logged.
+          its number is sent. SkinScan’s server looks that number up in its own list of products sold in Egypt and in Open
+          Beauty Facts, an open product database; no picture, name or account detail is passed on, and the barcode is not
+          logged. A product name you type is searched only in SkinScan’s own list and is not logged.
         </>,
       ],
     },
@@ -183,8 +184,9 @@ const ar: LegalContent = {
         </>,
         <>
           <strong>فحص المنتجات:</strong> عند فحص منتج للعناية بالبشرة، يُقرأ الباركود في متصفحك ولا يُرسَل إلا رقمه. يبحث
-          خادم SkinScan عن هذا الرقم في Open Beauty Facts، وهي قاعدة بيانات مفتوحة للمنتجات؛ ولا تُرسَل أي صورة أو اسم أو
-          بيانات حساب، ولا يُسجَّل الباركود.
+          خادم SkinScan عن هذا الرقم في قائمته الخاصة للمنتجات المباعة في مصر وفي Open Beauty Facts، وهي قاعدة بيانات مفتوحة
+          للمنتجات؛ ولا تُرسَل أي صورة أو اسم أو بيانات حساب، ولا يُسجَّل الباركود. أما اسم المنتج الذي تكتبه فيُبحث عنه في
+          قائمة SkinScan الخاصة فقط ولا يُسجَّل.
         </>,
       ],
     },

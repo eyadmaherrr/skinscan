@@ -95,27 +95,27 @@ export const INGREDIENTS = {
   salicylicAcid: {
     benefits: ['blemishes', 'pores'],
     sources: [SOURCES.zaenglein2016],
-    names: ['salicylic acid', 'beta hydroxy acid'],
+    names: ['salicylic acid', 'beta hydroxy acid', 'حمض الساليسيليك', 'حمض الساليسيلك', 'حمض السالسيليك', 'ساليسيليك اسيد'],
   },
   benzoylPeroxide: {
     benefits: ['blemishes'],
     sources: [SOURCES.zaenglein2016],
-    names: ['benzoyl peroxide'],
+    names: ['benzoyl peroxide', 'بنزويل بيروكسيد', 'بيروكسيد البنزويل', 'بنزويل بيروكسايد'],
   },
   adapalene: {
     benefits: ['blemishes'],
     sources: [SOURCES.zaenglein2016],
-    names: ['adapalene'],
+    names: ['adapalene', 'ادابالين'],
   },
   azelaicAcid: {
     benefits: ['blemishes', 'redness', 'unevenTone'],
     sources: [SOURCES.fitton1991, SOURCES.thiboutot2020],
-    names: ['azelaic acid'],
+    names: ['azelaic acid', 'حمض الازيليك', 'حمض الازليك', 'ازيليك اسيد'],
   },
   niacinamide: {
     benefits: ['redness', 'unevenTone', 'barrier'],
     sources: [SOURCES.wohlrab2014, SOURCES.hakozaki2002],
-    names: ['niacinamide', 'nicotinamide'],
+    names: ['niacinamide', 'nicotinamide', 'vitamin b3', 'نياسيناميد', 'نياسيناميد ب3', 'نيكوتيناميد', 'فيتامين ب3'],
   },
   vitaminC: {
     benefits: ['unevenTone', 'fineLines'],
@@ -130,17 +130,21 @@ export const INGREDIENTS = {
       'ethyl ascorbic acid',
       'tetrahexyldecyl ascorbate',
       'ascorbyl tetraisopalmitate',
+      'vitamin c',
+      'فيتامين سي',
+      'فيتامين ج',
+      'حمض الاسكوربيك',
     ],
   },
   retinoid: {
     benefits: ['texture', 'fineLines'],
     sources: [SOURCES.mukherjee2006],
-    names: ['retinol', 'retinal', 'retinaldehyde', 'tretinoin', 'retinoic acid'],
+    names: ['retinol', 'retinal', 'retinaldehyde', 'tretinoin', 'retinoic acid', 'ريتينول', 'ريتينال', 'تريتينوين'],
   },
   ahas: {
     benefits: ['texture', 'unevenTone'],
     sources: [SOURCES.tang2018],
-    names: ['glycolic acid', 'lactic acid', 'mandelic acid'],
+    names: ['glycolic acid', 'lactic acid', 'mandelic acid', 'حمض الجليكوليك', 'حمض الجلايكوليك', 'حمض اللاكتيك', 'حمض الماندليك', 'حمض المانديليك'],
   },
   uvFilter: {
     benefits: ['sunProtection'],
@@ -173,6 +177,9 @@ export const INGREDIENTS = {
       'polysilicone 15',
       'isoamyl p methoxycinnamate',
       '4 methylbenzylidene camphor',
+      'اوكتوكريلين',
+      'افوبنزون',
+      'افوبينزون',
     ],
   },
   /**
@@ -183,34 +190,35 @@ export const INGREDIENTS = {
   mineralUvFilter: {
     benefits: ['sunProtection'],
     sources: [SOURCES.euAnnexVI],
-    names: ['titanium dioxide', 'zinc oxide'],
+    names: ['titanium dioxide', 'zinc oxide', 'ثاني اكسيد التيتانيوم', 'اكسيد الزنك'],
   },
   hyaluronicAcid: {
     benefits: ['hydration'],
     sources: [SOURCES.purnamawati2017],
     names: [],
-    contains: ['hyaluron'],
+    contains: ['hyaluron', 'هيالورون'],
   },
   glycerin: {
     benefits: ['hydration'],
     sources: [SOURCES.fluhr2008],
-    names: ['glycerin', 'glycerol', 'glycerine'],
+    names: ['glycerin', 'glycerol', 'glycerine', 'جلسرين', 'جليسرين', 'جلسرول', 'جليسرول'],
   },
   urea: {
     benefits: ['hydration'],
     sources: [SOURCES.purnamawati2017],
-    names: ['urea'],
+    names: ['urea', 'يوريا'],
   },
   ceramides: {
     benefits: ['barrier'],
     sources: [SOURCES.purnamawati2017],
-    names: ['ceramides'],
+    names: ['ceramides', 'ceramide'],
     prefixes: ['ceramide '],
+    contains: ['سيراميد'],
   },
   panthenol: {
     benefits: ['barrier', 'hydration'],
     sources: [SOURCES.proksch2017],
-    names: ['panthenol', 'd panthenol', 'dexpanthenol'],
+    names: ['panthenol', 'd panthenol', 'dexpanthenol', 'provitamin b5', 'pro vitamin b5', 'vitamin b5', 'بانثينول', 'ديكسبانثينول', 'د بانثينول', 'بروفيتامين ب5', 'فيتامين ب5'],
   },
 } satisfies Record<string, Rule>;
 
@@ -225,26 +233,36 @@ export interface IngredientMatch {
   sources: Source[];
 }
 
-/** "Benzophenone-3", "CERAMIDE NP*" → "benzophenone 3", "ceramide np". */
+/**
+ * "Benzophenone-3", "CERAMIDE NP*", "حمض الهيالورونيك" → "benzophenone 3",
+ * "ceramide np", "حمض الهيالورونيك". Arabic spelling variants are folded
+ * (hamza forms of alef, taa marbuta, alef maqsura, diacritics, tatweel) and
+ * Arabic-Indic digits become 0–9, so packs printed either way match.
+ */
 export function normalizeName(name: string): string {
   return name
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[̀-ًͯ-ٰٟـ]/g, '')
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[آأإ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
     .toLowerCase()
     .replace(/\d+(\.\d+)?\s*%/g, ' ')
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[^a-z0-9ء-ي]+/g, ' ')
     .trim();
 }
 
 /**
  * An ingredient list ("Aqua/Water, Glycerin, Sodium Hyaluronate (hyaluronic
- * acid)…") as separate names, in label order. Bracketed alternatives and
- * slash-separated synonyms become names of their own.
+ * acid)…", "مياه، جلسرين، نياسيناميد", or a pharmacy listing's
+ * "panthenol+shea butter") as separate names, in label order. Bracketed
+ * alternatives and slash-separated synonyms become names of their own.
  */
 export function splitIngredients(text: string): { raw: string; name: string }[] {
   return text
-    .split(/[,;•·\n()[\]{}/]|\s[-–]\s|\.\s/)
-    .map((raw) => raw.replace(/^[\s*:+]+|[\s*.:+]+$/g, '').trim())
+    .split(/[,;،؛•·\n()[\]{}/+]|\s[-–]\s|\.\s/)
+    .map((raw) => raw.replace(/^[\s*:]+|[\s*.:]+$/g, '').trim())
     .map((raw) => ({ raw, name: normalizeName(raw) }))
     .filter(({ name }) => name.length > 1 && name.length < 90);
 }
@@ -259,8 +277,10 @@ function ruleMatches(rule: Rule, name: string): boolean {
 
 const NORMALIZED: [IngredientKey, Rule][] = INGREDIENT_KEYS.map((key) => {
   const rule: Rule = INGREDIENTS[key];
-  return [key, { ...rule, names: rule.names.map(normalizeName) }];
+  return [key, { ...rule, names: rule.names.map(normalizeName), contains: rule.contains?.map(normalizeName) }];
 });
+
+const QUALIFIER = /^(liposomal|encapsulated|micronized|micronised|stabilized|stabilised|pure) /;
 
 /** "Niacinamide", "SODIUM HYALURONATE" → "Niacinamide", "Sodium hyaluronate". */
 function displayName(raw: string): string {
@@ -300,8 +320,10 @@ export function matchIngredients({ text, tags, sunscreen = false }: IngredientIn
 
   const found = new Map<IngredientKey, IngredientMatch>();
   for (const { raw, name } of names) {
+    // "Liposomal retinol", "encapsulated vitamin c": the delivery form, not another ingredient.
+    const bare = name.replace(QUALIFIER, '');
     for (const [key, rule] of NORMALIZED) {
-      if (found.has(key) || !ruleMatches(rule, name)) continue;
+      if (found.has(key) || !(ruleMatches(rule, name) || ruleMatches(rule, bare))) continue;
       found.set(key, { key, asListed: displayName(raw), benefits: [...rule.benefits], sources: [...rule.sources] });
     }
   }

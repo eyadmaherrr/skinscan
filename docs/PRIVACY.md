@@ -51,8 +51,10 @@ its format) is sent, in the body of `POST /api/product-lookup`, so it does
 not appear in URLs or access logs. Our server asks Open Beauty Facts for
 that number (no IP, account or other data is passed on) and fetches the
 product photo itself, so the patient's browser never contacts Open Beauty
-Facts. Results are cached in memory by barcode only, never by patient. See
-[PRODUCT_SCAN.md](PRODUCT_SCAN.md).
+Facts. Results are cached in memory by barcode only, never by patient. A
+typed product name is searched on our server in a bundled list of products
+sold in Egyptian pharmacies (`data/eg-products.json`); it goes nowhere else
+and, like barcodes, is never logged. See [PRODUCT_SCAN.md](PRODUCT_SCAN.md).
 
 ## Logging
 

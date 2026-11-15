@@ -190,7 +190,9 @@ model names are never returned.
 Barcode scanner and ingredient descriptions, separate from the photo
 pipeline: `components/{ProductScanApp,BarcodeScanner,ProductResult}.tsx`,
 `lib/products/*`, `POST /api/product-lookup` (Open Beauty Facts by barcode,
-cited ingredient table). Contract, data source, licence and rules:
+then the bundled Egyptian pharmacy listing `data/eg-products.json`),
+`POST /api/product-search` (name search in that listing), cited ingredient
+table. Contract, data source, licence and rules:
 [PRODUCT_SCAN.md](PRODUCT_SCAN.md).
 
 ## Security

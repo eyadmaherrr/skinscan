@@ -23,10 +23,12 @@ in 4.0 and why: [docs/TESTING.md](docs/TESTING.md) §3.
   "Insufficient confidence" instead of a number.
 - Bad photos (dark, blurry, filtered, glasses, turned head, several faces…)
   are rejected with clear retake advice.
-- **Product check** (`/products`): scan a skincare product's barcode (or type
-  it) to see what its well-established ingredients are commonly used for,
-  from Open Beauty Facts and a cited ingredient table. Only the number is
-  sent; see [docs/PRODUCT_SCAN.md](docs/PRODUCT_SCAN.md).
+- **Product check** (`/products`): scan a skincare product's barcode, or type
+  its number or name (English or Arabic), to see what its well-established
+  ingredients are commonly used for, from Open Beauty Facts, a bundled list of
+  products sold in Egyptian pharmacies (eg-drugs, CC BY 4.0) and a cited
+  ingredient table. Only the number or typed name is sent; see
+  [docs/PRODUCT_SCAN.md](docs/PRODUCT_SCAN.md).
 
 | Doc | Contents |
 |---|---|
@@ -36,7 +38,7 @@ in 4.0 and why: [docs/TESTING.md](docs/TESTING.md) §3.
 | [docs/PRIVACY.md](docs/PRIVACY.md) | What happens to a photo, logging, analytics rules |
 | [docs/TESTING.md](docs/TESTING.md) | Test strategy, evaluation results, skin-tone checks, limitations |
 | [docs/UX_RULES.md](docs/UX_RULES.md) | UX rules every screen and the results page must follow, and how to check them |
-| [docs/PRODUCT_SCAN.md](docs/PRODUCT_SCAN.md) | Product check: barcode scanning, Open Beauty Facts lookup, the cited ingredient table, its rules |
+| [docs/PRODUCT_SCAN.md](docs/PRODUCT_SCAN.md) | Product check: barcode scanning, name search, Open Beauty Facts and the Egyptian pharmacy listing, the cited ingredient table, its rules |
 
 ## Requirements
 
@@ -95,7 +97,7 @@ Copy `.env.example` to `.env.local`. All are optional.
 | `SKIN_SCAN_MAX_CONCURRENT` | `2` | Scans processed at once per server instance |
 | `SKIN_SCAN_ONNX_THREADS` | `2` | CPU threads per model inference |
 | `SKIN_SCAN_RATE_LIMIT` / `SKIN_SCAN_RATE_LIMIT_WINDOW_SECONDS` | `8` / `600` | Scans per client per window |
-| `SKINSCAN_PRODUCT_RATE_LIMIT` | `30` | Product barcode lookups per client per the same window |
+| `SKINSCAN_PRODUCT_RATE_LIMIT` | `60` | Product lookups and name searches per client per the same window |
 | `SKINSCAN_PRODUCT_DB_URL` | `https://world.openbeautyfacts.org` | Product database for the product check (tests point it at a stand-in) |
 | `ONNXRUNTIME_NODE_INSTALL` | `skip` (via `.npmrc`) | Skips ONNX Runtime's optional CUDA download on Linux |
 | `SKINSCAN_ACNE_LESIONS` | `true` | Spot & acne-like mark candidates (experimental section) |
@@ -203,7 +205,8 @@ has a health check on `/api/health`.
 ```
 app/                 page, layout, styles, API routes (/api/skin-scan, /api/product-lookup, /api/health)
 components/          the scan flow (landing, photo step, camera, analysing, results) and the product check
-lib/products/        barcode checks, Open Beauty Facts lookup, cited ingredient table
+lib/products/        barcode checks, Open Beauty Facts + Egyptian listing lookup, name search, cited ingredient table
+data/eg-products.json Egyptian pharmacy skincare listing (scripts/import-eg-products.mjs; eg-drugs, CC BY 4.0)
 lib/skin-analysis/   the analysis pipeline (see docs/ARCHITECTURE.md)
 lib/client/          browser-side image preparation and API client
 models/              ONNX models, manifest with checksums, licence

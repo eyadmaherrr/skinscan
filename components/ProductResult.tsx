@@ -8,12 +8,53 @@ import { format } from '@/lib/messages';
 import { benefitSummary, type Source } from '@/lib/products/ingredients';
 import type { ProductInfo, ProductSource } from '@/lib/products/types';
 
-const ODBL_URL = 'https://opendatacommons.org/licenses/odbl/1-0/';
+/** The Egyptian Drug Authority's public register search (Cosmetics is one of its categories; it asks for a code, so we only link to it). */
+const EDA_SEARCH_URL = 'https://eservices.edaegypt.gov.eg/EDASearch/SearchRegDrugs.aspx';
 
 interface Props {
   product: ProductInfo;
-  source: ProductSource;
+  sources: ProductSource[];
   onAnother: () => void;
+}
+
+/** "Is it registered in Egypt? Search the Egyptian Drug Authority register…" — a pointer, not a check we made. */
+export function EdaLink() {
+  const { t } = useI18n();
+  const r = t.product.result;
+  return (
+    <>
+      {fill(r.eda, {
+        eda: (
+          <a href={EDA_SEARCH_URL} target="_blank" rel="noopener noreferrer" className="inlineLink">
+            {r.edaName}
+          </a>
+        ),
+      })}
+    </>
+  );
+}
+
+function SourceLine({ source }: { source: ProductSource }) {
+  const { t } = useI18n();
+  const r = t.product.result;
+  const egypt = source.id === 'egDrugs';
+  return (
+    <p className="fine productAttribution">
+      {fill(egypt ? r.attributionEg : r.attribution, {
+        source: (
+          <a href={source.url} target="_blank" rel="noopener noreferrer" className="inlineLink">
+            {source.name}
+          </a>
+        ),
+        licence: (
+          <a href={source.licenceUrl} target="_blank" rel="noopener noreferrer" className="inlineLink">
+            {egypt ? r.licenceEg : r.licence}
+          </a>
+        ),
+      })}
+      {source.imageLicence ? ` ${r.imageCredit}` : null}
+    </p>
+  );
 }
 
 /**
@@ -22,7 +63,7 @@ interface Props {
  * sources and attribution. Book a consultation is the one primary action
  * (docs/UX_RULES.md G1).
  */
-export default function ProductResult({ product, source, onAnother }: Props) {
+export default function ProductResult({ product, sources: dataSources, onAnother }: Props) {
   const { t: messages, locale } = useI18n();
   const t = messages.product;
   const r = t.result;
@@ -30,6 +71,8 @@ export default function ProductResult({ product, source, onAnother }: Props) {
   const summary = benefitSummary(product.matches);
   const sources = [...new Map(product.matches.flatMap((m) => m.sources).map((s: Source) => [s.url, s])).values()];
   const name = product.name ?? r.unnamed;
+  // The Egyptian pharmacy listing names main active ingredients only, not the full list from the pack.
+  const actives = product.ingredientsFrom === 'egDrugs';
   const meta = [product.brand, product.quantity].filter(Boolean).join(' · ');
 
   return (
@@ -47,13 +90,13 @@ export default function ProductResult({ product, source, onAnother }: Props) {
           )}
           <div className="productTitle">
             <span className="eyebrow">{r.found}</span>
-            <h1 id="product-title" tabIndex={-1}>
+            <h1 id="product-title" tabIndex={-1} dir="auto">
               {name}
             </h1>
             {meta ? <p className="productMeta">{meta}</p> : null}
-            <p className="productMeta">
-              {fill(r.barcode, { code: <span dir="ltr">{product.code}</span> })}
-            </p>
+            {product.code ? (
+              <p className="productMeta">{fill(r.barcode, { code: <span dir="ltr">{product.code}</span> })}</p>
+            ) : null}
           </div>
         </header>
 
@@ -69,7 +112,7 @@ export default function ProductResult({ product, source, onAnother }: Props) {
         ) : product.matches.length === 0 ? (
           <div className="productEmpty" role="status">
             <h2>{r.noneDescribedTitle}</h2>
-            <p>{format(r.noneDescribed, { count: product.ingredientCount })}</p>
+            <p>{format(actives ? r.noneDescribedActives : r.noneDescribed, { count: product.ingredientCount })}</p>
           </div>
         ) : (
           <>
@@ -89,7 +132,7 @@ export default function ProductResult({ product, source, onAnother }: Props) {
                 <li key={match.key}>
                   <b>{t.ingredients[match.key]}</b>
                   <span className="ingredientListed">
-                    {fill(r.listedAs, { name: <span dir="ltr">{match.asListed}</span> })}
+                    {fill(actives ? r.listedAsActives : r.listedAs, { name: <span dir="auto">{match.asListed}</span> })}
                   </span>
                   <span>{format(r.usedFor, { benefits: join(match.benefits.map((b) => t.benefits[b])) })}</span>
                 </li>
@@ -98,13 +141,12 @@ export default function ProductResult({ product, source, onAnother }: Props) {
             <p className="muted small">{r.amountNote}</p>
           </>
         )}
+        {actives ? <p className="muted small">{r.activesNote}</p> : null}
 
         {product.ingredientsText ? (
           <details className="productDetails">
-            <summary>{r.fullList}</summary>
-            <p dir="ltr" lang="en">
-              {product.ingredientsText}
-            </p>
+            <summary>{actives ? r.activesTitle : r.fullList}</summary>
+            <p dir="auto">{product.ingredientsText}</p>
           </details>
         ) : null}
 
@@ -123,20 +165,11 @@ export default function ProductResult({ product, source, onAnother }: Props) {
           </details>
         ) : null}
 
+        {dataSources.map((source) => (
+          <SourceLine key={source.id} source={source} />
+        ))}
         <p className="fine productAttribution">
-          {fill(r.attribution, {
-            source: (
-              <a href={source.url} target="_blank" rel="noopener noreferrer" className="inlineLink">
-                {source.name}
-              </a>
-            ),
-            licence: (
-              <a href={ODBL_URL} target="_blank" rel="noopener noreferrer" className="inlineLink">
-                {r.licence}
-              </a>
-            ),
-          })}
-          {source.imageLicence ? ` ${r.imageCredit}` : null}
+          <EdaLink />
         </p>
       </section>
 

@@ -9,6 +9,7 @@ import {
   INGREDIENTS,
   looksLikeSunscreen,
   matchIngredients,
+  normalizeName,
   splitIngredients,
 } from '../lib/products/ingredients';
 
@@ -121,5 +122,27 @@ describe('ingredient descriptions', () => {
       { benefit: 'hydration', from: ['glycerin'] },
       { benefit: 'barrier', from: ['niacinamide'] },
     ]);
+  });
+
+  it('reads Arabic ingredient lists, whatever the hamza or taa marbuta spelling', () => {
+    const { matches } = matchIngredients({
+      text: 'مياه، جلسرين، نياسيناميد، حمض الهيالورونيك، أكسيد الزنك',
+      sunscreen: true,
+    });
+    assert.deepEqual(
+      matches.map((m) => m.key),
+      ['glycerin', 'niacinamide', 'hyaluronicAcid', 'mineralUvFilter'],
+    );
+    assert.equal(normalizeName('أكسيد'), normalizeName('اكسيد'));
+    assert.equal(normalizeName('ب٢'), 'ب2');
+  });
+
+  it('reads pharmacy listings joined with "+", and delivery-form words', () => {
+    const { listed, matches } = matchIngredients({ text: 'liposomal retinol+argireline+niacinamide+ceramide-2' });
+    assert.equal(listed, 4);
+    assert.deepEqual(
+      matches.map((m) => m.key),
+      ['retinoid', 'niacinamide', 'ceramides'],
+    );
   });
 });
