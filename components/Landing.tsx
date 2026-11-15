@@ -37,14 +37,6 @@ export default function Landing({ onStart, signInNeeded }: { onStart: () => void
           </li>
         </ul>
         <nav className="heroLearnLinks" aria-label={t.landing.about}>
-          <a href={href('/how-it-works')} className="heroLearnLink">
-            {t.nav.howItWorks}
-          </a>
-          <span className="heroLearnDot" aria-hidden>·</span>
-          <a href={href('/features')} className="heroLearnLink">
-            {t.nav.features}
-          </a>
-          <span className="heroLearnDot" aria-hidden>·</span>
           <a href={href('/about')} className="heroLearnLink">
             {t.nav.about}
           </a>

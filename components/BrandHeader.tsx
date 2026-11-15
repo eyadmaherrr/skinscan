@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Globe,
   Info,
-  ListChecks,
   LogIn,
   LogOut,
   Mail,
@@ -16,7 +15,6 @@ import {
   ScanBarcode,
   ScanFace,
   ShieldCheck,
-  Sparkles,
   UserRound,
   X,
 } from 'lucide-react';
@@ -97,16 +95,12 @@ export default function BrandHeader({ onHome, scanActive = true, productsActive 
   const links = [
     { id: 'scan', href: scanHome, label: t.nav.scan, icon: ScanFace, active: scanActive, onClick: goHome },
     { id: 'products', href: to(href('/products')), label: t.nav.products, icon: ScanBarcode, active: productsActive },
-    { id: 'how', href: to(href('/how-it-works')), label: t.nav.howItWorks, icon: ListChecks },
-    { id: 'features', href: to(href('/features')), label: t.nav.features, icon: Sparkles },
     { id: 'book', href: booking, label: t.nav.book, icon: CalendarDays },
   ];
 
   // Every page, for the phone menu.
   const menu = [
     { href: to(href('/products')), label: t.nav.products, icon: ScanBarcode },
-    { href: to(href('/how-it-works')), label: t.nav.howItWorks, icon: ListChecks },
-    { href: to(href('/features')), label: t.nav.features, icon: Sparkles },
     { href: to(href('/skin-analysis')), label: t.nav.topics, icon: BookOpen },
     { href: to(href('/about')), label: t.nav.about, icon: Info },
     { href: to(href('/contact')), label: t.nav.contact, icon: Mail },

@@ -50,6 +50,10 @@ const ortExcludes = ortPlatforms
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Served as they are: the site is deployed as a Vercel service (vercel.json), where the
+  // /_next/image optimizer is not routed (it fell through to the 404 page, so the logo broke).
+  // The only local images are small, already-compressed WebP files.
+  images: { unoptimized: true },
   // English (app/(en)) and Arabic (app/ar) each have their own root layout, so
   // unknown URLs use app/global-not-found.tsx.
   experimental: { globalNotFound: true },
